@@ -93,3 +93,22 @@ coverage/
 
 # Prompts directory (internal)
 prompts/
+
+# Playwright
+node_modules/
+package-lock.json
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Test screenshots
+*.png
+test-*.js
+
+# Database and assistant files
+*.db
+.claude_assistant_settings.json
+
+# Docker (optional)
+Dockerfile.*
+docker-compose.yml

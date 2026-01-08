@@ -569,6 +569,44 @@ body {
     color: var(--text-secondary);
 }
 
+.title-input-group {
+    position: relative;
+}
+
+.title-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 10;
+    margin-top: 2px;
+}
+
+.title-suggestions[hidden] {
+    display: none;
+}
+
+.suggestion-item {
+    padding: var(--spacing-sm) var(--spacing-md);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.suggestion-item:hover,
+.suggestion-item.active {
+    background: var(--primary-50);
+}
+
+.suggestion-item:not(:last-child) {
+    border-bottom: 1px solid var(--border-color);
+}
+
 .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;

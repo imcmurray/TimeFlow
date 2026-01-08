@@ -47,6 +47,12 @@ class Database {
         return this._getAll('tasks');
     }
 
+    async getAllTaskTitles() {
+        const tasks = await this._getAll('tasks');
+        const uniqueTitles = [...new Set(tasks.map(t => t.title))];
+        return uniqueTitles;
+    }
+
     async getTasksByDate(date) {
         const dateStr = this._formatDate(date);
         return this._getAllByIndex('tasks', 'date', dateStr);
@@ -623,6 +629,25 @@ class TimeFlowApp {
         document.getElementById('task-form').addEventListener('submit', (e) => this.handleTaskSubmit(e));
         document.getElementById('delete-task-btn').addEventListener('click', () => this.deleteCurrentTask());
 
+        // Title suggestions
+        const titleInput = document.getElementById('task-title');
+        const suggestionsContainer = document.getElementById('title-suggestions');
+
+        titleInput.addEventListener('input', () => this.showTitleSuggestions());
+        titleInput.addEventListener('focus', () => this.showTitleSuggestions());
+        titleInput.addEventListener('blur', () => {
+            // Delay hiding to allow click on suggestion
+            setTimeout(() => suggestionsContainer.hidden = true, 200);
+        });
+
+        suggestionsContainer.addEventListener('click', (e) => {
+            const item = e.target.closest('.suggestion-item');
+            if (item) {
+                titleInput.value = item.textContent;
+                suggestionsContainer.hidden = true;
+            }
+        });
+
         // Settings modal
         document.getElementById('settings-btn').addEventListener('click', () => this.openSettingsModal());
         document.getElementById('close-settings-btn').addEventListener('click', () => this.closeSettingsModal());
@@ -650,8 +675,22 @@ class TimeFlowApp {
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                this.closeTaskModal();
-                this.closeSettingsModal();
+                // Close modals in order of priority (most recent first)
+                const confirmModal = document.getElementById('confirm-modal');
+                const shareModal = document.getElementById('share-modal');
+                const settingsModal = document.getElementById('settings-modal');
+                const taskModal = document.getElementById('task-modal');
+
+                if (!confirmModal.hidden) {
+                    // If confirm modal is open, close it but keep task modal
+                    confirmModal.hidden = true;
+                } else if (!shareModal.hidden) {
+                    this.closeShareModal();
+                } else if (!settingsModal.hidden) {
+                    this.closeSettingsModal();
+                } else if (!taskModal.hidden) {
+                    this.closeTaskModal();
+                }
             }
             if (e.key === 'n' && !e.target.matches('input, textarea')) {
                 e.preventDefault();
@@ -763,6 +802,33 @@ class TimeFlowApp {
     closeTaskModal() {
         document.getElementById('task-modal').hidden = true;
         this.state.setState({ editingTask: null });
+    }
+
+    async showTitleSuggestions() {
+        const titleInput = document.getElementById('task-title');
+        const suggestionsContainer = document.getElementById('title-suggestions');
+        const query = titleInput.value.trim().toLowerCase();
+
+        if (query.length < 2) {
+            suggestionsContainer.hidden = true;
+            return;
+        }
+
+        // Get all unique task titles from history
+        const allTasks = await this.db.getAllTaskTitles();
+        const suggestions = allTasks.filter(title =>
+            title.toLowerCase().includes(query) && title.toLowerCase() !== query
+        ).slice(0, 5); // Limit to 5 suggestions
+
+        if (suggestions.length === 0) {
+            suggestionsContainer.hidden = true;
+            return;
+        }
+
+        suggestionsContainer.innerHTML = suggestions
+            .map(title => `<div class="suggestion-item">${title}</div>`)
+            .join('');
+        suggestionsContainer.hidden = false;
     }
 
     async handleTaskSubmit(e) {

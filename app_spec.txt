@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<app_specification>
+  <project_name>TimeFlow</project_name>
+  <project_tagline>Experience time as a gentle flowing river, not a pressure cooker</project_tagline>
+  
+  <project_description>
+TimeFlow is a revolutionary daily schedule app that transforms how you experience time. Instead of static grids or stressful lists, your day flows like a gentle river toward a fixed "NOW" line. As real minutes pass, tasks automatically scroll down, creating a calming, intuitive sense of progress.
+
+Originally conceived for sharing pet care routines with sitters, TimeFlow works beautifully for any schedule: personal productivity, work shifts, childcare, medical routines, or family plans. The app delivers calm awareness—time flows naturally while you stay in control without feeling overwhelmed.
+  </project_description>
+  
+  <key_features>
+    <feature>Dynamic real-time vertical timeline that auto-scrolls to keep current time aligned with the prominent "NOW" line</feature>
+    <feature>Tasks as elegant cards flowing downward through time, positioned by start/end times</feature>
+    <feature>Visual time zones: upcoming (above NOW), current (at NOW), completed (below NOW)</feature>
+    <feature>Rich task management with priority levels, reminders, notes, and attachments</feature>
+    <feature>One-tap sharing for easy schedule handoff to caregivers, sitters, or team members</feature>
+    <feature>Beautiful animations that make time feel fluid and natural</feature>
+    <feature>Local notifications for upcoming tasks</feature>
+    <feature>Offline-first design with local persistence</feature>
+  </key_features>
+  
+  <user_stories>
+    <story>As a pet owner, I want to share my dogs' daily routine with a sitter so they know exactly what to do and when</story>
+    <story>As a busy professional, I want to see my day flow naturally so I feel calm progress instead of time pressure</story>
+    <story>As a parent, I want to manage my family's schedule visually so everyone knows what's happening now and next</story>
+    <story>As a caregiver, I want to track medical routines and appointments so nothing gets missed</story>
+    <story>As someone with ADHD, I want a visual representation of time passing so I can better understand my day</story>
+  </user_stories>
+  
+  <technical_requirements>
+    <platform>Cross-platform mobile (iOS and Android)</platform>
+    <framework>Flutter (preferred for superior animation performance and custom scrolling)</framework>
+    <architecture>Clean Architecture with Repository pattern</architecture>
+    <state_management>Riverpod or Provider for reactive updates</state_management>
+    <database>Local SQLite via drift or sqflite for offline-first storage</database>
+    <animations>Flutter's animation framework with custom ScrollController</animations>
+    <notifications>Local notifications via flutter_local_notifications</notifications>
+    <future_considerations>
+      <consideration>PWA version for web access</consideration>
+      <consideration>Cloud sync via Firebase or Supabase</consideration>
+      <consideration>Collaborative schedules for teams/families</consideration>
+    </future_considerations>
+  </technical_requirements>
+  
+  <ui_design>
+    <design_philosophy>Calm, minimalist, nature-inspired aesthetic reminiscent of flowing water</design_philosophy>
+    <color_scheme>
+      <primary>Soft blues and aqua tones (#E3F2FD, #42A5F5)</primary>
+      <secondary>Gentle greens (#E8F5E9, #66BB6A)</secondary>
+      <accent>Warm coral for important tasks (#FFCCBC, #FF7043)</accent>
+      <background>Off-white with subtle gradients (#FAFAFA)</background>
+      <text>Deep charcoal for readability (#212121, #757575)</text>
+    </color_scheme>
+    <key_elements>
+      <element>Full-screen vertical ScrollView as main canvas</element>
+      <element>Thin timeline on left with subtle hour markers</element>
+      <element>Bold horizontal NOW line at 70-80% down screen with soft glow</element>
+      <element>Task cards with rounded corners, subtle shadows, height based on duration</element>
+      <element>Floating Action Button for quick task addition</element>
+      <element>Smooth auto-scroll animation synced to real time</element>
+    </key_elements>
+    <animations>
+      <animation>Continuous gentle downward scroll matching time progression</animation>
+      <animation>Ripple effect on NOW line</animation>
+      <animation>Task cards fade in when created</animation>
+      <animation>Swipe gestures for task completion/dismissal</animation>
+      <animation>Pinch to zoom timeline density</animation>
+    </animations>
+  </ui_design>
+  
+  <core_screens>
+    <screen name="Timeline View">
+      <description>Main screen showing the flowing daily timeline</description>
+      <elements>
+        <element>Vertical scrolling timeline with hour markers</element>
+        <element>Fixed NOW line with current time display</element>
+        <element>Task cards positioned by time</element>
+        <element>Date header with navigation arrows</element>
+        <element>FAB for adding tasks</element>
+      </elements>
+    </screen>
+    
+    <screen name="Task Detail">
+      <description>Full-screen modal or bottom sheet for task management</description>
+      <elements>
+        <element>Task title input</element>
+        <element>Start/end time pickers</element>
+        <element>Priority toggle (normal/important)</element>
+        <element>Description field</element>
+        <element>Reminder settings</element>
+        <element>Recurring options</element>
+        <element>Attachment/photo option</element>
+        <element>Delete button</element>
+      </elements>
+    </screen>
+    
+    <screen name="Quick Add">
+      <description>Streamlined task creation flow</description>
+      <elements>
+        <element>Title input with suggestions</element>
+        <element>Time slot selector</element>
+        <element>Duration picker</element>
+        <element>Quick priority toggle</element>
+        <element>Save button</element>
+      </elements>
+    </screen>
+    
+    <screen name="Share View">
+      <description>Export/share current day's schedule</description>
+      <elements>
+        <element>Preview of shareable timeline</element>
+        <element>Share method options (image, link, text)</element>
+        <element>Time range selector</element>
+        <element>Privacy options (hide details, etc)</element>
+      </elements>
+    </screen>
+    
+    <screen name="Settings">
+      <description>App preferences and customization</description>
+      <elements>
+        <element>Theme selection (light/dark/auto)</element>
+        <element>Default reminder times</element>
+        <element>Timeline density settings</element>
+        <element>Notification preferences</element>
+        <element>About section</element>
+      </elements>
+    </screen>
+  </core_screens>
+  
+  <data_model>
+    <entity name="Task">
+      <field name="id" type="String" description="Unique identifier"/>
+      <field name="title" type="String" description="Task name"/>
+      <field name="description" type="String?" description="Optional detailed description"/>
+      <field name="startTime" type="DateTime" description="Task start time"/>
+      <field name="endTime" type="DateTime" description="Task end time"/>
+      <field name="isImportant" type="bool" description="Priority flag"/>
+      <field name="isCompleted" type="bool" description="Completion status"/>
+      <field name="reminderMinutes" type="int?" description="Minutes before task to remind"/>
+      <field name="recurringPattern" type="String?" description="Recurrence rule if applicable"/>
+      <field name="notes" type="String?" description="Additional notes"/>
+      <field name="attachmentPath" type="String?" description="Local path to attachment"/>
+      <field name="color" type="String?" description="Custom color override"/>
+      <field name="createdAt" type="DateTime" description="Creation timestamp"/>
+      <field name="updatedAt" type="DateTime" description="Last update timestamp"/>
+    </entity>
+    
+    <entity name="Settings">
+      <field name="theme" type="String" description="light/dark/auto"/>
+      <field name="defaultReminderMinutes" type="int" description="Default reminder time"/>
+      <field name="timelineDensity" type="double" description="Zoom level for timeline"/>
+      <field name="notificationsEnabled" type="bool" description="Global notification toggle"/>
+      <field name="firstLaunch" type="bool" description="Show onboarding"/>
+    </entity>
+  </data_model>
+  
+  <test_scenarios>
+    <scenario name="Real-time Timeline Flow">
+      <steps>
+        <step>Open app at 2:00 PM</step>
+        <step>Observe NOW line showing "2:00 PM"</step>
+        <step>Watch for 1 minute</step>
+        <step>Verify timeline has scrolled down and NOW shows "2:01 PM"</step>
+        <step>Verify tasks have moved accordingly</step>
+      </steps>
+    </scenario>
+    
+    <scenario name="Task Creation and Positioning">
+      <steps>
+        <step>Tap FAB to add new task</step>
+        <step>Enter "Team Meeting" as title</step>
+        <step>Set time from 3:00 PM to 4:00 PM</step>
+        <step>Mark as important</step>
+        <step>Save task</step>
+        <step>Verify task appears at correct position on timeline</step>
+        <step>Verify important task has accent color</step>
+      </steps>
+    </scenario>
+    
+    <scenario name="Task Completion Flow">
+      <steps>
+        <step>Wait for task to reach NOW line</step>
+        <step>Swipe task right to complete</step>
+        <step>Verify task fades and shows completion checkmark</step>
+        <step>Verify task moves to completed section below NOW</step>
+      </steps>
+    </scenario>
+    
+    <scenario name="Schedule Sharing">
+      <steps>
+        <step>Create several tasks for the day</step>
+        <step>Tap share button</step>
+        <step>Select "Share as Image"</step>
+        <step>Verify preview shows clean timeline view</step>
+        <step>Share to another app</step>
+        <step>Verify image is readable and shows all tasks</step>
+      </steps>
+    </scenario>
+    
+    <scenario name="Notification Delivery">
+      <steps>
+        <step>Create task "Walk Dogs" for 10 minutes in future</step>
+        <step>Set reminder for 5 minutes before</step>
+        <step>Close app</step>
+        <step>Wait 5 minutes</step>
+        <step>Verify notification appears with task details</step>
+        <step>Tap notification</step>
+        <step>Verify app opens to correct task</step>
+      </steps>
+    </scenario>
+  </test_scenarios>
+  
+  <success_criteria>
+    <criterion>Timeline scrolls smoothly in real-time without jitter</criterion>
+    <criterion>NOW line remains fixed while content flows past it</criterion>
+    <criterion>Tasks appear at pixel-perfect positions based on time</criterion>
+    <criterion>All animations feel natural and calming</criterion>
+    <criterion>App works fully offline with no data loss</criterion>
+    <criterion>Notifications arrive precisely on time</criterion>
+    <criterion>Sharing produces clear, professional-looking schedules</criterion>
+    <criterion>UI remains responsive even with 50+ daily tasks</criterion>
+    <criterion>Onboarding explains concept in under 30 seconds</criterion>
+    <criterion>Dark mode provides comfortable viewing in low light</criterion>
+  </success_criteria>
+</app_specification>

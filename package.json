@@ -1,0 +1,29 @@
+{
+  "name": "timeflow-e2e-tests",
+  "version": "1.0.0",
+  "description": "Playwright E2E tests for TimeFlow web app",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "server": "node server.js",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  },
+  "main": "playwright.config.js",
+  "directories": {
+    "lib": "lib",
+    "test": "tests"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "playwright": "^1.57.0"
+  }
+}

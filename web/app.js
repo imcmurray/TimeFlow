@@ -872,6 +872,7 @@ class TimeFlowApp {
 
         const form = e.target;
         const formData = new FormData(form);
+        const saveBtn = form.querySelector('button[type="submit"]');
 
         const editingTask = this.state.state.editingTask;
         const task = {
@@ -901,14 +902,36 @@ class TimeFlowApp {
             return;
         }
 
+        // Show loading state
+        this.setButtonLoading(saveBtn, true);
+        const isNewTask = !task.id;
+
         try {
             await this.db.saveTask(task);
             await this.loadTasksForDate(this.state.state.currentDate);
             this.closeTaskModal();
-            Toast.show(task.id ? 'Task updated' : 'Task created', 'success');
+            Toast.show(isNewTask ? 'Task created' : 'Task updated', 'success');
         } catch (error) {
             console.error('Failed to save task:', error);
             Toast.show('Failed to save task', 'error');
+        } finally {
+            // Clear loading state
+            this.setButtonLoading(saveBtn, false);
+        }
+    }
+
+    setButtonLoading(button, isLoading) {
+        if (isLoading) {
+            button.disabled = true;
+            button.classList.add('loading');
+            button.dataset.originalText = button.textContent;
+            button.innerHTML = '<span class="spinner"></span> Saving...';
+        } else {
+            button.disabled = false;
+            button.classList.remove('loading');
+            if (button.dataset.originalText) {
+                button.textContent = button.dataset.originalText;
+            }
         }
     }
 

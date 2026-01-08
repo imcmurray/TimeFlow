@@ -281,17 +281,36 @@ This approach allows full testing with Playwright browser automation while maint
 
 ### Feature Status:
 - Total: 150
-- Passing: 28
+- Passing: 34
 - In Progress: 0
-- Percentage: 18.7%
+- Percentage: 22.7%
+
+### Additional Features Implemented:
+- Feature 29: Notification toggle
+- Feature 30: Share screen opens
+- Feature 31: Share as image
+- Feature 37: Task notes field
+- Feature 39: Manual scroll override
+- Feature 40: Jump to NOW button
+
+### Features Skipped (to implement later):
+- Feature 32: Share time range selection
+- Features 33-36: Recurring tasks, attachments, custom colors
+
+### Technical Additions:
+- Share button in header
+- Share modal with image/text/link options
+- Jump to NOW button (appears when scrolled away)
+- Share functionality with clipboard fallback
 
 ### Next Steps for Future Sessions:
-1. Continue implementing remaining 122 features
+1. Continue implementing remaining features
 2. Add recurring task support
-3. Implement share functionality
+3. Implement export/import functionality
 4. Performance optimization for many tasks
-5. Export/Import functionality
 
 ### Files Modified This Session:
-- web/app.js (updated - async navigateDay, swipe gesture, timeline density)
+- web/index.html (updated - share button, jump to NOW button)
+- web/styles.css (updated - jump to NOW button styles)
+- web/app.js (updated - share functions, jump to NOW, scroll handling)
 - claude-progress.txt (updated)

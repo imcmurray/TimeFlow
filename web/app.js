@@ -620,6 +620,9 @@ class TimeFlowApp {
         document.getElementById('share-modal').addEventListener('click', (e) => {
             if (e.target.id === 'share-modal') this.closeShareModal();
         });
+        document.getElementById('share-image-btn')?.addEventListener('click', () => this.shareAsImage());
+        document.getElementById('share-text-btn')?.addEventListener('click', () => this.shareAsText());
+        document.getElementById('copy-link-btn')?.addEventListener('click', () => this.copyLink());
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
@@ -646,13 +649,33 @@ class TimeFlowApp {
 
         // Set up scroll listener to pause auto-scroll when user scrolls manually
         const timeline = document.getElementById('timeline');
+        const jumpToNowBtn = document.getElementById('jump-to-now-btn');
         let userScrolling = false;
+
         timeline.addEventListener('scroll', () => {
             if (!userScrolling) {
                 userScrolling = true;
                 this.renderer.pauseAutoScroll(10000); // Pause for 10 seconds after manual scroll
                 setTimeout(() => { userScrolling = false; }, 100);
             }
+
+            // Show/hide jump to NOW button based on scroll position
+            const currentMinutes = Utils.getCurrentTimeMinutes();
+            const targetScroll = (currentMinutes / 60) * this.renderer.hourHeight - (timeline.clientHeight * 0.7);
+            const scrollDiff = Math.abs(timeline.scrollTop - targetScroll);
+
+            // Show button if scrolled more than 200px away from current time
+            if (scrollDiff > 200) {
+                jumpToNowBtn.hidden = false;
+            } else {
+                jumpToNowBtn.hidden = true;
+            }
+        });
+
+        // Jump to NOW button click handler
+        jumpToNowBtn.addEventListener('click', () => {
+            this.renderer.scrollToCurrentTime(true);
+            jumpToNowBtn.hidden = true;
         });
     }
 
@@ -866,6 +889,83 @@ class TimeFlowApp {
         html += '</ul>';
 
         preview.innerHTML = html;
+    }
+
+    async shareAsImage() {
+        const preview = document.getElementById('share-preview');
+        try {
+            // Use html2canvas if available, otherwise show a message
+            if (typeof html2canvas !== 'undefined') {
+                const canvas = await html2canvas(preview);
+                canvas.toBlob(async (blob) => {
+                    if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], 'schedule.png', { type: 'image/png' })] })) {
+                        const file = new File([blob], 'schedule.png', { type: 'image/png' });
+                        await navigator.share({
+                            files: [file],
+                            title: 'My Schedule'
+                        });
+                    } else {
+                        // Download the image
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `schedule-${new Date().toISOString().split('T')[0]}.png`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        Toast.show('Image downloaded!', 'success');
+                    }
+                });
+            } else {
+                Toast.show('Image sharing not available', 'info');
+            }
+        } catch (error) {
+            Toast.show('Failed to share as image', 'error');
+        }
+    }
+
+    async shareAsText() {
+        const { tasks, currentDate } = this.state.state;
+        let text = `📅 ${Utils.formatDate(currentDate)}\n\n`;
+
+        tasks.forEach(task => {
+            const status = task.isCompleted ? '✅' : '⏰';
+            text += `${status} ${Utils.formatTime(task.startTime)} - ${Utils.formatTime(task.endTime)}: ${task.title}\n`;
+            if (task.description) {
+                text += `   ${task.description}\n`;
+            }
+        });
+
+        try {
+            if (navigator.share) {
+                await navigator.share({
+                    title: 'My Schedule',
+                    text: text
+                });
+            } else {
+                await navigator.clipboard.writeText(text);
+                Toast.show('Schedule copied to clipboard!', 'success');
+            }
+        } catch (error) {
+            Toast.show('Failed to share', 'error');
+        }
+    }
+
+    async copyLink() {
+        // In a real app, this would generate a shareable link
+        // For now, we'll copy the text version
+        const { tasks, currentDate } = this.state.state;
+        let text = `TimeFlow Schedule - ${Utils.formatDate(currentDate)}\n\n`;
+
+        tasks.forEach(task => {
+            text += `• ${Utils.formatTime(task.startTime)} - ${Utils.formatTime(task.endTime)}: ${task.title}\n`;
+        });
+
+        try {
+            await navigator.clipboard.writeText(text);
+            Toast.show('Schedule copied to clipboard!', 'success');
+        } catch (error) {
+            Toast.show('Failed to copy', 'error');
+        }
     }
 }
 

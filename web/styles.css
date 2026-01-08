@@ -461,6 +461,37 @@ body {
     transform: scale(0.95);
 }
 
+/* Jump to NOW Button */
+.jump-to-now-btn {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--primary-500);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-fast);
+    z-index: 100;
+}
+
+.jump-to-now-btn:hover {
+    background: var(--primary-600);
+    transform: translateX(-50%) scale(1.05);
+}
+
+.jump-to-now-btn[hidden] {
+    display: none;
+}
+
 /* Modal */
 .modal-overlay {
     position: fixed;

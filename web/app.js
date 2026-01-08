@@ -820,17 +820,65 @@ class TimeFlowApp {
         const { editingTask } = this.state.state;
         if (!editingTask) return;
 
-        if (confirm('Are you sure you want to delete this task?')) {
-            try {
-                await this.db.deleteTask(editingTask.id);
-                await this.loadTasksForDate(this.state.state.currentDate);
-                this.closeTaskModal();
-                Toast.show('Task deleted', 'success');
-            } catch (error) {
-                console.error('Failed to delete task:', error);
-                Toast.show('Failed to delete task', 'error');
+        // Show custom confirmation dialog
+        this.showConfirmDialog(
+            'Delete Task',
+            `Are you sure you want to delete "${editingTask.title}"? This action cannot be undone.`,
+            async () => {
+                try {
+                    await this.db.deleteTask(editingTask.id);
+                    await this.loadTasksForDate(this.state.state.currentDate);
+                    this.closeTaskModal();
+                    Toast.show('Task deleted', 'success');
+                } catch (error) {
+                    console.error('Failed to delete task:', error);
+                    Toast.show('Failed to delete task', 'error');
+                }
             }
-        }
+        );
+    }
+
+    showConfirmDialog(title, message, onConfirm) {
+        const modal = document.getElementById('confirm-modal');
+        const titleEl = document.getElementById('confirm-title');
+        const messageEl = document.getElementById('confirm-message');
+        const cancelBtn = document.getElementById('confirm-cancel-btn');
+        const confirmBtn = document.getElementById('confirm-delete-btn');
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        modal.hidden = false;
+
+        // Store the callback and set up event listeners
+        const cleanup = () => {
+            cancelBtn.removeEventListener('click', handleCancel);
+            confirmBtn.removeEventListener('click', handleConfirm);
+            modal.removeEventListener('click', handleOverlayClick);
+        };
+
+        const handleCancel = () => {
+            modal.hidden = true;
+            cleanup();
+        };
+
+        const handleConfirm = () => {
+            modal.hidden = true;
+            cleanup();
+            onConfirm();
+        };
+
+        const handleOverlayClick = (e) => {
+            if (e.target === modal) {
+                handleCancel();
+            }
+        };
+
+        cancelBtn.addEventListener('click', handleCancel);
+        confirmBtn.addEventListener('click', handleConfirm);
+        modal.addEventListener('click', handleOverlayClick);
+
+        // Focus the cancel button for accessibility
+        cancelBtn.focus();
     }
 
     async toggleTaskComplete(taskId) {

@@ -858,6 +858,45 @@ textarea {
     color: var(--text-secondary);
 }
 
+/* Confirmation Dialog */
+#confirm-modal {
+    z-index: 1100; /* Higher than task modal (1000) */
+}
+
+.confirm-modal {
+    max-width: 360px;
+    text-align: center;
+}
+
+.confirm-content {
+    padding: var(--spacing-lg);
+    padding-top: var(--spacing-md);
+}
+
+.confirm-content p {
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg);
+}
+
+.confirm-actions .btn {
+    flex: 1;
+}
+
+.btn-danger {
+    background: var(--accent-300);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: var(--accent-400);
+}
+
 /* Responsive */
 @media (max-width: 640px) {
     .app-header {

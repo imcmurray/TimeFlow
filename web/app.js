@@ -394,6 +394,83 @@ class TimelineRenderer {
             window.app.toggleTaskComplete(task.id);
         });
 
+        // Swipe to complete functionality
+        let startX = 0;
+        let startY = 0;
+        let currentX = 0;
+        let isDragging = false;
+        const SWIPE_THRESHOLD = 100;
+
+        const handleSwipeStart = (clientX, clientY) => {
+            startX = clientX;
+            startY = clientY;
+            currentX = 0;
+            isDragging = true;
+            card.style.transition = 'none';
+        };
+
+        const handleSwipeMove = (clientX, clientY) => {
+            if (!isDragging) return;
+            const deltaX = clientX - startX;
+            const deltaY = clientY - startY;
+
+            // Only allow horizontal swipe if more horizontal than vertical
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                currentX = Math.max(0, deltaX); // Only allow right swipe
+                card.style.transform = `translateX(${currentX}px)`;
+                card.style.opacity = Math.max(0.3, 1 - currentX / 200);
+            }
+        };
+
+        const handleSwipeEnd = () => {
+            if (!isDragging) return;
+            isDragging = false;
+            card.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+
+            if (currentX >= SWIPE_THRESHOLD && !task.isCompleted) {
+                // Complete the task with animation
+                card.style.transform = 'translateX(100%)';
+                card.style.opacity = '0';
+                setTimeout(() => {
+                    window.app.toggleTaskComplete(task.id);
+                }, 300);
+            } else {
+                // Reset position
+                card.style.transform = 'translateX(0)';
+                card.style.opacity = '1';
+            }
+        };
+
+        // Mouse events
+        card.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.complete-btn')) return;
+            handleSwipeStart(e.clientX, e.clientY);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            handleSwipeMove(e.clientX, e.clientY);
+        });
+
+        document.addEventListener('mouseup', () => {
+            handleSwipeEnd();
+        });
+
+        // Touch events
+        card.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.complete-btn')) return;
+            const touch = e.touches[0];
+            handleSwipeStart(touch.clientX, touch.clientY);
+        });
+
+        card.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            handleSwipeMove(touch.clientX, touch.clientY);
+        });
+
+        card.addEventListener('touchend', () => {
+            handleSwipeEnd();
+        });
+
         return card;
     }
 
@@ -486,6 +563,9 @@ class TimeFlowApp {
                 this.state
             );
 
+            // Apply timeline density
+            this.applyTimelineDensity(this.state.state.settings.timelineDensity);
+
             // Load tasks for current date
             await this.loadTasksForDate(this.state.state.currentDate);
 
@@ -535,7 +615,11 @@ class TimeFlowApp {
         document.getElementById('timeline-density').addEventListener('input', (e) => this.updateSetting('timelineDensity', parseFloat(e.target.value)));
 
         // Share modal
+        document.getElementById('share-btn').addEventListener('click', () => this.openShareModal());
         document.getElementById('close-share-btn')?.addEventListener('click', () => this.closeShareModal());
+        document.getElementById('share-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'share-modal') this.closeShareModal();
+        });
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
@@ -585,11 +669,11 @@ class TimeFlowApp {
         document.getElementById('date-subtitle').textContent = Utils.formatDateSubtitle(currentDate);
     }
 
-    navigateDay(delta) {
+    async navigateDay(delta) {
         const { currentDate } = this.state.state;
         const newDate = new Date(currentDate);
         newDate.setDate(newDate.getDate() + delta);
-        this.loadTasksForDate(newDate);
+        await this.loadTasksForDate(newDate);
         this.updateDateDisplay();
     }
 
@@ -735,6 +819,19 @@ class TimeFlowApp {
         if (key === 'theme') {
             this.applyTheme(value);
         }
+
+        if (key === 'timelineDensity') {
+            this.applyTimelineDensity(value);
+        }
+    }
+
+    applyTimelineDensity(density) {
+        const baseHeight = 80;
+        const newHeight = baseHeight * density;
+        this.renderer.hourHeight = newHeight;
+        document.documentElement.style.setProperty('--hour-height', `${newHeight}px`);
+        // Re-render tasks with new density
+        this.renderer.render(this.state.state.tasks);
     }
 
     applyTheme(theme) {

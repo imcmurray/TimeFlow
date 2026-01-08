@@ -645,6 +645,7 @@ class TimeFlowApp {
         document.getElementById('share-image-btn')?.addEventListener('click', () => this.shareAsImage());
         document.getElementById('share-text-btn')?.addEventListener('click', () => this.shareAsText());
         document.getElementById('copy-link-btn')?.addEventListener('click', () => this.copyLink());
+        document.getElementById('share-hide-details')?.addEventListener('change', () => this.renderSharePreview());
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
@@ -941,6 +942,8 @@ class TimeFlowApp {
     // Share functionality
     openShareModal() {
         document.getElementById('share-modal').hidden = false;
+        // Reset privacy option
+        document.getElementById('share-hide-details').checked = false;
         this.renderSharePreview();
     }
 
@@ -948,15 +951,23 @@ class TimeFlowApp {
         document.getElementById('share-modal').hidden = true;
     }
 
+    isHideDetailsEnabled() {
+        return document.getElementById('share-hide-details')?.checked || false;
+    }
+
     renderSharePreview() {
         const { tasks, currentDate } = this.state.state;
         const preview = document.getElementById('share-preview');
+        const hideDetails = this.isHideDetailsEnabled();
 
         let html = `<h4>${Utils.formatDate(currentDate)}</h4><ul style="list-style: none; padding: 0;">`;
         tasks.forEach(task => {
             html += `<li style="padding: 8px 0; border-bottom: 1px solid var(--border-color);">
-                <strong>${Utils.formatTime(task.startTime)} - ${Utils.formatTime(task.endTime)}</strong>: ${task.title}
-            </li>`;
+                <strong>${Utils.formatTime(task.startTime)} - ${Utils.formatTime(task.endTime)}</strong>: ${task.title}`;
+            if (!hideDetails && task.description) {
+                html += `<br><small style="color: var(--text-secondary);">${task.description}</small>`;
+            }
+            html += `</li>`;
         });
         html += '</ul>';
 
@@ -997,12 +1008,13 @@ class TimeFlowApp {
 
     async shareAsText() {
         const { tasks, currentDate } = this.state.state;
+        const hideDetails = this.isHideDetailsEnabled();
         let text = `📅 ${Utils.formatDate(currentDate)}\n\n`;
 
         tasks.forEach(task => {
             const status = task.isCompleted ? '✅' : '⏰';
             text += `${status} ${Utils.formatTime(task.startTime)} - ${Utils.formatTime(task.endTime)}: ${task.title}\n`;
-            if (task.description) {
+            if (!hideDetails && task.description) {
                 text += `   ${task.description}\n`;
             }
         });

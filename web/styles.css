@@ -749,6 +749,20 @@ textarea {
     padding: var(--spacing-lg);
 }
 
+.share-privacy-options {
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-sm) 0;
+}
+
+.share-privacy-options .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
 .share-preview {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);

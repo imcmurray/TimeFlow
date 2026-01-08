@@ -648,6 +648,19 @@ class TimeFlowApp {
             }
         });
 
+        // Duration presets
+        document.getElementById('duration-presets').addEventListener('click', (e) => {
+            const btn = e.target.closest('.duration-preset-btn');
+            if (btn) {
+                const duration = parseInt(btn.dataset.duration);
+                this.applyDurationPreset(duration);
+
+                // Highlight active button
+                document.querySelectorAll('.duration-preset-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }
+        });
+
         // Settings modal
         document.getElementById('settings-btn').addEventListener('click', () => this.openSettingsModal());
         document.getElementById('close-settings-btn').addEventListener('click', () => this.closeSettingsModal());
@@ -802,6 +815,29 @@ class TimeFlowApp {
     closeTaskModal() {
         document.getElementById('task-modal').hidden = true;
         this.state.setState({ editingTask: null });
+    }
+
+    applyDurationPreset(durationMinutes) {
+        const startInput = document.getElementById('task-start-time');
+        const endInput = document.getElementById('task-end-time');
+
+        // If no start time, use current time rounded to nearest 15 minutes
+        if (!startInput.value) {
+            const now = new Date();
+            const minutes = Math.ceil(now.getMinutes() / 15) * 15;
+            now.setMinutes(minutes);
+            now.setSeconds(0);
+            startInput.value = now.toTimeString().slice(0, 5);
+        }
+
+        // Calculate end time from start time + duration
+        const [hours, mins] = startInput.value.split(':').map(Number);
+        const startMinutes = hours * 60 + mins;
+        const endMinutes = startMinutes + durationMinutes;
+
+        const endHours = Math.floor(endMinutes / 60) % 24;
+        const endMins = endMinutes % 60;
+        endInput.value = `${String(endHours).padStart(2, '0')}:${String(endMins).padStart(2, '0')}`;
     }
 
     async showTitleSuggestions() {

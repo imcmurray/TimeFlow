@@ -613,6 +613,35 @@ body {
     gap: var(--spacing-md);
 }
 
+.duration-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.duration-preset-btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.duration-preset-btn:hover {
+    background: var(--primary-50);
+    border-color: var(--primary-400);
+    color: var(--primary-400);
+}
+
+.duration-preset-btn.active {
+    background: var(--primary-400);
+    border-color: var(--primary-400);
+    color: white;
+}
+
 input[type="text"],
 input[type="time"],
 textarea,

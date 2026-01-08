@@ -32,10 +32,10 @@
     --bg-secondary: #FFFFFF;
     --bg-elevated: #FFFFFF;
 
-    /* Text */
+    /* Text - Adjusted for WCAG AA contrast (4.5:1 minimum) */
     --text-primary: #212121;
-    --text-secondary: #757575;
-    --text-hint: #9E9E9E;
+    --text-secondary: #666666;  /* Darkened from #757575 for 4.5:1+ contrast */
+    --text-hint: #808080;       /* Darkened from #9E9E9E for 3:1+ minimum */
     --text-on-primary: #FFFFFF;
 
     /* Borders & Shadows */

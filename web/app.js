@@ -321,6 +321,28 @@ class TimelineRenderer {
     }
 
     renderTasks(tasks, timeline) {
+        // Remove any existing empty state
+        const existingEmpty = timeline.querySelector('.empty-state');
+        if (existingEmpty) existingEmpty.remove();
+
+        // Show empty state if no tasks
+        if (tasks.length === 0) {
+            const emptyState = document.createElement('div');
+            emptyState.className = 'empty-state';
+            emptyState.innerHTML = `
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <h3>No tasks today</h3>
+                <p>Tap the + button to add your first task and start planning your day.</p>
+            `;
+            timeline.appendChild(emptyState);
+            return;
+        }
+
         const currentMinutes = Utils.getCurrentTimeMinutes();
 
         tasks.forEach(task => {
@@ -748,6 +770,7 @@ class TimeFlowApp {
         const form = e.target;
         const formData = new FormData(form);
 
+        const editingTask = this.state.state.editingTask;
         const task = {
             id: formData.get('id') || null,
             title: formData.get('title').trim(),
@@ -757,7 +780,8 @@ class TimeFlowApp {
             isImportant: form.querySelector('#task-important').checked,
             reminderMinutes: formData.get('reminderMinutes') ? parseInt(formData.get('reminderMinutes')) : null,
             date: this.db._formatDate(this.state.state.currentDate),
-            isCompleted: this.state.state.editingTask?.isCompleted || false
+            isCompleted: editingTask?.isCompleted || false,
+            createdAt: editingTask?.createdAt || null
         };
 
         // Validation

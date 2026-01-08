@@ -354,9 +354,16 @@ This approach allows full testing with Playwright browser automation while maint
 
 ### Feature Status:
 - Total: 150
-- Passing: 53
+- Passing: 58
 - In Progress: 0
-- Percentage: 35.3%
+- Percentage: 38.7%
+
+### Additional Features Tested:
+- Feature 63: Task with no description saves correctly
+- Feature 64: Required field validation - title
+- Feature 65: Required field validation - times
+- Feature 66: End time must be after start time
+- Feature 67: Time picker usability
 
 ### Features Skipped (to implement later):
 - Feature 56: Onboarding shows on first launch
@@ -383,12 +390,17 @@ This approach allows full testing with Playwright browser automation while maint
 - test-overlapping-tasks.js
 - test-about-section.js
 - test-timeline-zones.js
+- test-no-description.js
+- test-required-title.js
+- test-required-times.js
+- test-time-picker.js
 
 ### Git Commits This Session:
 - "Add empty state display and fix createdAt preservation on edit"
+- "Update progress notes - Session 4 with 53/150 features passing"
 
 ### Next Steps for Future Sessions:
-1. Continue implementing remaining ~100 features
+1. Continue implementing remaining ~92 features
 2. Implement accessibility features
 3. Add export/import functionality
 4. Implement recurring tasks

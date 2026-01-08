@@ -265,6 +265,18 @@ const Utils = {
     getCurrentTimeMinutes() {
         const now = new Date();
         return now.getHours() * 60 + now.getMinutes();
+    },
+
+    // Screen reader announcement helper
+    announceToScreenReader(message) {
+        const announcer = document.getElementById('sr-announcements');
+        if (announcer) {
+            // Clear and set to trigger announcement
+            announcer.textContent = '';
+            setTimeout(() => {
+                announcer.textContent = message;
+            }, 100);
+        }
     }
 };
 
@@ -278,7 +290,15 @@ class Toast {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         toast.textContent = message;
+
+        // Add ARIA attributes for screen reader announcement
+        toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+        toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+
         container.appendChild(toast);
+
+        // Also announce to screen reader via dedicated announcer
+        Utils.announceToScreenReader(message);
 
         setTimeout(() => {
             toast.style.opacity = '0';
@@ -336,7 +356,7 @@ class TimelineRenderer {
             const emptyState = document.createElement('div');
             emptyState.className = 'empty-state';
             emptyState.innerHTML = `
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                     <line x1="16" y1="2" x2="16" y2="6"></line>
                     <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -383,6 +403,14 @@ class TimelineRenderer {
         card.style.top = `${top}px`;
         card.style.height = `${height}px`;
 
+        // Accessibility attributes for screen readers
+        card.setAttribute('role', 'listitem');
+        card.setAttribute('tabindex', '0');
+        const statusText = task.isCompleted ? 'completed' : (status === 'current' ? 'in progress' : status);
+        const importantText = task.isImportant ? ', important' : '';
+        const ariaLabel = `${task.title}, ${Utils.formatTime(task.startTime)} to ${Utils.formatTime(task.endTime)}, ${statusText}${importantText}`;
+        card.setAttribute('aria-label', ariaLabel);
+
         card.innerHTML = `
             <div class="task-header">
                 <h3 class="task-title">${this.escapeHtml(task.title)}</h3>
@@ -413,6 +441,14 @@ class TimelineRenderer {
         // Event listeners
         card.addEventListener('click', (e) => {
             if (!e.target.closest('.complete-btn')) {
+                window.app.editTask(task.id);
+            }
+        });
+
+        // Keyboard support for accessibility
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
                 window.app.editTask(task.id);
             }
         });
@@ -889,8 +925,11 @@ class TimeFlowApp {
         };
 
         // Validation
-        if (!task.title) {
+        if (!task.title || !task.title.trim()) {
             Toast.show('Please enter a task title', 'error');
+            const titleField = document.getElementById('task-title');
+            titleField?.focus();
+            titleField?.setAttribute('aria-invalid', 'true');
             return;
         }
 
@@ -899,8 +938,15 @@ class TimeFlowApp {
 
         if (endMinutes <= startMinutes) {
             Toast.show('End time must be after start time', 'error');
+            const endTimeField = document.getElementById('task-end-time');
+            endTimeField?.focus();
+            endTimeField?.setAttribute('aria-invalid', 'true');
             return;
         }
+
+        // Clear any previous aria-invalid states
+        document.getElementById('task-title')?.removeAttribute('aria-invalid');
+        document.getElementById('task-end-time')?.removeAttribute('aria-invalid');
 
         // Show loading state
         this.setButtonLoading(saveBtn, true);
@@ -910,10 +956,13 @@ class TimeFlowApp {
             await this.db.saveTask(task);
             await this.loadTasksForDate(this.state.state.currentDate);
             this.closeTaskModal();
-            Toast.show(isNewTask ? 'Task created' : 'Task updated', 'success');
+            const message = isNewTask ? 'Task created' : 'Task updated';
+            Toast.show(message, 'success');
+            Utils.announceToScreenReader(`${task.title} ${message.toLowerCase()}`);
         } catch (error) {
             console.error('Failed to save task:', error);
             Toast.show('Failed to save task', 'error');
+            Utils.announceToScreenReader('Failed to save task');
         } finally {
             // Clear loading state
             this.setButtonLoading(saveBtn, false);
@@ -947,18 +996,21 @@ class TimeFlowApp {
         if (!editingTask) return;
 
         // Show custom confirmation dialog
+        const taskTitle = editingTask.title;
         this.showConfirmDialog(
             'Delete Task',
-            `Are you sure you want to delete "${editingTask.title}"? This action cannot be undone.`,
+            `Are you sure you want to delete "${taskTitle}"? This action cannot be undone.`,
             async () => {
                 try {
                     await this.db.deleteTask(editingTask.id);
                     await this.loadTasksForDate(this.state.state.currentDate);
                     this.closeTaskModal();
                     Toast.show('Task deleted', 'success');
+                    Utils.announceToScreenReader(`${taskTitle} deleted`);
                 } catch (error) {
                     console.error('Failed to delete task:', error);
                     Toast.show('Failed to delete task', 'error');
+                    Utils.announceToScreenReader('Failed to delete task');
                 }
             }
         );

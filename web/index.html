@@ -11,6 +11,9 @@
 </head>
 <body>
     <div id="app">
+        <!-- Skip to main content link for accessibility -->
+        <a href="#timeline" class="skip-link" id="skip-link">Skip to main content</a>
+
         <!-- Header -->
         <header class="app-header">
             <button class="icon-btn" id="prev-day-btn" aria-label="Previous day">
@@ -45,9 +48,9 @@
         </header>
 
         <!-- Main Timeline View -->
-        <main class="timeline-container" id="timeline-container">
+        <main class="timeline-container" id="timeline-container" aria-label="Daily timeline">
             <!-- NOW Line (fixed position) -->
-            <div class="now-line" id="now-line">
+            <div class="now-line" id="now-line" role="status" aria-live="polite" aria-label="Current time indicator">
                 <div class="now-line-glow"></div>
                 <div class="now-line-content">
                     <span class="now-label">NOW</span>
@@ -56,9 +59,12 @@
             </div>
 
             <!-- Timeline -->
-            <div class="timeline" id="timeline">
+            <div class="timeline" id="timeline" role="list" aria-label="Scheduled tasks">
                 <!-- Hour markers and tasks will be rendered here -->
             </div>
+
+            <!-- Live region for screen reader announcements -->
+            <div id="sr-announcements" class="sr-only" aria-live="polite" aria-atomic="true"></div>
         </main>
 
         <!-- Jump to NOW Button -->
@@ -240,16 +246,16 @@
                         <!-- Preview will be rendered here -->
                     </div>
                     <div class="share-options">
-                        <button class="share-option-btn" id="share-image-btn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <button class="share-option-btn" id="share-image-btn" aria-label="Share as image">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                                 <circle cx="8.5" cy="8.5" r="1.5"></circle>
                                 <polyline points="21,15 16,10 5,21"></polyline>
                             </svg>
                             <span>Share as Image</span>
                         </button>
-                        <button class="share-option-btn" id="share-text-btn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <button class="share-option-btn" id="share-text-btn" aria-label="Share as text">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                 <polyline points="14,2 14,8 20,8"></polyline>
                                 <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -258,8 +264,8 @@
                             </svg>
                             <span>Share as Text</span>
                         </button>
-                        <button class="share-option-btn" id="copy-link-btn">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <button class="share-option-btn" id="copy-link-btn" aria-label="Copy link">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                             </svg>

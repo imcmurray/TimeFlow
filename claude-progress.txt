@@ -1549,6 +1549,7 @@ The TimeFlow application is production-ready with:
 - ✅ Custom task colors
 - ✅ Task priority indicators
 - ✅ Duration presets for quick task creation
+- ✅ Visual reminder indicators on timeline (Session 20)
 
 ---
 
@@ -1630,4 +1631,73 @@ The TimeFlow application is production-ready with:
 - ✅ Custom task colors
 - ✅ Task priority indicators
 - ✅ Duration presets for quick task creation
+- ✅ Visual reminder indicators on timeline (Session 20)
+
+---
+
+## Session 20 - Visual Reminder Indicator Feature
+
+### Date: January 9, 2026
+
+### Session Summary:
+This session fixed a critical bug where the web/index.html was serving a Flutter loading page instead of the vanilla JavaScript app, and implemented a new feature (Feature 151) for visual reminder indicators on the timeline.
+
+### Completed Tasks:
+
+1. **Fixed Critical Bug - index.html Loading Flutter**
+   - Discovered web/index.html was trying to load `flutter_bootstrap.js`
+   - App was stuck showing loading spinner
+   - Restored correct index.html from git commit 42a2420
+   - App now loads vanilla JavaScript app correctly
+
+2. **Implemented Feature 151: Visual Reminder Indicator**
+   - Added visual indicators on timeline showing when reminders will fire
+   - Three visual states:
+     - **Normal**: Subtle bell icon with dashed line at reminder time
+     - **Approaching**: Pulses when reminder is within 15 minutes
+     - **Triggered**: Grayed out with strikethrough when past reminder time
+   - Color variants match task colors (purple, green, orange, red, teal)
+   - Non-intrusive design that doesn't impede task display
+
+3. **Regression Testing**
+   - Verified core app functionality still works
+   - NOW line displays correctly
+   - Task creation, editing, deletion all working
+   - Hour markers (24) displayed correctly
+
+### Technical Changes:
+- `web/app.js`:
+  - Added `renderReminderIndicators()` method to TimelineRenderer class
+  - Calculates reminder time based on task start time minus reminder minutes
+  - Handles three states: normal, approaching, triggered
+  - Renders bell icon and time display for each reminder
+
+- `web/styles.css`:
+  - Added `.reminder-indicator` styles (position, layout, opacity)
+  - Added `.reminder-indicator-line` (subtle dashed line)
+  - Added `.reminder-indicator-icon` (bell icon in circle)
+  - Added `.reminder-indicator-time` (time display)
+  - Added `.approaching` state (pulsing animation)
+  - Added `.triggered` state (grayed out, strikethrough)
+  - Added color variants for all task colors
+
+### Git Commits:
+- "Add visual reminder indicator on timeline (Feature 151)"
+
+### Feature Status:
+- Feature 151 (Visual Reminder Indicator): PASS
+- Feature 145 (Mobile Widget): SKIPPED (platform limitation)
+
+### Final Project Status:
+- Total: 151
+- Passing: 150 (99.3%)
+- Skipped: 1 (Feature 145 - mobile widget, N/A for web)
+
+### Screenshots Captured:
+- test-reminder-indicator-1-form.png (task form with reminder set)
+- test-reminder-indicator-2-timeline.png (timeline showing reminder indicator)
+- test-reminder-indicator-3-at-now.png (indicator relative to NOW line)
+
+### Test Scripts Created:
+- test-reminder-indicator.js (Feature 151 verification)
 

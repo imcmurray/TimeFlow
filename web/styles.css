@@ -351,6 +351,27 @@ body {
     box-shadow: var(--shadow-md), 0 0 0 2px var(--primary-400);
 }
 
+/* Task colors */
+.task-card.color-purple {
+    border-left-color: #9c27b0;
+}
+
+.task-card.color-green {
+    border-left-color: #4caf50;
+}
+
+.task-card.color-orange {
+    border-left-color: #ff9800;
+}
+
+.task-card.color-red {
+    border-left-color: #f44336;
+}
+
+.task-card.color-teal {
+    border-left-color: #009688;
+}
+
 .task-header {
     display: flex;
     align-items: flex-start;
@@ -567,6 +588,39 @@ body {
     font-size: 0.875rem;
     font-weight: 500;
     color: var(--text-secondary);
+}
+
+/* Color picker */
+.color-picker {
+    display: flex;
+    gap: var(--spacing-xs);
+    flex-wrap: wrap;
+}
+
+.color-btn {
+    width: 32px;
+    height: 32px;
+    padding: 2px;
+    border: 2px solid transparent;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.color-btn:hover {
+    transform: scale(1.1);
+}
+
+.color-btn.selected {
+    border-color: var(--text-primary);
+}
+
+.color-swatch {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-xs);
 }
 
 .title-input-group {

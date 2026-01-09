@@ -55,7 +55,50 @@ class Database {
 
     async getTasksByDate(date) {
         const dateStr = this._formatDate(date);
-        return this._getAllByIndex('tasks', 'date', dateStr);
+        const directTasks = await this._getAllByIndex('tasks', 'date', dateStr);
+
+        // Also include recurring tasks that match this date
+        const allTasks = await this._getAll('tasks');
+        const recurringTasks = allTasks.filter(task => {
+            if (!task.recurring || task.date === dateStr) return false;
+            return this._matchesRecurringPattern(task, date);
+        });
+
+        // Create virtual instances of recurring tasks for this date
+        const recurringInstances = recurringTasks.map(task => ({
+            ...task,
+            originalId: task.id,
+            id: `${task.id}_${dateStr}`, // Virtual ID for this instance
+            date: dateStr,
+            isRecurringInstance: true
+        }));
+
+        return [...directTasks, ...recurringInstances];
+    }
+
+    _matchesRecurringPattern(task, targetDate) {
+        const taskDate = new Date(task.date + 'T00:00:00');
+        const target = new Date(this._formatDate(targetDate) + 'T00:00:00');
+
+        // Only match dates after the original task date
+        if (target <= taskDate) return false;
+
+        const dayOfWeek = target.getDay(); // 0 = Sunday, 6 = Saturday
+
+        switch (task.recurring) {
+            case 'daily':
+                return true;
+            case 'weekly':
+                // Same day of week
+                return taskDate.getDay() === dayOfWeek;
+            case 'weekdays':
+                return dayOfWeek >= 1 && dayOfWeek <= 5; // Mon-Fri
+            case 'monthly':
+                // Same day of month
+                return taskDate.getDate() === target.getDate();
+            default:
+                return false;
+        }
     }
 
     async getTask(id) {
@@ -101,7 +144,11 @@ class Database {
     }
 
     _formatDate(date) {
-        return date.toISOString().split('T')[0];
+        // Use local timezone instead of UTC to avoid date shifting
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 
     _getAll(storeName) {
@@ -399,6 +446,7 @@ class TimelineRenderer {
         const card = document.createElement('div');
         card.className = `task-card ${status}`;
         if (task.isImportant) card.classList.add('important');
+        if (task.color) card.classList.add(`color-${task.color}`);
         card.dataset.taskId = task.id;
         card.style.top = `${top}px`;
         card.style.height = `${height}px`;
@@ -428,6 +476,12 @@ class TimelineRenderer {
                     <span class="task-indicator">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                         ${task.reminderMinutes}m before
+                    </span>
+                ` : ''}
+                ${task.recurring ? `
+                    <span class="task-indicator recurring-indicator">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                        ${task.recurring === 'daily' ? 'Daily' : task.recurring === 'weekly' ? 'Weekly' : task.recurring === 'weekdays' ? 'Weekdays' : 'Monthly'}
                     </span>
                 ` : ''}
             </div>
@@ -630,8 +684,11 @@ class TimeFlowApp {
             // Apply timeline density
             this.applyTimelineDensity(this.state.state.settings.timelineDensity);
 
-            // Load tasks for current date
-            await this.loadTasksForDate(this.state.state.currentDate);
+            // Check for deep link date in URL hash
+            const initialDate = this.getDateFromUrl() || this.state.state.currentDate;
+
+            // Load tasks for initial date
+            await this.loadTasksForDate(initialDate);
 
             // Set up event listeners
             this.setupEventListeners();
@@ -694,6 +751,16 @@ class TimeFlowApp {
                 // Highlight active button
                 document.querySelectorAll('.duration-preset-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
+            }
+        });
+
+        // Color picker
+        document.getElementById('task-color-picker').addEventListener('click', (e) => {
+            const btn = e.target.closest('.color-btn');
+            if (btn) {
+                const color = btn.dataset.color;
+                document.getElementById('task-color').value = color;
+                this.setSelectedColor(color);
             }
         });
 
@@ -809,6 +876,42 @@ class TimeFlowApp {
         newDate.setDate(newDate.getDate() + delta);
         await this.loadTasksForDate(newDate);
         this.updateDateDisplay();
+        this.updateUrlHash();
+    }
+
+    // Deep linking support
+    getDateFromUrl() {
+        const hash = window.location.hash;
+        const match = hash.match(/date=(\d{4}-\d{2}-\d{2})/);
+        if (match) {
+            const dateStr = match[1];
+            const date = new Date(dateStr + 'T00:00:00');
+            // Validate the date is valid
+            if (!isNaN(date.getTime())) {
+                return date;
+            }
+        }
+        return null;
+    }
+
+    updateUrlHash() {
+        const { currentDate } = this.state.state;
+        const dateStr = this.db._formatDate(currentDate);
+        const today = this.db._formatDate(new Date());
+
+        // Only show hash if not today (cleaner URLs)
+        if (dateStr === today) {
+            history.replaceState(null, '', window.location.pathname);
+        } else {
+            history.replaceState(null, '', `#date=${dateStr}`);
+        }
+    }
+
+    // Navigate to a specific date (for deep linking)
+    async navigateToDate(date) {
+        await this.loadTasksForDate(date);
+        this.updateDateDisplay();
+        this.updateUrlHash();
     }
 
     // Task Management
@@ -829,6 +932,9 @@ class TimeFlowApp {
             document.getElementById('task-description').value = task.description || '';
             document.getElementById('task-important').checked = task.isImportant || false;
             document.getElementById('task-reminder').value = task.reminderMinutes || '';
+            document.getElementById('task-recurring').value = task.recurring || '';
+            document.getElementById('task-color').value = task.color || '';
+            this.setSelectedColor(task.color || '');
             deleteBtn.hidden = false;
             this.state.setState({ editingTask: task });
         } else {
@@ -840,12 +946,21 @@ class TimeFlowApp {
             const endTime = `${(currentHour + 1).toString().padStart(2, '0')}:00`;
             document.getElementById('task-start-time').value = startTime;
             document.getElementById('task-end-time').value = endTime;
+            document.getElementById('task-color').value = '';
+            this.setSelectedColor('');
             deleteBtn.hidden = true;
             this.state.setState({ editingTask: null });
         }
 
         modal.hidden = false;
         document.getElementById('task-title').focus();
+    }
+
+    setSelectedColor(color) {
+        const buttons = document.querySelectorAll('#task-color-picker .color-btn');
+        buttons.forEach(btn => {
+            btn.classList.toggle('selected', btn.dataset.color === color);
+        });
     }
 
     closeTaskModal() {
@@ -919,6 +1034,8 @@ class TimeFlowApp {
             description: formData.get('description')?.trim() || '',
             isImportant: form.querySelector('#task-important').checked,
             reminderMinutes: formData.get('reminderMinutes') ? parseInt(formData.get('reminderMinutes')) : null,
+            recurring: formData.get('recurring') || null,
+            color: formData.get('color') || null,
             date: this.db._formatDate(this.state.state.currentDate),
             isCompleted: editingTask?.isCompleted || false,
             createdAt: editingTask?.createdAt || null
@@ -985,35 +1102,149 @@ class TimeFlowApp {
     }
 
     async editTask(taskId) {
-        const task = await this.db.getTask(taskId);
-        if (task) {
-            this.openTaskModal(task);
+        // Check if this is a recurring instance (virtual ID format: originalId_date)
+        const tasks = this.state.state.tasks;
+        let task = tasks.find(t => t.id === taskId);
+
+        // If not in current state, try to get from DB
+        if (!task) {
+            task = await this.db.getTask(taskId);
         }
+
+        if (task) {
+            // If editing a recurring instance, show choice dialog
+            if (task.isRecurringInstance && task.originalId) {
+                this.showRecurringEditChoice(task);
+            } else {
+                this.openTaskModal(task);
+            }
+        }
+    }
+
+    showRecurringEditChoice(task) {
+        const modal = document.getElementById('confirm-modal');
+        const titleEl = document.getElementById('confirm-title');
+        const messageEl = document.getElementById('confirm-message');
+        const cancelBtn = document.getElementById('confirm-cancel-btn');
+        const confirmBtn = document.getElementById('confirm-delete-btn');
+
+        titleEl.textContent = 'Edit Recurring Task';
+        messageEl.textContent = `"${task.title}" is a recurring task. What would you like to edit?`;
+
+        // Change button texts
+        cancelBtn.textContent = 'This occurrence only';
+        confirmBtn.textContent = 'All occurrences';
+
+        modal.hidden = false;
+
+        const cleanup = () => {
+            cancelBtn.removeEventListener('click', handleThisOnly);
+            confirmBtn.removeEventListener('click', handleAll);
+            modal.removeEventListener('click', handleOverlayClick);
+            cancelBtn.textContent = 'Cancel';
+            confirmBtn.textContent = 'Delete';
+        };
+
+        const handleThisOnly = async () => {
+            modal.hidden = true;
+            cleanup();
+            // Create a new standalone task for this date only
+            const newTask = {
+                ...task,
+                id: null, // Will generate new ID
+                recurring: null, // Not recurring
+                isRecurringInstance: false,
+                originalId: undefined
+            };
+            this.openTaskModal(newTask);
+        };
+
+        const handleAll = async () => {
+            modal.hidden = true;
+            cleanup();
+            // Edit the original recurring task
+            const originalTask = await this.db.getTask(task.originalId);
+            if (originalTask) {
+                this.openTaskModal(originalTask);
+            }
+        };
+
+        const handleOverlayClick = (e) => {
+            if (e.target === modal) {
+                modal.hidden = true;
+                cleanup();
+            }
+        };
+
+        cancelBtn.addEventListener('click', handleThisOnly);
+        confirmBtn.addEventListener('click', handleAll);
+        modal.addEventListener('click', handleOverlayClick);
     }
 
     async deleteCurrentTask() {
         const { editingTask } = this.state.state;
         if (!editingTask) return;
 
-        // Show custom confirmation dialog
         const taskTitle = editingTask.title;
-        this.showConfirmDialog(
-            'Delete Task',
-            `Are you sure you want to delete "${taskTitle}"? This action cannot be undone.`,
-            async () => {
-                try {
-                    await this.db.deleteTask(editingTask.id);
-                    await this.loadTasksForDate(this.state.state.currentDate);
-                    this.closeTaskModal();
-                    Toast.show('Task deleted', 'success');
-                    Utils.announceToScreenReader(`${taskTitle} deleted`);
-                } catch (error) {
-                    console.error('Failed to delete task:', error);
-                    Toast.show('Failed to delete task', 'error');
-                    Utils.announceToScreenReader('Failed to delete task');
+
+        // If this is a recurring task instance, delete the original task (all instances)
+        if (editingTask.isRecurringInstance && editingTask.originalId) {
+            this.showConfirmDialog(
+                'Delete Recurring Task',
+                `Are you sure you want to delete "${taskTitle}" and all its recurring instances? This action cannot be undone.`,
+                async () => {
+                    try {
+                        await this.db.deleteTask(editingTask.originalId);
+                        await this.loadTasksForDate(this.state.state.currentDate);
+                        this.closeTaskModal();
+                        Toast.show('Recurring task deleted', 'success');
+                        Utils.announceToScreenReader(`${taskTitle} and all instances deleted`);
+                    } catch (error) {
+                        console.error('Failed to delete task:', error);
+                        Toast.show('Failed to delete task', 'error');
+                        Utils.announceToScreenReader('Failed to delete task');
+                    }
                 }
-            }
-        );
+            );
+        } else if (editingTask.recurring) {
+            // Original recurring task - delete it and all future instances
+            this.showConfirmDialog(
+                'Delete Recurring Task',
+                `Are you sure you want to delete "${taskTitle}" and all its future occurrences? This action cannot be undone.`,
+                async () => {
+                    try {
+                        await this.db.deleteTask(editingTask.id);
+                        await this.loadTasksForDate(this.state.state.currentDate);
+                        this.closeTaskModal();
+                        Toast.show('Recurring task deleted', 'success');
+                        Utils.announceToScreenReader(`${taskTitle} and all instances deleted`);
+                    } catch (error) {
+                        console.error('Failed to delete task:', error);
+                        Toast.show('Failed to delete task', 'error');
+                        Utils.announceToScreenReader('Failed to delete task');
+                    }
+                }
+            );
+        } else {
+            // Regular one-time task
+            this.showConfirmDialog(
+                'Delete Task',
+                `Are you sure you want to delete "${taskTitle}"? This action cannot be undone.`,
+                async () => {
+                    try {
+                        await this.db.deleteTask(editingTask.id);
+                        await this.loadTasksForDate(this.state.state.currentDate);
+                        this.closeTaskModal();
+                        Toast.show('Task deleted', 'success');
+                        Utils.announceToScreenReader(`${taskTitle} deleted`);
+                    } catch (error) {
+                        console.error('Failed to delete task:', error);
+                        Toast.show('Failed to delete task', 'error');
+                        Utils.announceToScreenReader('Failed to delete task');
+                    }
+                }
+            );
+        }
     }
 
     showConfirmDialog(title, message, onConfirm) {

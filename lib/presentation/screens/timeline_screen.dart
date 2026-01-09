@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timeflow/core/theme/app_colors.dart';
+import 'package:timeflow/presentation/providers/settings_provider.dart';
 import 'package:timeflow/presentation/widgets/timeline_view.dart';
 import 'package:timeflow/presentation/widgets/now_line.dart';
 import 'package:timeflow/presentation/screens/task_detail_screen.dart';
@@ -126,7 +126,10 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
       body: Stack(
         children: [
           // The main timeline view
-          TimelineView(selectedDate: _selectedDate),
+          TimelineView(
+            selectedDate: _selectedDate,
+            upcomingTasksAboveNow: ref.watch(settingsProvider).upcomingTasksAboveNow,
+          ),
 
           // Fixed NOW line (only shown for today)
           if (_isToday)

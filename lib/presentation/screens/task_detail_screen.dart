@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeflow/domain/entities/task.dart';
+import 'package:timeflow/presentation/providers/task_provider.dart';
+import 'package:uuid/uuid.dart';
 
 /// Full-screen modal for task creation and editing.
 ///
@@ -142,8 +144,31 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       return;
     }
 
-    // TODO: Save task via repository/provider
-    // For now, just pop and show success
+    final now = DateTime.now();
+    final task = Task(
+      id: widget.task?.id ?? const Uuid().v4(),
+      title: title,
+      description: _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim(),
+      startTime: _startTime,
+      endTime: _endTime,
+      isImportant: _isImportant,
+      isCompleted: widget.task?.isCompleted ?? false,
+      reminderMinutes: _reminderMinutes,
+      recurringPattern: _recurringPattern,
+      notes: _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim(),
+      attachmentPath: widget.task?.attachmentPath,
+      color: widget.task?.color,
+      createdAt: widget.task?.createdAt ?? now,
+      updatedAt: now,
+    );
+
+    ref.read(taskRepositoryProvider).save(task);
+    ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
+
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -166,9 +191,11 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
           ),
           TextButton(
             onPressed: () {
+              ref.read(taskRepositoryProvider).delete(widget.task!.id);
+              ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
+
               Navigator.of(context).pop(); // Close dialog
               Navigator.of(context).pop(); // Close detail screen
-              // TODO: Delete via repository/provider
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Task deleted'),

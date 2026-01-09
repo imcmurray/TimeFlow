@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timeflow/presentation/providers/settings_provider.dart';
 
 /// Settings screen for app preferences and customization.
 ///
@@ -13,7 +14,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  // TODO: Replace with actual settings provider
+  // TODO: Replace remaining local state with settings provider
   String _theme = 'auto';
   int _defaultReminderMinutes = 10;
   double _timelineDensity = 1.0;
@@ -40,6 +41,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: const Text('Timeline Density'),
             subtitle: Text(_densityLabel(_timelineDensity)),
             onTap: () => _showDensityDialog(),
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.swap_vert),
+            title: const Text('Upcoming Tasks Above NOW'),
+            subtitle: const Text('Future tasks flow down toward the NOW line'),
+            value: ref.watch(settingsProvider).upcomingTasksAboveNow,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setUpcomingTasksAboveNow(value);
+            },
           ),
 
           const Divider(),

@@ -17,12 +17,17 @@ class Settings {
   /// Whether this is the first launch (show onboarding).
   final bool firstLaunch;
 
+  /// Whether upcoming tasks appear above the NOW line on the timeline.
+  /// When true, later times render at the top and flow down toward the NOW line.
+  final bool upcomingTasksAboveNow;
+
   const Settings({
     this.theme = 'auto',
     this.defaultReminderMinutes = 10,
     this.timelineDensity = 1.0,
     this.notificationsEnabled = true,
     this.firstLaunch = true,
+    this.upcomingTasksAboveNow = true,
   });
 
   /// Default settings for first-time users.
@@ -35,6 +40,7 @@ class Settings {
     double? timelineDensity,
     bool? notificationsEnabled,
     bool? firstLaunch,
+    bool? upcomingTasksAboveNow,
   }) {
     return Settings(
       theme: theme ?? this.theme,
@@ -42,6 +48,7 @@ class Settings {
       timelineDensity: timelineDensity ?? this.timelineDensity,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       firstLaunch: firstLaunch ?? this.firstLaunch,
+      upcomingTasksAboveNow: upcomingTasksAboveNow ?? this.upcomingTasksAboveNow,
     );
   }
 
@@ -53,7 +60,8 @@ class Settings {
         other.defaultReminderMinutes == defaultReminderMinutes &&
         other.timelineDensity == timelineDensity &&
         other.notificationsEnabled == notificationsEnabled &&
-        other.firstLaunch == firstLaunch;
+        other.firstLaunch == firstLaunch &&
+        other.upcomingTasksAboveNow == upcomingTasksAboveNow;
   }
 
   @override
@@ -64,6 +72,7 @@ class Settings {
       timelineDensity,
       notificationsEnabled,
       firstLaunch,
+      upcomingTasksAboveNow,
     );
   }
 
@@ -71,6 +80,6 @@ class Settings {
   String toString() {
     return 'Settings(theme: $theme, defaultReminderMinutes: $defaultReminderMinutes, '
         'timelineDensity: $timelineDensity, notificationsEnabled: $notificationsEnabled, '
-        'firstLaunch: $firstLaunch)';
+        'firstLaunch: $firstLaunch, upcomingTasksAboveNow: $upcomingTasksAboveNow)';
   }
 }

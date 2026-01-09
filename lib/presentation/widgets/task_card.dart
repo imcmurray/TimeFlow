@@ -105,119 +105,136 @@ class TaskCard extends StatelessWidget {
                   width: 4,
                   color: cardColor.withOpacity(task.isCompleted ? 0.5 : 1.0),
                 ),
-                // Content
+                // Content - uses LayoutBuilder for responsive sizing
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Title row with indicators
-                        Row(
-                          children: [
-                            if (task.isImportant)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 4),
-                                child: Icon(
-                                  Icons.star,
-                                  size: 16,
-                                  color: AppColors.accentCoral,
-                                ),
-                              ),
-                            Expanded(
-                              child: Text(
-                                task.title,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  decoration: task.isCompleted
-                                      ? TextDecoration.lineThrough
-                                      : null,
-                                  color: task.isCompleted
-                                      ? Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withOpacity(0.5)
-                                      : null,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (task.isCompleted)
-                              const Icon(
-                                Icons.check_circle,
-                                size: 18,
-                                color: AppColors.taskCompleted,
-                              ),
-                          ],
-                        ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final availableHeight = constraints.maxHeight;
+                      // Reduce padding for very short cards
+                      final padding = availableHeight < 40 ? 4.0 : 8.0;
+                      // Thresholds for showing optional content
+                      final showTime = availableHeight >= 50;
+                      final showDescription = availableHeight >= 80 &&
+                          task.description != null &&
+                          task.description!.isNotEmpty;
+                      final showIndicators = availableHeight >= 100 &&
+                          (task.reminderMinutes != null ||
+                              task.recurringPattern != null);
 
-                        const SizedBox(height: 4),
-
-                        // Time row
-                        Text(
-                          '${_formatTime(task.startTime)} - ${_formatTime(task.endTime)}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withOpacity(0.6),
-                          ),
-                        ),
-
-                        // Description preview (if exists and card is tall enough)
-                        if (task.description != null &&
-                            task.description!.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            task.description!,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.5),
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-
-                        // Indicator row for reminder/recurring
-                        if (task.reminderMinutes != null ||
-                            task.recurringPattern != null) ...[
-                          const SizedBox(height: 4),
-                          Row(
+                      return ClipRect(
+                        child: Padding(
+                          padding: EdgeInsets.all(padding),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (task.reminderMinutes != null) ...[
-                                Icon(
-                                  Icons.notifications_outlined,
-                                  size: 14,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withOpacity(0.4),
+                              // Title row with indicators (always shown)
+                              Row(
+                                children: [
+                                  if (task.isImportant)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 4),
+                                      child: Icon(
+                                        Icons.star,
+                                        size: 16,
+                                        color: AppColors.accentCoral,
+                                      ),
+                                    ),
+                                  Expanded(
+                                    child: Text(
+                                      task.title,
+                                      style: TextStyle(
+                                        fontSize: availableHeight < 40 ? 12 : 16,
+                                        fontWeight: FontWeight.w600,
+                                        decoration: task.isCompleted
+                                            ? TextDecoration.lineThrough
+                                            : null,
+                                        color: task.isCompleted
+                                            ? Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withOpacity(0.5)
+                                            : null,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (task.isCompleted)
+                                    const Icon(
+                                      Icons.check_circle,
+                                      size: 18,
+                                      color: AppColors.taskCompleted,
+                                    ),
+                                ],
+                              ),
+
+                              // Time row (shown if card is tall enough)
+                              if (showTime) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${_formatTime(task.startTime)} - ${_formatTime(task.endTime)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.6),
+                                  ),
                                 ),
-                                const SizedBox(width: 4),
                               ],
-                              if (task.recurringPattern != null) ...[
-                                Icon(
-                                  Icons.repeat,
-                                  size: 14,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withOpacity(0.4),
+
+                              // Description preview (shown if card is tall enough)
+                              if (showDescription) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  task.description!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.5),
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+
+                              // Indicator row for reminder/recurring (shown if card is tall enough)
+                              if (showIndicators) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    if (task.reminderMinutes != null) ...[
+                                      Icon(
+                                        Icons.notifications_outlined,
+                                        size: 14,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withOpacity(0.4),
+                                      ),
+                                      const SizedBox(width: 4),
+                                    ],
+                                    if (task.recurringPattern != null) ...[
+                                      Icon(
+                                        Icons.repeat,
+                                        size: 14,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withOpacity(0.4),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ],
                             ],
                           ),
-                        ],
-                      ],
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],

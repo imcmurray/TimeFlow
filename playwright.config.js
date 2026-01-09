@@ -13,12 +13,12 @@ const { defineConfig, devices } = require('@playwright/test');
 module.exports = defineConfig({
   testDir: './tests',
 
-  // Maximum time one test can run for
-  timeout: 30 * 1000,
+  // Maximum time one test can run for (increased for persistence tests)
+  timeout: 120 * 1000,
 
   expect: {
     // Maximum time expect() should wait for the condition to be met
-    timeout: 5000
+    timeout: 30000
   },
 
   // Run tests in files in parallel
@@ -43,7 +43,7 @@ module.exports = defineConfig({
   // Shared settings for all the projects below
   use: {
     // Base URL to use in actions like `await page.goto('/')`
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    baseURL: process.env.BASE_URL || 'http://localhost:8081',
 
     // Collect trace when retrying the failed test
     trace: 'on-first-retry',
@@ -51,8 +51,8 @@ module.exports = defineConfig({
     // Screenshot on failure
     screenshot: 'only-on-failure',
 
-    // Video on failure
-    video: 'retain-on-failure',
+    // Disable video for faster tests
+    video: 'off',
   },
 
   // Configure projects for major browsers

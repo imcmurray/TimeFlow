@@ -1,0 +1,41 @@
+import 'package:timeflow/domain/entities/task.dart';
+
+/// In-memory repository for task storage.
+///
+/// Stores tasks in a map keyed by their unique ID, allowing multiple
+/// tasks at the same time slot. For persistent storage, this can be
+/// replaced with a Drift database implementation.
+class TaskRepository {
+  final Map<String, Task> _tasks = {};
+
+  /// Returns all tasks that overlap with the given date.
+  List<Task> getTasksForDate(DateTime date) {
+    final dayStart = DateTime(date.year, date.month, date.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+
+    return _tasks.values.where((task) {
+      return task.startTime.isBefore(dayEnd) && task.endTime.isAfter(dayStart);
+    }).toList();
+  }
+
+  /// Returns a task by its ID, or null if not found.
+  Task? getById(String id) => _tasks[id];
+
+  /// Saves a task (insert or update).
+  void save(Task task) {
+    _tasks[task.id] = task;
+  }
+
+  /// Deletes a task by its ID.
+  void delete(String id) {
+    _tasks.remove(id);
+  }
+
+  /// Returns all tasks.
+  List<Task> getAll() => _tasks.values.toList();
+
+  /// Clears all tasks.
+  void clear() {
+    _tasks.clear();
+  }
+}

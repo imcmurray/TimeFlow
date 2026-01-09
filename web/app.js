@@ -787,6 +787,9 @@ class TimeFlowApp {
         document.getElementById('share-text-btn')?.addEventListener('click', () => this.shareAsText());
         document.getElementById('copy-link-btn')?.addEventListener('click', () => this.copyLink());
         document.getElementById('share-hide-details')?.addEventListener('change', () => this.renderSharePreview());
+        document.getElementById('share-start-time')?.addEventListener('change', () => this.renderSharePreview());
+        document.getElementById('share-end-time')?.addEventListener('change', () => this.renderSharePreview());
+        document.getElementById('share-reset-range')?.addEventListener('click', () => this.resetShareTimeRange());
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
@@ -1352,6 +1355,9 @@ class TimeFlowApp {
         document.getElementById('share-modal').hidden = false;
         // Reset privacy option
         document.getElementById('share-hide-details').checked = false;
+        // Set default time range to full day (00:00 to 23:59)
+        document.getElementById('share-start-time').value = '00:00';
+        document.getElementById('share-end-time').value = '23:59';
         this.renderSharePreview();
     }
 
@@ -1363,21 +1369,65 @@ class TimeFlowApp {
         return document.getElementById('share-hide-details')?.checked || false;
     }
 
+    getShareTimeRange() {
+        const startTime = document.getElementById('share-start-time')?.value || '00:00';
+        const endTime = document.getElementById('share-end-time')?.value || '23:59';
+        return { startTime, endTime };
+    }
+
+    resetShareTimeRange() {
+        document.getElementById('share-start-time').value = '00:00';
+        document.getElementById('share-end-time').value = '23:59';
+        this.renderSharePreview();
+    }
+
+    getFilteredTasksForShare() {
+        const { tasks } = this.state.state;
+        const { startTime, endTime } = this.getShareTimeRange();
+
+        // Parse time range into minutes from midnight
+        const [startH, startM] = startTime.split(':').map(Number);
+        const [endH, endM] = endTime.split(':').map(Number);
+        const rangeStart = startH * 60 + startM;
+        const rangeEnd = endH * 60 + endM;
+
+        return tasks.filter(task => {
+            // Task startTime and endTime are stored as time strings like "09:30"
+            const [taskStartH, taskStartM] = task.startTime.split(':').map(Number);
+            const [taskEndH, taskEndM] = task.endTime.split(':').map(Number);
+            const taskStart = taskStartH * 60 + taskStartM;
+            const taskEnd = taskEndH * 60 + taskEndM;
+
+            // Task is included if it overlaps with the time range
+            // A task overlaps if: task starts before range ends AND task ends after range starts
+            return taskStart < rangeEnd && taskEnd > rangeStart;
+        });
+    }
+
     renderSharePreview() {
-        const { tasks, currentDate } = this.state.state;
+        const { currentDate } = this.state.state;
         const preview = document.getElementById('share-preview');
         const hideDetails = this.isHideDetailsEnabled();
+        const { startTime, endTime } = this.getShareTimeRange();
+        const filteredTasks = this.getFilteredTasksForShare();
 
-        let html = `<h4>${Utils.formatDate(currentDate)}</h4><ul style="list-style: none; padding: 0;">`;
-        tasks.forEach(task => {
-            html += `<li style="padding: 8px 0; border-bottom: 1px solid var(--border-color);">
-                <strong>${Utils.formatTime(task.startTime)} - ${Utils.formatTime(task.endTime)}</strong>: ${task.title}`;
-            if (!hideDetails && task.description) {
-                html += `<br><small style="color: var(--text-secondary);">${task.description}</small>`;
-            }
-            html += `</li>`;
-        });
-        html += '</ul>';
+        let html = `<h4>${Utils.formatDate(currentDate)}</h4>`;
+        html += `<p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 12px;">Showing tasks from ${startTime} to ${endTime}</p>`;
+
+        if (filteredTasks.length === 0) {
+            html += `<p style="text-align: center; color: var(--text-hint); padding: 20px;">No tasks in this time range</p>`;
+        } else {
+            html += `<ul style="list-style: none; padding: 0;">`;
+            filteredTasks.forEach(task => {
+                html += `<li style="padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+                    <strong>${Utils.formatTime(task.startTime)} - ${Utils.formatTime(task.endTime)}</strong>: ${task.title}`;
+                if (!hideDetails && task.description) {
+                    html += `<br><small style="color: var(--text-secondary);">${task.description}</small>`;
+                }
+                html += `</li>`;
+            });
+            html += '</ul>';
+        }
 
         preview.innerHTML = html;
     }
@@ -1415,17 +1465,24 @@ class TimeFlowApp {
     }
 
     async shareAsText() {
-        const { tasks, currentDate } = this.state.state;
+        const { currentDate } = this.state.state;
         const hideDetails = this.isHideDetailsEnabled();
-        let text = `📅 ${Utils.formatDate(currentDate)}\n\n`;
+        const { startTime, endTime } = this.getShareTimeRange();
+        const filteredTasks = this.getFilteredTasksForShare();
+        let text = `📅 ${Utils.formatDate(currentDate)}\n`;
+        text += `⏱️ ${startTime} - ${endTime}\n\n`;
 
-        tasks.forEach(task => {
-            const status = task.isCompleted ? '✅' : '⏰';
-            text += `${status} ${Utils.formatTime(task.startTime)} - ${Utils.formatTime(task.endTime)}: ${task.title}\n`;
-            if (!hideDetails && task.description) {
-                text += `   ${task.description}\n`;
-            }
-        });
+        if (filteredTasks.length === 0) {
+            text += 'No tasks in this time range\n';
+        } else {
+            filteredTasks.forEach(task => {
+                const status = task.isCompleted ? '✅' : '⏰';
+                text += `${status} ${Utils.formatTime(task.startTime)} - ${Utils.formatTime(task.endTime)}: ${task.title}\n`;
+                if (!hideDetails && task.description) {
+                    text += `   ${task.description}\n`;
+                }
+            });
+        }
 
         try {
             if (navigator.share) {
@@ -1445,12 +1502,19 @@ class TimeFlowApp {
     async copyLink() {
         // In a real app, this would generate a shareable link
         // For now, we'll copy the text version
-        const { tasks, currentDate } = this.state.state;
-        let text = `TimeFlow Schedule - ${Utils.formatDate(currentDate)}\n\n`;
+        const { currentDate } = this.state.state;
+        const { startTime, endTime } = this.getShareTimeRange();
+        const filteredTasks = this.getFilteredTasksForShare();
+        let text = `TimeFlow Schedule - ${Utils.formatDate(currentDate)}\n`;
+        text += `Time Range: ${startTime} - ${endTime}\n\n`;
 
-        tasks.forEach(task => {
-            text += `• ${Utils.formatTime(task.startTime)} - ${Utils.formatTime(task.endTime)}: ${task.title}\n`;
-        });
+        if (filteredTasks.length === 0) {
+            text += 'No tasks in this time range\n';
+        } else {
+            filteredTasks.forEach(task => {
+                text += `• ${Utils.formatTime(task.startTime)} - ${Utils.formatTime(task.endTime)}: ${task.title}\n`;
+            });
+        }
 
         try {
             await navigator.clipboard.writeText(text);

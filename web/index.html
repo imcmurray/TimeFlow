@@ -271,6 +271,15 @@
                     </button>
                 </div>
                 <div class="share-content">
+                    <div class="share-time-range">
+                        <label>Time Range</label>
+                        <div class="time-range-inputs">
+                            <input type="time" id="share-start-time" aria-label="Start time for sharing">
+                            <span class="time-range-separator">to</span>
+                            <input type="time" id="share-end-time" aria-label="End time for sharing">
+                            <button type="button" class="btn btn-small btn-secondary" id="share-reset-range" aria-label="Reset to full day">Reset</button>
+                        </div>
+                    </div>
                     <div class="share-privacy-options">
                         <label class="checkbox-label">
                             <input type="checkbox" id="share-hide-details">

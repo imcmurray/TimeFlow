@@ -422,6 +422,63 @@ class TimelineRenderer {
             const taskCard = this.createTaskCard(task, currentMinutes);
             timeline.appendChild(taskCard);
         });
+
+        // Render reminder indicators for tasks with reminders
+        this.renderReminderIndicators(tasks, timeline, currentMinutes);
+    }
+
+    renderReminderIndicators(tasks, timeline, currentMinutes) {
+        // Remove any existing reminder indicators
+        timeline.querySelectorAll('.reminder-indicator').forEach(el => el.remove());
+
+        tasks.forEach(task => {
+            if (!task.reminderMinutes || task.isCompleted) return;
+
+            const startMinutes = Utils.timeToMinutes(task.startTime);
+            const reminderMinutes = startMinutes - task.reminderMinutes;
+
+            // Skip if reminder time is negative (would be before midnight) or task has already started
+            if (reminderMinutes < 0 || startMinutes <= currentMinutes) return;
+
+            // Calculate position on timeline
+            const top = (reminderMinutes / 60) * this.hourHeight;
+
+            // Create reminder indicator
+            const indicator = document.createElement('div');
+            indicator.className = 'reminder-indicator';
+            if (task.color) indicator.classList.add(`color-${task.color}`);
+
+            // Determine the state of the reminder
+            const minutesUntilReminder = reminderMinutes - currentMinutes;
+            const isTriggered = reminderMinutes <= currentMinutes;
+            const isApproaching = minutesUntilReminder <= 15 && minutesUntilReminder > 0;
+
+            if (isTriggered) {
+                indicator.classList.add('triggered');
+            } else if (isApproaching) {
+                indicator.classList.add('approaching');
+            }
+
+            indicator.style.top = `${top}px`;
+            indicator.dataset.taskId = task.id;
+            indicator.setAttribute('title', `Reminder for "${task.title}" - ${task.reminderMinutes}m before`);
+
+            const statusText = isTriggered ? ' (triggered)' : '';
+            indicator.setAttribute('aria-label', `Reminder indicator: ${task.title} reminder at ${Utils.formatTime(Utils.minutesToTime(reminderMinutes))}${statusText}`);
+
+            indicator.innerHTML = `
+                <div class="reminder-indicator-line"></div>
+                <div class="reminder-indicator-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                </div>
+                <span class="reminder-indicator-time">${Utils.formatTime(Utils.minutesToTime(reminderMinutes))}</span>
+            `;
+
+            timeline.appendChild(indicator);
+        });
     }
 
     createTaskCard(task, currentMinutes) {

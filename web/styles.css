@@ -453,6 +453,140 @@ body {
     color: white;
 }
 
+/* Reminder Indicator - shows when a reminder will fire on the timeline */
+.reminder-indicator {
+    position: absolute;
+    left: 0;
+    right: 80px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0.7;
+    transition: opacity var(--transition-fast);
+}
+
+.reminder-indicator:hover {
+    opacity: 1;
+}
+
+.reminder-indicator-line {
+    flex: 1;
+    height: 1px;
+    background: var(--accent-400);
+    opacity: 0.5;
+    margin-left: 75px;
+}
+
+.reminder-indicator-icon {
+    width: 18px;
+    height: 18px;
+    background: var(--accent-50);
+    border: 1px solid var(--accent-400);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 4px;
+}
+
+.reminder-indicator-icon svg {
+    width: 10px;
+    height: 10px;
+    color: var(--accent-500);
+}
+
+.reminder-indicator-time {
+    font-size: 0.65rem;
+    color: var(--accent-500);
+    margin-left: 4px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Approaching state - reminder is about to fire */
+.reminder-indicator.approaching {
+    opacity: 1;
+}
+
+.reminder-indicator.approaching .reminder-indicator-line {
+    background: var(--accent-500);
+    opacity: 0.8;
+    height: 2px;
+}
+
+.reminder-indicator.approaching .reminder-indicator-icon {
+    background: var(--accent-400);
+    border-color: var(--accent-500);
+    animation: reminderPulse 2s ease-in-out infinite;
+}
+
+.reminder-indicator.approaching .reminder-indicator-icon svg {
+    color: white;
+}
+
+@keyframes reminderPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 var(--accent-200);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 8px transparent;
+    }
+}
+
+/* Triggered state - reminder has already fired but task hasn't started */
+.reminder-indicator.triggered {
+    opacity: 0.5;
+}
+
+.reminder-indicator.triggered .reminder-indicator-line {
+    background: var(--text-secondary);
+    opacity: 0.3;
+}
+
+.reminder-indicator.triggered .reminder-indicator-icon {
+    background: var(--bg-secondary);
+    border-color: var(--text-secondary);
+}
+
+.reminder-indicator.triggered .reminder-indicator-icon svg {
+    color: var(--text-secondary);
+}
+
+.reminder-indicator.triggered .reminder-indicator-time {
+    color: var(--text-secondary);
+    text-decoration: line-through;
+}
+
+/* Color variants for reminder indicators */
+.reminder-indicator.color-purple .reminder-indicator-line { background: #9c27b0; }
+.reminder-indicator.color-purple .reminder-indicator-icon { border-color: #9c27b0; background: #f3e5f5; }
+.reminder-indicator.color-purple .reminder-indicator-icon svg { color: #9c27b0; }
+.reminder-indicator.color-purple .reminder-indicator-time { color: #9c27b0; }
+
+.reminder-indicator.color-green .reminder-indicator-line { background: #4caf50; }
+.reminder-indicator.color-green .reminder-indicator-icon { border-color: #4caf50; background: #e8f5e9; }
+.reminder-indicator.color-green .reminder-indicator-icon svg { color: #4caf50; }
+.reminder-indicator.color-green .reminder-indicator-time { color: #4caf50; }
+
+.reminder-indicator.color-orange .reminder-indicator-line { background: #ff9800; }
+.reminder-indicator.color-orange .reminder-indicator-icon { border-color: #ff9800; background: #fff3e0; }
+.reminder-indicator.color-orange .reminder-indicator-icon svg { color: #ff9800; }
+.reminder-indicator.color-orange .reminder-indicator-time { color: #ff9800; }
+
+.reminder-indicator.color-red .reminder-indicator-line { background: #f44336; }
+.reminder-indicator.color-red .reminder-indicator-icon { border-color: #f44336; background: #ffebee; }
+.reminder-indicator.color-red .reminder-indicator-icon svg { color: #f44336; }
+.reminder-indicator.color-red .reminder-indicator-time { color: #f44336; }
+
+.reminder-indicator.color-teal .reminder-indicator-line { background: #009688; }
+.reminder-indicator.color-teal .reminder-indicator-icon { border-color: #009688; background: #e0f2f1; }
+.reminder-indicator.color-teal .reminder-indicator-icon svg { color: #009688; }
+.reminder-indicator.color-teal .reminder-indicator-time { color: #009688; }
+
 /* FAB */
 .fab {
     position: fixed;

@@ -484,6 +484,12 @@ class TimelineRenderer {
                         ${task.recurring === 'daily' ? 'Daily' : task.recurring === 'weekly' ? 'Weekly' : task.recurring === 'weekdays' ? 'Weekdays' : 'Monthly'}
                     </span>
                 ` : ''}
+                ${task.attachmentData ? `
+                    <span class="task-indicator task-attachment-indicator">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                        Photo
+                    </span>
+                ` : ''}
             </div>
             <button class="complete-btn" aria-label="${task.isCompleted ? 'Mark incomplete' : 'Mark complete'}">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
@@ -699,11 +705,307 @@ class TimeFlowApp {
             // Update header
             this.updateDateDisplay();
 
+            // Initialize notifications
+            await this.initNotifications();
+
+            // Initialize cross-tab sync for concurrent edit handling
+            this.initCrossTabSync();
+
+            // Check if onboarding should be shown
+            await this.checkOnboarding();
+
             console.log('TimeFlow initialized successfully');
         } catch (error) {
             console.error('Failed to initialize TimeFlow:', error);
             Toast.show('Failed to initialize app', 'error');
         }
+    }
+
+    async checkOnboarding() {
+        const hasSeenOnboarding = await this.db.getSetting('hasSeenOnboarding');
+        if (!hasSeenOnboarding) {
+            this.showOnboarding();
+        }
+    }
+
+    // Notification System
+    async initNotifications() {
+        this.scheduledNotifications = new Map();
+
+        // Request notification permission if not already granted
+        if ('Notification' in window) {
+            if (Notification.permission === 'default') {
+                // Don't request immediately - wait for user interaction
+                console.log('Notification permission not yet requested');
+            } else if (Notification.permission === 'granted') {
+                console.log('Notifications enabled');
+                // Schedule notifications for today's tasks
+                await this.scheduleNotificationsForToday();
+            }
+        }
+
+        // Start notification check interval (every 10 seconds)
+        this.notificationInterval = setInterval(() => {
+            this.checkAndTriggerNotifications();
+        }, 10000);
+    }
+
+    async requestNotificationPermission() {
+        if (!('Notification' in window)) {
+            Toast.show('Notifications not supported in this browser', 'info');
+            return false;
+        }
+
+        if (Notification.permission === 'granted') {
+            return true;
+        }
+
+        if (Notification.permission !== 'denied') {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                Toast.show('Notifications enabled!', 'success');
+                await this.scheduleNotificationsForToday();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    async scheduleNotificationsForToday() {
+        // Clear existing scheduled notifications
+        this.scheduledNotifications.clear();
+
+        const today = new Date();
+        const tasks = await this.db.getTasksByDate(today);
+
+        tasks.forEach(task => {
+            if (task.reminderMinutes && !task.isCompleted) {
+                this.scheduleNotificationForTask(task, today);
+            }
+        });
+
+        console.log(`Scheduled ${this.scheduledNotifications.size} notifications for today`);
+    }
+
+    scheduleNotificationForTask(task, date) {
+        if (!task.reminderMinutes) return;
+
+        // Parse task start time
+        const [hours, minutes] = task.startTime.split(':').map(Number);
+        const taskDate = new Date(date);
+        taskDate.setHours(hours, minutes, 0, 0);
+
+        // Calculate notification time (X minutes before task)
+        const notificationTime = new Date(taskDate.getTime() - task.reminderMinutes * 60 * 1000);
+
+        // Don't schedule if notification time is in the past
+        if (notificationTime <= new Date()) {
+            return;
+        }
+
+        // Store the notification data
+        this.scheduledNotifications.set(task.id, {
+            taskId: task.id,
+            title: task.title,
+            startTime: task.startTime,
+            reminderMinutes: task.reminderMinutes,
+            notificationTime: notificationTime,
+            triggered: false
+        });
+    }
+
+    checkAndTriggerNotifications() {
+        if (Notification.permission !== 'granted') return;
+
+        // Check if notifications are globally enabled in settings
+        if (!this.state.state.settings.notificationsEnabled) {
+            return;
+        }
+
+        const now = new Date();
+
+        this.scheduledNotifications.forEach((notification, taskId) => {
+            if (notification.triggered) return;
+
+            if (now >= notification.notificationTime) {
+                this.triggerNotification(notification);
+                notification.triggered = true;
+            }
+        });
+    }
+
+    // Cross-tab synchronization for concurrent edit handling
+    initCrossTabSync() {
+        // Use BroadcastChannel API for cross-tab communication
+        if ('BroadcastChannel' in window) {
+            this.syncChannel = new BroadcastChannel('timeflow-sync');
+
+            this.syncChannel.onmessage = (event) => {
+                this.handleCrossTabMessage(event.data);
+            };
+        }
+
+        // Fallback: Use localStorage events for older browsers
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'timeflow-task-update') {
+                try {
+                    const data = JSON.parse(event.newValue);
+                    this.handleCrossTabMessage(data);
+                } catch (e) {
+                    // Ignore parsing errors
+                }
+            }
+        });
+
+        console.log('Cross-tab sync initialized');
+    }
+
+    broadcastTaskUpdate(taskId, action) {
+        const message = {
+            type: 'task-update',
+            taskId,
+            action, // 'saved', 'deleted', 'editing'
+            timestamp: Date.now(),
+            tabId: this.tabId || (this.tabId = Math.random().toString(36).substr(2, 9))
+        };
+
+        // Broadcast using BroadcastChannel
+        if (this.syncChannel) {
+            this.syncChannel.postMessage(message);
+        }
+
+        // Also use localStorage for fallback
+        localStorage.setItem('timeflow-task-update', JSON.stringify(message));
+    }
+
+    handleCrossTabMessage(data) {
+        if (!data || data.tabId === this.tabId) return; // Ignore own messages
+
+        if (data.type === 'task-update') {
+            const editingTask = this.state.state.editingTask;
+
+            if (data.action === 'saved' || data.action === 'deleted') {
+                // Another tab saved or deleted a task - refresh our view
+                this.loadTasksForDate(this.state.state.currentDate);
+
+                // If we're editing the same task that was modified elsewhere
+                if (editingTask && editingTask.id === data.taskId) {
+                    if (data.action === 'deleted') {
+                        Toast.show('This task was deleted in another window', 'info');
+                        this.closeTaskModal();
+                    } else {
+                        Toast.show('This task was updated in another window. Your changes may be overwritten.', 'warning');
+                    }
+                }
+            } else if (data.action === 'editing' && editingTask && editingTask.id === data.taskId) {
+                // Another tab is also editing this task
+                Toast.show('This task is being edited in another window', 'info');
+            }
+        }
+    }
+
+    triggerNotification(notification) {
+        const formattedTime = Utils.formatTime(notification.startTime);
+
+        try {
+            const browserNotification = new Notification('TimeFlow Reminder', {
+                body: `${notification.title} starts at ${formattedTime}`,
+                icon: '/favicon.ico',
+                tag: `task-${notification.taskId}`,
+                requireInteraction: false,
+                silent: false
+            });
+
+            browserNotification.onclick = () => {
+                window.focus();
+                this.editTask(notification.taskId);
+                browserNotification.close();
+            };
+
+            // Also show toast notification
+            Toast.show(`Reminder: ${notification.title} at ${formattedTime}`, 'info');
+
+            console.log(`Notification triggered for task: ${notification.title}`);
+        } catch (error) {
+            console.error('Failed to trigger notification:', error);
+            // Fallback to toast only
+            Toast.show(`Reminder: ${notification.title} at ${formattedTime}`, 'info');
+        }
+    }
+
+    showOnboarding() {
+        const modal = document.getElementById('onboarding-modal');
+        const nextBtn = document.getElementById('onboarding-next-btn');
+        const skipBtn = document.getElementById('onboarding-skip-btn');
+        const dotsContainer = document.getElementById('onboarding-dots');
+
+        let currentSlide = 0;
+        const totalSlides = 4;
+
+        const updateSlide = (newSlide) => {
+            const slides = document.querySelectorAll('.onboarding-slide');
+            const dots = document.querySelectorAll('.onboarding-dot');
+
+            // Mark current slide as exiting
+            slides[currentSlide].classList.remove('active');
+            slides[currentSlide].classList.add('exiting');
+
+            // Short delay before activating new slide
+            setTimeout(() => {
+                slides[currentSlide].classList.remove('exiting');
+            }, 300);
+
+            // Activate new slide
+            currentSlide = newSlide;
+            slides[currentSlide].classList.add('active');
+
+            // Update dots
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentSlide);
+            });
+
+            // Update next button text
+            if (currentSlide === totalSlides - 1) {
+                nextBtn.textContent = 'Get Started';
+            } else {
+                nextBtn.textContent = 'Next';
+            }
+        };
+
+        const completeOnboarding = async () => {
+            modal.hidden = true;
+            await this.db.setSetting('hasSeenOnboarding', true);
+            Toast.show('Welcome to TimeFlow!', 'success');
+        };
+
+        // Next button click
+        nextBtn.addEventListener('click', () => {
+            if (currentSlide < totalSlides - 1) {
+                updateSlide(currentSlide + 1);
+            } else {
+                completeOnboarding();
+            }
+        });
+
+        // Skip button click
+        skipBtn.addEventListener('click', () => {
+            completeOnboarding();
+        });
+
+        // Dot clicks
+        dotsContainer.addEventListener('click', (e) => {
+            const dot = e.target.closest('.onboarding-dot');
+            if (dot) {
+                const slideIndex = parseInt(dot.dataset.slide);
+                if (slideIndex !== currentSlide) {
+                    updateSlide(slideIndex);
+                }
+            }
+        });
+
+        // Show the modal
+        modal.hidden = false;
     }
 
     setupEventListeners() {
@@ -763,6 +1065,29 @@ class TimeFlowApp {
                 this.setSelectedColor(color);
             }
         });
+
+        // Attachment handling
+        const attachmentBtn = document.getElementById('attachment-btn');
+        const attachmentInput = document.getElementById('task-attachment');
+        const attachmentPreview = document.getElementById('attachment-preview');
+        const attachmentPreviewImg = document.getElementById('attachment-preview-img');
+        const removeAttachmentBtn = document.getElementById('remove-attachment-btn');
+
+        attachmentBtn.addEventListener('click', () => attachmentInput.click());
+
+        attachmentInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                this.handleAttachmentFile(file);
+            }
+        });
+
+        removeAttachmentBtn.addEventListener('click', () => {
+            this.clearAttachment();
+        });
+
+        // Virtual keyboard handling - ensure inputs stay visible
+        this.setupVirtualKeyboardHandling();
 
         // Settings modal
         document.getElementById('settings-btn').addEventListener('click', () => this.openSettingsModal());
@@ -858,6 +1183,87 @@ class TimeFlowApp {
             this.renderer.scrollToCurrentTime(true);
             jumpToNowBtn.hidden = true;
         });
+
+        // Pinch to zoom timeline functionality
+        this.setupPinchToZoom(timeline);
+    }
+
+    setupPinchToZoom(timeline) {
+        let initialDistance = 0;
+        let initialDensity = 1;
+        let isPinching = false;
+
+        // Calculate distance between two touch points
+        const getDistance = (touch1, touch2) => {
+            const dx = touch1.clientX - touch2.clientX;
+            const dy = touch1.clientY - touch2.clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        };
+
+        timeline.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                isPinching = true;
+                initialDistance = getDistance(e.touches[0], e.touches[1]);
+                initialDensity = this.state.state.settings.timelineDensity;
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        timeline.addEventListener('touchmove', (e) => {
+            if (isPinching && e.touches.length === 2) {
+                const currentDistance = getDistance(e.touches[0], e.touches[1]);
+                const scale = currentDistance / initialDistance;
+
+                // Calculate new density (clamped between 0.5 and 2)
+                let newDensity = initialDensity * scale;
+                newDensity = Math.max(0.5, Math.min(2, newDensity));
+
+                // Apply the new density
+                this.applyTimelineDensity(newDensity);
+
+                // Pause auto-scroll during pinch
+                this.renderer.pauseAutoScroll(5000);
+
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        timeline.addEventListener('touchend', (e) => {
+            if (isPinching && e.touches.length < 2) {
+                isPinching = false;
+
+                // Save the final density to settings
+                const finalDensity = parseFloat(document.documentElement.style.getPropertyValue('--hour-height') || '80') / 80;
+                const clampedDensity = Math.max(0.5, Math.min(2, finalDensity));
+                this.updateSetting('timelineDensity', clampedDensity);
+
+                // Update settings slider to reflect new value
+                const densitySlider = document.getElementById('timeline-density');
+                if (densitySlider) {
+                    densitySlider.value = clampedDensity;
+                }
+            }
+        });
+
+        // Also support wheel zoom for desktop (Ctrl + scroll)
+        timeline.addEventListener('wheel', (e) => {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                const currentDensity = this.state.state.settings.timelineDensity;
+                let newDensity = currentDensity + delta;
+                newDensity = Math.max(0.5, Math.min(2, newDensity));
+
+                this.applyTimelineDensity(newDensity);
+                this.updateSetting('timelineDensity', newDensity);
+
+                // Update settings slider
+                const densitySlider = document.getElementById('timeline-density');
+                if (densitySlider) {
+                    densitySlider.value = newDensity;
+                }
+            }
+        }, { passive: false });
     }
 
     async loadTasksForDate(date) {
@@ -925,6 +1331,7 @@ class TimeFlowApp {
         const deleteBtn = document.getElementById('delete-task-btn');
 
         form.reset();
+        this.clearAttachment(); // Reset attachment state
 
         if (task) {
             title.textContent = 'Edit Task';
@@ -938,6 +1345,13 @@ class TimeFlowApp {
             document.getElementById('task-recurring').value = task.recurring || '';
             document.getElementById('task-color').value = task.color || '';
             this.setSelectedColor(task.color || '');
+
+            // Handle attachment
+            if (task.attachmentData) {
+                document.getElementById('task-attachment-data').value = task.attachmentData;
+                this.setAttachmentPreview(task.attachmentData);
+            }
+
             deleteBtn.hidden = false;
             this.state.setState({ editingTask: task });
         } else {
@@ -963,6 +1377,99 @@ class TimeFlowApp {
         const buttons = document.querySelectorAll('#task-color-picker .color-btn');
         buttons.forEach(btn => {
             btn.classList.toggle('selected', btn.dataset.color === color);
+        });
+    }
+
+    handleAttachmentFile(file) {
+        // Validate file type (images only)
+        if (!file.type.startsWith('image/')) {
+            Toast.show('Please select an image file', 'error');
+            return;
+        }
+
+        // Validate file size (max 5MB)
+        const maxSize = 5 * 1024 * 1024;
+        if (file.size > maxSize) {
+            Toast.show('Image too large. Maximum size is 5MB', 'error');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const dataUrl = e.target.result;
+            this.setAttachmentPreview(dataUrl);
+            document.getElementById('task-attachment-data').value = dataUrl;
+        };
+        reader.onerror = () => {
+            Toast.show('Failed to read file', 'error');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    setAttachmentPreview(dataUrl) {
+        const preview = document.getElementById('attachment-preview');
+        const previewImg = document.getElementById('attachment-preview-img');
+        const attachmentBtn = document.getElementById('attachment-btn');
+
+        if (dataUrl) {
+            previewImg.src = dataUrl;
+            preview.hidden = false;
+            attachmentBtn.textContent = 'Change Photo/File';
+        } else {
+            previewImg.src = '';
+            preview.hidden = true;
+            attachmentBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                </svg>
+                Add Photo/File`;
+        }
+    }
+
+    clearAttachment() {
+        document.getElementById('task-attachment').value = '';
+        document.getElementById('task-attachment-data').value = '';
+        this.setAttachmentPreview(null);
+    }
+
+    setupVirtualKeyboardHandling() {
+        // Use Visual Viewport API if available
+        if (window.visualViewport) {
+            const taskModal = document.getElementById('task-modal');
+            const settingsModal = document.getElementById('settings-modal');
+
+            const handleViewportResize = () => {
+                const { height, offsetTop } = window.visualViewport;
+
+                // When keyboard is open, visual viewport height is less than layout viewport
+                const keyboardOpen = window.innerHeight - height > 100;
+
+                if (keyboardOpen) {
+                    // Find the focused element
+                    const focusedElement = document.activeElement;
+                    if (focusedElement && (focusedElement.tagName === 'INPUT' || focusedElement.tagName === 'TEXTAREA' || focusedElement.tagName === 'SELECT')) {
+                        // Scroll the focused element into view after a small delay
+                        setTimeout(() => {
+                            focusedElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 100);
+                    }
+                }
+            };
+
+            window.visualViewport.addEventListener('resize', handleViewportResize);
+            window.visualViewport.addEventListener('scroll', handleViewportResize);
+        }
+
+        // Fallback for browsers without Visual Viewport API
+        // Use scroll-margin-bottom on form inputs
+        const formInputs = document.querySelectorAll('.task-form input, .task-form textarea, .task-form select');
+        formInputs.forEach(input => {
+            input.addEventListener('focus', (e) => {
+                // Small delay to allow keyboard to appear
+                setTimeout(() => {
+                    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            });
         });
     }
 
@@ -1029,6 +1536,7 @@ class TimeFlowApp {
         const saveBtn = form.querySelector('button[type="submit"]');
 
         const editingTask = this.state.state.editingTask;
+        const attachmentData = document.getElementById('task-attachment-data').value || null;
         const task = {
             id: formData.get('id') || null,
             title: formData.get('title').trim(),
@@ -1039,6 +1547,7 @@ class TimeFlowApp {
             reminderMinutes: formData.get('reminderMinutes') ? parseInt(formData.get('reminderMinutes')) : null,
             recurring: formData.get('recurring') || null,
             color: formData.get('color') || null,
+            attachmentData: attachmentData,
             date: this.db._formatDate(this.state.state.currentDate),
             isCompleted: editingTask?.isCompleted || false,
             createdAt: editingTask?.createdAt || null
@@ -1073,8 +1582,21 @@ class TimeFlowApp {
         const isNewTask = !task.id;
 
         try {
-            await this.db.saveTask(task);
+            const savedTask = await this.db.saveTask(task);
             await this.loadTasksForDate(this.state.state.currentDate);
+
+            // Broadcast update to other tabs
+            this.broadcastTaskUpdate(savedTask.id, 'saved');
+
+            // Reschedule notifications if this is for today
+            if (task.reminderMinutes) {
+                const today = new Date();
+                const taskDateStr = this.db._formatDate(today);
+                if (task.date === taskDateStr) {
+                    this.scheduleNotificationForTask(savedTask, today);
+                }
+            }
+
             this.closeTaskModal();
             const message = isNewTask ? 'Task created' : 'Task updated';
             Toast.show(message, 'success');
@@ -1199,6 +1721,7 @@ class TimeFlowApp {
                     try {
                         await this.db.deleteTask(editingTask.originalId);
                         await this.loadTasksForDate(this.state.state.currentDate);
+                        this.broadcastTaskUpdate(editingTask.originalId, 'deleted');
                         this.closeTaskModal();
                         Toast.show('Recurring task deleted', 'success');
                         Utils.announceToScreenReader(`${taskTitle} and all instances deleted`);
@@ -1218,6 +1741,7 @@ class TimeFlowApp {
                     try {
                         await this.db.deleteTask(editingTask.id);
                         await this.loadTasksForDate(this.state.state.currentDate);
+                        this.broadcastTaskUpdate(editingTask.id, 'deleted');
                         this.closeTaskModal();
                         Toast.show('Recurring task deleted', 'success');
                         Utils.announceToScreenReader(`${taskTitle} and all instances deleted`);
@@ -1237,6 +1761,7 @@ class TimeFlowApp {
                     try {
                         await this.db.deleteTask(editingTask.id);
                         await this.loadTasksForDate(this.state.state.currentDate);
+                        this.broadcastTaskUpdate(editingTask.id, 'deleted');
                         this.closeTaskModal();
                         Toast.show('Task deleted', 'success');
                         Utils.announceToScreenReader(`${taskTitle} deleted`);

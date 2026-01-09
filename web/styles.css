@@ -542,8 +542,24 @@ body {
     width: 100%;
     max-width: 480px;
     max-height: 90vh;
+    max-height: 90dvh; /* Dynamic viewport height - adjusts for virtual keyboard */
     overflow-y: auto;
     animation: slideUp var(--transition-normal);
+}
+
+/* Virtual keyboard adjustments */
+@supports (height: 100dvh) {
+    .modal-overlay {
+        height: 100dvh;
+    }
+}
+
+/* Ensure inputs have scroll padding for virtual keyboard */
+.task-form input,
+.task-form textarea,
+.task-form select {
+    scroll-margin-bottom: 150px;
+    scroll-margin-top: 100px;
 }
 
 @keyframes slideUp {
@@ -1195,4 +1211,284 @@ input:focus:not(:focus-visible) {
     top: 8px;
     outline: 3px solid var(--primary-700);
     outline-offset: 2px;
+}
+
+/* Attachment styles */
+.attachment-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.attachment-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    width: fit-content;
+}
+
+.attachment-btn svg {
+    flex-shrink: 0;
+}
+
+.attachment-preview {
+    position: relative;
+    display: inline-block;
+    max-width: 200px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.attachment-preview img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 150px;
+    object-fit: cover;
+}
+
+.remove-attachment-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.remove-attachment-btn:hover {
+    background: rgba(244, 67, 54, 0.9);
+}
+
+/* Task card attachment indicator */
+.task-attachment-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.task-attachment-indicator svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Task card attachment thumbnail (shown when expanded or in detail view) */
+.task-attachment-thumbnail {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    border: 1px solid var(--border-color);
+    margin-top: var(--spacing-xs);
+}
+
+/* Onboarding Styles */
+.onboarding-overlay {
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0.9);
+}
+
+.onboarding-container {
+    width: 100%;
+    max-width: 420px;
+    height: 100%;
+    max-height: 600px;
+    margin: auto;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-xl);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.onboarding-slides {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.onboarding-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+    text-align: center;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.onboarding-slide.active {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.onboarding-slide.exiting {
+    opacity: 0;
+    transform: translateX(-100%);
+}
+
+.onboarding-icon {
+    margin-bottom: var(--spacing-lg);
+    color: var(--primary-500);
+}
+
+.onboarding-slide h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.onboarding-tagline {
+    font-size: 1rem;
+    color: var(--primary-500);
+    font-weight: 500;
+    margin-bottom: var(--spacing-md);
+}
+
+.onboarding-description {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    max-width: 300px;
+}
+
+/* NOW line demo in onboarding */
+.now-line-demo {
+    width: 100%;
+    max-width: 280px;
+    height: 80px;
+    background: linear-gradient(to bottom,
+        var(--bg-primary) 0%,
+        var(--bg-primary) 45%,
+        transparent 45%,
+        transparent 55%,
+        var(--bg-primary) 55%
+    );
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.demo-now-line {
+    width: 100%;
+    height: 2px;
+    background: var(--primary-400);
+    box-shadow: 0 0 12px var(--now-line-glow);
+    display: flex;
+    align-items: center;
+    padding: 0 var(--spacing-md);
+    position: relative;
+}
+
+.demo-now-line::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+    height: 2px;
+    background: var(--primary-400);
+}
+
+.demo-now-label {
+    position: absolute;
+    left: var(--spacing-md);
+    top: -12px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--primary-500);
+    background: var(--bg-secondary);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.demo-now-time {
+    position: absolute;
+    right: var(--spacing-md);
+    top: -12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--primary-500);
+    background: var(--bg-secondary);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* Onboarding navigation */
+.onboarding-nav {
+    padding: var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.onboarding-dots {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-sm);
+}
+
+.onboarding-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border-color);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.onboarding-dot.active {
+    background: var(--primary-500);
+    transform: scale(1.2);
+}
+
+.onboarding-dot:hover {
+    background: var(--primary-300);
+}
+
+.onboarding-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.onboarding-buttons .btn {
+    flex: 1;
 }

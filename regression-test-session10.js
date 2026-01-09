@@ -11,6 +11,13 @@ const { chromium } = require('playwright');
     await page.goto('http://localhost:3000');
     await page.waitForTimeout(1000);
 
+    // Skip onboarding if shown
+    const onboarding = await page.locator('#onboarding-modal');
+    if (await onboarding.isVisible()) {
+      await page.click('#onboarding-skip-btn');
+      await page.waitForTimeout(300);
+    }
+
     // Test 1: Verify app loads and NOW line is visible
     console.log('Test 1: App loads and NOW line visible');
     const nowLine = await page.locator('#now-line');

@@ -114,3 +114,6 @@ debug-*.js
 # Docker (optional)
 Dockerfile.*
 docker-compose.yml
+
+# Backup directories
+web-vanilla-backup/

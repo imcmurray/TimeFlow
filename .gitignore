@@ -103,6 +103,8 @@ playwright/.cache/
 
 # Test screenshots and regression/debug artifacts
 *.png
+!web/icons/*.png
+!web/favicon.png
 test-*.js
 regression-*.js
 debug-*.js

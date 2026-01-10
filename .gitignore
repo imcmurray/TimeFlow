@@ -101,9 +101,11 @@ test-results/
 playwright-report/
 playwright/.cache/
 
-# Test screenshots
+# Test screenshots and regression/debug artifacts
 *.png
 test-*.js
+regression-*.js
+debug-*.js
 
 # Database and assistant files
 *.db

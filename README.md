@@ -178,7 +178,7 @@ Features are tracked via a SQLite database (`features.db`). Use the feature mana
 
 ## License
 
-Proprietary - All rights reserved
+This project is licensed under [CC BY-NC-SA 4.0](LICENSE) (Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International).
 
 ---
 

@@ -456,11 +456,11 @@ body {
 /* Reminder Indicator - shows when a reminder will fire on the timeline */
 .reminder-indicator {
     position: absolute;
-    left: 0;
-    right: 80px;
+    left: 70px;
     height: 24px;
     display: flex;
     align-items: center;
+    gap: 4px;
     z-index: 5;
     pointer-events: none;
     opacity: 0.7;
@@ -469,14 +469,6 @@ body {
 
 .reminder-indicator:hover {
     opacity: 1;
-}
-
-.reminder-indicator-line {
-    flex: 1;
-    height: 1px;
-    background: var(--accent-400);
-    opacity: 0.5;
-    margin-left: 75px;
 }
 
 .reminder-indicator-icon {
@@ -488,7 +480,6 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-left: 4px;
 }
 
 .reminder-indicator-icon svg {
@@ -508,12 +499,6 @@ body {
 /* Approaching state - reminder is about to fire */
 .reminder-indicator.approaching {
     opacity: 1;
-}
-
-.reminder-indicator.approaching .reminder-indicator-line {
-    background: var(--accent-500);
-    opacity: 0.8;
-    height: 2px;
 }
 
 .reminder-indicator.approaching .reminder-indicator-icon {
@@ -542,11 +527,6 @@ body {
     opacity: 0.5;
 }
 
-.reminder-indicator.triggered .reminder-indicator-line {
-    background: var(--text-secondary);
-    opacity: 0.3;
-}
-
 .reminder-indicator.triggered .reminder-indicator-icon {
     background: var(--bg-secondary);
     border-color: var(--text-secondary);
@@ -562,30 +542,80 @@ body {
 }
 
 /* Color variants for reminder indicators */
-.reminder-indicator.color-purple .reminder-indicator-line { background: #9c27b0; }
 .reminder-indicator.color-purple .reminder-indicator-icon { border-color: #9c27b0; background: #f3e5f5; }
 .reminder-indicator.color-purple .reminder-indicator-icon svg { color: #9c27b0; }
 .reminder-indicator.color-purple .reminder-indicator-time { color: #9c27b0; }
 
-.reminder-indicator.color-green .reminder-indicator-line { background: #4caf50; }
 .reminder-indicator.color-green .reminder-indicator-icon { border-color: #4caf50; background: #e8f5e9; }
 .reminder-indicator.color-green .reminder-indicator-icon svg { color: #4caf50; }
 .reminder-indicator.color-green .reminder-indicator-time { color: #4caf50; }
 
-.reminder-indicator.color-orange .reminder-indicator-line { background: #ff9800; }
 .reminder-indicator.color-orange .reminder-indicator-icon { border-color: #ff9800; background: #fff3e0; }
 .reminder-indicator.color-orange .reminder-indicator-icon svg { color: #ff9800; }
 .reminder-indicator.color-orange .reminder-indicator-time { color: #ff9800; }
 
-.reminder-indicator.color-red .reminder-indicator-line { background: #f44336; }
 .reminder-indicator.color-red .reminder-indicator-icon { border-color: #f44336; background: #ffebee; }
 .reminder-indicator.color-red .reminder-indicator-icon svg { color: #f44336; }
 .reminder-indicator.color-red .reminder-indicator-time { color: #f44336; }
 
-.reminder-indicator.color-teal .reminder-indicator-line { background: #009688; }
 .reminder-indicator.color-teal .reminder-indicator-icon { border-color: #009688; background: #e0f2f1; }
 .reminder-indicator.color-teal .reminder-indicator-icon svg { color: #009688; }
 .reminder-indicator.color-teal .reminder-indicator-time { color: #009688; }
+
+/* Reminder Lines - Visual connection from task to reminder time */
+.reminder-lines-svg {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 4;
+    overflow: visible;
+}
+
+.reminder-line {
+    stroke: #EF5350;
+    stroke-linecap: round;
+    fill: none;
+}
+
+/* Distant state: 15-60 minutes away */
+.reminder-line.state-distant {
+    stroke-opacity: 0.2;
+    stroke-width: 1.5px;
+}
+
+/* Approaching state: 5-15 minutes away */
+.reminder-line.state-approaching {
+    stroke-opacity: 0.6;
+    stroke-width: 2px;
+}
+
+/* Imminent state: <5 minutes - with shake animation */
+.reminder-line.state-imminent {
+    stroke-opacity: 1;
+    stroke-width: 2.5px;
+    animation: reminderShake 0.3s ease-in-out infinite;
+}
+
+@keyframes reminderShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-1px); }
+    75% { transform: translateX(1px); }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    .reminder-line {
+        animation: none !important;
+    }
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .reminder-line {
+    stroke: #EF5350;
+}
 
 /* FAB */
 .fab {

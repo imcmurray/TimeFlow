@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeflow/core/theme/app_theme.dart';
+import 'package:timeflow/presentation/providers/settings_provider.dart';
 import 'package:timeflow/presentation/screens/timeline_screen.dart';
 
 void main() {
@@ -22,13 +23,19 @@ class TimeFlowApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // TODO: Watch theme provider for light/dark/auto mode
+    final themeSetting = ref.watch(settingsProvider).theme;
+    final themeMode = switch (themeSetting) {
+      'light' => ThemeMode.light,
+      'dark' => ThemeMode.dark,
+      _ => ThemeMode.system,
+    };
+
     return MaterialApp(
       title: 'TimeFlow',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       home: const TimelineScreen(),
     );
   }

@@ -6,6 +6,10 @@ import 'package:timeflow/domain/entities/task.dart';
 /// tasks at the same time slot. For persistent storage, this can be
 /// replaced with a Drift database implementation.
 class TaskRepository {
+  static final TaskRepository _instance = TaskRepository._internal();
+  factory TaskRepository() => _instance;
+  TaskRepository._internal();
+
   final Map<String, Task> _tasks = {};
 
   /// Returns all tasks that overlap with the given date.
@@ -15,6 +19,17 @@ class TaskRepository {
 
     return _tasks.values.where((task) {
       return task.startTime.isBefore(dayEnd) && task.endTime.isAfter(dayStart);
+    }).toList();
+  }
+
+  /// Returns all tasks that overlap with the given date range.
+  List<Task> getTasksForRange(DateTime startDate, DateTime endDate) {
+    final rangeStart = DateTime(startDate.year, startDate.month, startDate.day);
+    final rangeEnd = DateTime(endDate.year, endDate.month, endDate.day)
+        .add(const Duration(days: 1));
+
+    return _tasks.values.where((task) {
+      return task.startTime.isBefore(rangeEnd) && task.endTime.isAfter(rangeStart);
     }).toList();
   }
 

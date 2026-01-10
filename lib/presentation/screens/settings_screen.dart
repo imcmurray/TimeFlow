@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/services/reminder_sound_service.dart';
 
 /// Settings screen for app preferences and customization.
 ///
@@ -15,7 +16,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   // TODO: Replace remaining local state with settings provider
-  String _theme = 'auto';
   int _defaultReminderMinutes = 10;
   double _timelineDensity = 1.0;
   bool _notificationsEnabled = true;
@@ -33,7 +33,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ListTile(
             leading: const Icon(Icons.palette_outlined),
             title: const Text('Theme'),
-            subtitle: Text(_themeLabel(_theme)),
+            subtitle: Text(_themeLabel(ref.watch(settingsProvider).theme)),
             onTap: () => _showThemeDialog(),
           ),
           ListTile(
@@ -72,6 +72,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: Text('$_defaultReminderMinutes minutes before'),
             enabled: _notificationsEnabled,
             onTap: _notificationsEnabled ? () => _showReminderDialog() : null,
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.open_in_new),
+            title: const Text('Bring Window to Front'),
+            subtitle: const Text('Raise app window when reminder triggers'),
+            value: ref.watch(settingsProvider).bringWindowToFrontOnReminder,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setBringWindowToFrontOnReminder(value);
+            },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.volume_up),
+            title: const Text('Reminder Sound'),
+            subtitle: const Text('Play sound when reminder triggers'),
+            value: ref.watch(settingsProvider).reminderSoundEnabled,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setReminderSoundEnabled(value);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.music_note),
+            title: const Text('Alert Sound'),
+            subtitle: Text(ReminderSoundService.getLabel(
+                ref.watch(settingsProvider).reminderSound)),
+            enabled: ref.watch(settingsProvider).reminderSoundEnabled,
+            onTap: ref.watch(settingsProvider).reminderSoundEnabled
+                ? () => _showSoundPicker(ref)
+                : null,
           ),
 
           const Divider(),
@@ -122,6 +150,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showThemeDialog() {
+    final currentTheme = ref.read(settingsProvider).theme;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -132,31 +161,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             RadioListTile<String>(
               title: const Text('Light'),
               value: 'light',
-              groupValue: _theme,
+              groupValue: currentTheme,
               onChanged: (value) {
-                setState(() => _theme = value!);
+                ref.read(settingsProvider.notifier).setTheme(value!);
                 Navigator.pop(context);
-                // TODO: Save via settings provider
               },
             ),
             RadioListTile<String>(
               title: const Text('Dark'),
               value: 'dark',
-              groupValue: _theme,
+              groupValue: currentTheme,
               onChanged: (value) {
-                setState(() => _theme = value!);
+                ref.read(settingsProvider.notifier).setTheme(value!);
                 Navigator.pop(context);
-                // TODO: Save via settings provider
               },
             ),
             RadioListTile<String>(
               title: const Text('System default'),
               value: 'auto',
-              groupValue: _theme,
+              groupValue: currentTheme,
               onChanged: (value) {
-                setState(() => _theme = value!);
+                ref.read(settingsProvider.notifier).setTheme(value!);
                 Navigator.pop(context);
-                // TODO: Save via settings provider
               },
             ),
           ],
@@ -234,6 +260,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showSoundPicker(WidgetRef ref) {
+    final currentSound = ref.read(settingsProvider).reminderSound;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Choose Alert Sound'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: ReminderSoundService.availableSounds.map((sound) {
+            return ListTile(
+              title: Text(ReminderSoundService.getLabel(sound)),
+              leading: Radio<String>(
+                value: sound,
+                groupValue: currentSound,
+                onChanged: (value) {
+                  ref.read(settingsProvider.notifier).setReminderSound(value!);
+                  Navigator.pop(context);
+                },
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.play_arrow),
+                onPressed: () => ReminderSoundService.play(sound),
+              ),
+              onTap: () {
+                ref.read(settingsProvider.notifier).setReminderSound(sound);
+                Navigator.pop(context);
+              },
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
       ),
     );
   }

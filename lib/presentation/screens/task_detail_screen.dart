@@ -30,6 +30,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   late final TextEditingController _descriptionController;
   late final TextEditingController _notesController;
 
+  late DateTime _taskDate;
   late DateTime _startTime;
   late DateTime _endTime;
   bool _isImportant = false;
@@ -49,6 +50,8 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     _descriptionController = TextEditingController(text: task?.description ?? '');
     _notesController = TextEditingController(text: task?.notes ?? '');
 
+    _taskDate = DateTime(initialDate.year, initialDate.month, initialDate.day);
+
     if (task != null) {
       _startTime = task.startTime;
       _endTime = task.endTime;
@@ -57,14 +60,16 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       _recurringPattern = task.recurringPattern;
     } else {
       // Default to next hour, 1 hour duration
-      final nextHour = DateTime(
-        initialDate.year,
-        initialDate.month,
-        initialDate.day,
-        now.hour + 1,
+      // Clamp hour to 0-23 to prevent rollover to next day
+      final nextHour = (now.hour + 1).clamp(0, 23);
+      final defaultStart = DateTime(
+        _taskDate.year,
+        _taskDate.month,
+        _taskDate.day,
+        nextHour,
       );
-      _startTime = nextHour;
-      _endTime = nextHour.add(const Duration(hours: 1));
+      _startTime = defaultStart;
+      _endTime = defaultStart.add(const Duration(hours: 1));
     }
   }
 
@@ -87,9 +92,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       setState(() {
         if (isStart) {
           _startTime = DateTime(
-            _startTime.year,
-            _startTime.month,
-            _startTime.day,
+            _taskDate.year,
+            _taskDate.month,
+            _taskDate.day,
             picked.hour,
             picked.minute,
           );
@@ -99,9 +104,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
           }
         } else {
           _endTime = DateTime(
-            _endTime.year,
-            _endTime.month,
-            _endTime.day,
+            _taskDate.year,
+            _taskDate.month,
+            _taskDate.day,
             picked.hour,
             picked.minute,
           );

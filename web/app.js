@@ -418,6 +418,14 @@ class TimelineRenderer {
 
         const currentMinutes = Utils.getCurrentTimeMinutes();
 
+        // Create or update SVG overlay for reminder lines
+        let svgOverlay = timeline.querySelector('.reminder-lines-svg');
+        if (!svgOverlay) {
+            svgOverlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svgOverlay.classList.add('reminder-lines-svg');
+            timeline.appendChild(svgOverlay);
+        }
+
         tasks.forEach(task => {
             const taskCard = this.createTaskCard(task, currentMinutes);
             timeline.appendChild(taskCard);
@@ -425,6 +433,9 @@ class TimelineRenderer {
 
         // Render reminder indicators for tasks with reminders
         this.renderReminderIndicators(tasks, timeline, currentMinutes);
+
+        // Render reminder lines connecting tasks to their reminder times
+        this.renderReminderLines(tasks, timeline, currentMinutes);
     }
 
     renderReminderIndicators(tasks, timeline, currentMinutes) {
@@ -467,7 +478,6 @@ class TimelineRenderer {
             indicator.setAttribute('aria-label', `Reminder indicator: ${task.title} reminder at ${Utils.formatTime(Utils.minutesToTime(reminderMinutes))}${statusText}`);
 
             indicator.innerHTML = `
-                <div class="reminder-indicator-line"></div>
                 <div class="reminder-indicator-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -478,6 +488,56 @@ class TimelineRenderer {
             `;
 
             timeline.appendChild(indicator);
+        });
+    }
+
+    renderReminderLines(tasks, timeline, currentMinutes) {
+        const svgOverlay = timeline.querySelector('.reminder-lines-svg');
+        if (!svgOverlay) return;
+
+        // Clear existing lines
+        svgOverlay.innerHTML = '';
+
+        // Set SVG dimensions to match timeline
+        svgOverlay.setAttribute('width', '100%');
+        svgOverlay.setAttribute('height', timeline.scrollHeight);
+
+        tasks.forEach(task => {
+            if (!task.reminderMinutes || task.isCompleted) return;
+
+            const startMinutes = Utils.timeToMinutes(task.startTime);
+            const reminderMinutes = startMinutes - task.reminderMinutes;
+            const minutesUntilReminder = reminderMinutes - currentMinutes;
+
+            // Only show within 1 hour window and before triggered
+            if (minutesUntilReminder <= 0 || minutesUntilReminder > 60) return;
+
+            // Skip if reminder time is negative (before midnight)
+            if (reminderMinutes < 0) return;
+
+            // Calculate positions
+            const taskY = (startMinutes / 60) * this.hourHeight;
+            const reminderY = (reminderMinutes / 60) * this.hourHeight;
+            const lineX = 75;
+
+            // Determine state based on time until reminder
+            let state = 'distant';
+            if (minutesUntilReminder <= 5) {
+                state = 'imminent';
+            } else if (minutesUntilReminder <= 15) {
+                state = 'approaching';
+            }
+
+            // Create vertical line from reminder time up to task
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', lineX);
+            line.setAttribute('y1', reminderY);
+            line.setAttribute('x2', lineX);
+            line.setAttribute('y2', taskY);
+            line.classList.add('reminder-line', `state-${state}`);
+            line.dataset.taskId = task.id;
+
+            svgOverlay.appendChild(line);
         });
     }
 
@@ -1206,6 +1266,14 @@ class TimeFlowApp {
             this.renderer.updateNowLine();
             this.renderer.autoScroll();
         }, 1000);
+
+        // Update reminder lines every 10 seconds (state changes at 15min and 5min thresholds)
+        this.reminderLineInterval = setInterval(() => {
+            const timeline = document.getElementById('timeline');
+            const tasks = this.state.state.tasks;
+            const currentMinutes = Utils.getCurrentTimeMinutes();
+            this.renderer.renderReminderLines(tasks, timeline, currentMinutes);
+        }, 10000);
 
         // Initial update
         this.renderer.updateNowLine();

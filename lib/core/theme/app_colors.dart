@@ -53,6 +53,9 @@ class AppColors {
   static const Color hourMarkerLight = Color(0xFF9E9E9E);
   static const Color hourMarkerDark = Color(0xFF757575);
 
+  // Reminder Line Colors
+  static const Color reminderLine = Color(0xFFEF5350);
+
   // Overlay and Shadow
   static const Color shadowLight = Color(0x1A000000);
   static const Color shadowDark = Color(0x40000000);

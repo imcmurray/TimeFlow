@@ -21,6 +21,16 @@ class Settings {
   /// When true, later times render at the top and flow down toward the NOW line.
   final bool upcomingTasksAboveNow;
 
+  /// Whether to bring the app window to front when a reminder triggers.
+  final bool bringWindowToFrontOnReminder;
+
+  /// Whether to play sound when reminder triggers.
+  final bool reminderSoundEnabled;
+
+  /// Which sound to play for reminders.
+  /// Options: 'chime', 'bell', 'alert', 'soft'
+  final String reminderSound;
+
   const Settings({
     this.theme = 'auto',
     this.defaultReminderMinutes = 10,
@@ -28,6 +38,9 @@ class Settings {
     this.notificationsEnabled = true,
     this.firstLaunch = true,
     this.upcomingTasksAboveNow = true,
+    this.bringWindowToFrontOnReminder = true,
+    this.reminderSoundEnabled = true,
+    this.reminderSound = 'chime',
   });
 
   /// Default settings for first-time users.
@@ -41,6 +54,9 @@ class Settings {
     bool? notificationsEnabled,
     bool? firstLaunch,
     bool? upcomingTasksAboveNow,
+    bool? bringWindowToFrontOnReminder,
+    bool? reminderSoundEnabled,
+    String? reminderSound,
   }) {
     return Settings(
       theme: theme ?? this.theme,
@@ -49,6 +65,9 @@ class Settings {
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       firstLaunch: firstLaunch ?? this.firstLaunch,
       upcomingTasksAboveNow: upcomingTasksAboveNow ?? this.upcomingTasksAboveNow,
+      bringWindowToFrontOnReminder: bringWindowToFrontOnReminder ?? this.bringWindowToFrontOnReminder,
+      reminderSoundEnabled: reminderSoundEnabled ?? this.reminderSoundEnabled,
+      reminderSound: reminderSound ?? this.reminderSound,
     );
   }
 
@@ -61,7 +80,10 @@ class Settings {
         other.timelineDensity == timelineDensity &&
         other.notificationsEnabled == notificationsEnabled &&
         other.firstLaunch == firstLaunch &&
-        other.upcomingTasksAboveNow == upcomingTasksAboveNow;
+        other.upcomingTasksAboveNow == upcomingTasksAboveNow &&
+        other.bringWindowToFrontOnReminder == bringWindowToFrontOnReminder &&
+        other.reminderSoundEnabled == reminderSoundEnabled &&
+        other.reminderSound == reminderSound;
   }
 
   @override
@@ -73,6 +95,9 @@ class Settings {
       notificationsEnabled,
       firstLaunch,
       upcomingTasksAboveNow,
+      bringWindowToFrontOnReminder,
+      reminderSoundEnabled,
+      reminderSound,
     );
   }
 
@@ -80,6 +105,8 @@ class Settings {
   String toString() {
     return 'Settings(theme: $theme, defaultReminderMinutes: $defaultReminderMinutes, '
         'timelineDensity: $timelineDensity, notificationsEnabled: $notificationsEnabled, '
-        'firstLaunch: $firstLaunch, upcomingTasksAboveNow: $upcomingTasksAboveNow)';
+        'firstLaunch: $firstLaunch, upcomingTasksAboveNow: $upcomingTasksAboveNow, '
+        'bringWindowToFrontOnReminder: $bringWindowToFrontOnReminder, '
+        'reminderSoundEnabled: $reminderSoundEnabled, reminderSound: $reminderSound)';
   }
 }

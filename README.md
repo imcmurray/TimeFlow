@@ -2,6 +2,8 @@
   <img src="assets/images/timeflow-logo.png" alt="TimeFlow Logo" width="128" height="128">
 </p>
 
+[![Deploy to GitHub Pages](https://github.com/imcmurray/TimeFlow/actions/workflows/deploy.yml/badge.svg)](https://github.com/imcmurray/TimeFlow/actions/workflows/deploy.yml)
+
 # TimeFlow
 
 > Experience time as a gentle flowing river, not a pressure cooker

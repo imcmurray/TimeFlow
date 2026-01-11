@@ -27,6 +27,9 @@ class MergedTaskCard extends StatefulWidget {
   /// Callback when the card is tapped to expand.
   final VoidCallback? onTap;
 
+  /// Callback when an individual task pill is tapped for editing.
+  final void Function(Task task)? onTapTask;
+
   const MergedTaskCard({
     super.key,
     required this.tasks,
@@ -34,6 +37,7 @@ class MergedTaskCard extends StatefulWidget {
     this.reminderStates = const {},
     this.reminderTimes = const {},
     this.onTap,
+    this.onTapTask,
   });
 
   @override
@@ -213,7 +217,7 @@ class _MergedTaskCardState extends State<MergedTaskCard>
     } else if (task.isCurrent) {
       return AppColors.taskCurrent;
     } else {
-      return AppColors.primaryBlue;
+      return AppColors.primaryBlueDark;
     }
   }
 
@@ -234,35 +238,38 @@ class _MergedTaskCardState extends State<MergedTaskCard>
         if (showColorDots) titleHeight -= 20; // color dots + spacing
 
         return ClipRect(
-          child: Padding(
-            padding: EdgeInsets.all(padding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Title list with reminder badge (always shown)
-                Flexible(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: _buildTitleList(context, titleHeight)),
-                      _buildReminderSummary(),
-                    ],
+          child: SizedBox(
+            height: availableHeight,
+            child: Padding(
+              padding: EdgeInsets.all(padding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Title list with reminder badge (always shown)
+                  Flexible(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _buildTitleList(context, titleHeight)),
+                        _buildReminderSummary(),
+                      ],
+                    ),
                   ),
-                ),
 
-                // Time range (if space)
-                if (showTimeRange) ...[
-                  const SizedBox(height: 4),
-                  _buildTimeRange(context),
-                ],
+                  // Time range (if space)
+                  if (showTimeRange) ...[
+                    const SizedBox(height: 4),
+                    _buildTimeRange(context),
+                  ],
 
-                // Color dots (if more space)
-                if (showColorDots) ...[
-                  const SizedBox(height: 4),
-                  _buildColorDots(),
+                  // Color dots (if more space)
+                  if (showColorDots) ...[
+                    const SizedBox(height: 4),
+                    _buildColorDots(),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         );
@@ -271,7 +278,6 @@ class _MergedTaskCardState extends State<MergedTaskCard>
   }
 
   Widget _buildTitleList(BuildContext context, double availableHeight) {
-    // Sort tasks: important first, then by start time
     final sortedTasks = List<Task>.from(widget.tasks)
       ..sort((a, b) {
         if (a.isImportant && !b.isImportant) return -1;
@@ -279,67 +285,88 @@ class _MergedTaskCardState extends State<MergedTaskCard>
         return a.startTime.compareTo(b.startTime);
       });
 
-    // Limit number of titles based on available height
-    // Each title row is ~16px (14px text + 2px padding)
-    final maxTitles = (availableHeight / 16).floor().clamp(1, sortedTasks.length);
+    final maxTitles = sortedTasks.length.clamp(1, 4);
     final displayTasks = sortedTasks.take(maxTitles).toList();
     final remainingCount = sortedTasks.length - maxTitles;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
+    return Row(
       children: [
-        ...displayTasks.map((task) {
-          final isCompleted = task.isCompleted;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 2),
-            child: Row(
-              children: [
-                if (task.isImportant)
-                  const Padding(
-                    padding: EdgeInsets.only(right: 4),
-                    child: Icon(
-                      Icons.star,
-                      size: 12,
-                      color: Colors.white,
-                    ),
-                  ),
-                Expanded(
-                  child: Text(
-                    task.title,
-                    style: TextStyle(
-                      fontSize: availableHeight < 50 ? 12 : 14,
-                      fontWeight: task.isImportant ? FontWeight.bold : FontWeight.w500,
-                      color: Colors.white,
-                      decoration: isCompleted ? TextDecoration.lineThrough : null,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (isCompleted)
-                  const Padding(
-                    padding: EdgeInsets.only(left: 4),
-                    child: Icon(
-                      Icons.check_circle,
-                      size: 12,
-                      color: Colors.white70,
-                    ),
-                  ),
-              ],
+        ...displayTasks.asMap().entries.map((entry) {
+          final index = entry.key;
+          final task = entry.value;
+          return Flexible(
+            child: Padding(
+              padding: EdgeInsets.only(
+                  right: index < displayTasks.length - 1 ? 8 : 0),
+              child: _buildTitlePill(task, availableHeight),
             ),
           );
         }),
         if (remainingCount > 0)
-          Text(
-            '+$remainingCount more',
-            style: const TextStyle(
-              fontSize: 11,
-              fontStyle: FontStyle.italic,
-              color: Colors.white70,
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Text(
+              '+$remainingCount more',
+              style: const TextStyle(
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+                color: Colors.white70,
+              ),
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildTitlePill(Task task, double availableHeight) {
+    final color = _getTaskColor(task);
+    final isSmall = availableHeight < 50;
+
+    return GestureDetector(
+      onTap: widget.onTapTask != null ? () => widget.onTapTask!(task) : null,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: 8,
+          vertical: isSmall ? 2 : 4,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: color.withValues(alpha: 0.5),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (task.isImportant)
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Icon(Icons.star, size: 12, color: color),
+              ),
+            Flexible(
+              child: Text(
+                task.title,
+                style: TextStyle(
+                  fontSize: isSmall ? 11 : 12,
+                  fontWeight: task.isImportant ? FontWeight.bold : FontWeight.w500,
+                  color: color,
+                  decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (task.isCompleted)
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Icon(
+                    Icons.check_circle, size: 12, color: color.withValues(alpha: 0.7)),
+              ),
+          ],
+        ),
+      ),
     );
   }
 

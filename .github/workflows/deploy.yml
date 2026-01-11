@@ -25,6 +25,11 @@ jobs:
       - name: Enable web
         run: flutter config --enable-web
 
+      - name: Generate build info
+        run: |
+          chmod +x ./scripts/generate_build_info.sh
+          ./scripts/generate_build_info.sh
+
       - name: Build web
         run: flutter build web --release --base-href="/TimeFlow/"
 

@@ -286,13 +286,13 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
                       fontWeight: FontWeight.w600,
                       decoration: widget.task.isCompleted
                           ? TextDecoration.lineThrough
-                          : null,
+                          : TextDecoration.none,
                       color: widget.task.isCompleted
                           ? Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withOpacity(0.5)
-                          : null,
+                              .withValues(alpha: 0.5)
+                          : Theme.of(context).colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -317,10 +317,11 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
                 '${_formatTime(widget.task.startTime)} - ${_formatTime(widget.task.endTime)}',
                 style: TextStyle(
                   fontSize: 12,
+                  decoration: TextDecoration.none,
                   color: Theme.of(context)
                       .colorScheme
                       .onSurface
-                      .withOpacity(0.6),
+                      .withValues(alpha: 0.6),
                 ),
               ),
             ],
@@ -332,10 +333,11 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
                 widget.task.description!,
                 style: TextStyle(
                   fontSize: 12,
+                  decoration: TextDecoration.none,
                   color: Theme.of(context)
                       .colorScheme
                       .onSurface
-                      .withOpacity(0.5),
+                      .withValues(alpha: 0.5),
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -522,6 +524,7 @@ class _SwipeBackground extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
             ),
             const SizedBox(width: 8),
@@ -534,6 +537,7 @@ class _SwipeBackground extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
             ),
           ],

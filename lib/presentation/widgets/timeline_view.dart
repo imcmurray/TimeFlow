@@ -999,6 +999,7 @@ class _TaskCardsLayerMultiDayState
                   reminderStates: reminderStates,
                   reminderTimes: reminderTimes,
                   onTap: () => _showConfluenceModal(context, group, use24Hour),
+                  onTapTask: (task) => _openTaskDetail(context, task),
                 ),
               ),
             );

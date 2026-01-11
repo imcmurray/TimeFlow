@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timeflow/data/datasources/database.dart' show AppDatabase;
 import 'package:timeflow/data/repositories/task_repository.dart';
 import 'package:timeflow/domain/entities/task.dart';
 
@@ -33,14 +32,10 @@ class DateRange {
       );
 }
 
-/// Database provider - must be overridden in main.dart ProviderScope.
-final databaseProvider = Provider<AppDatabase>((ref) {
-  throw UnimplementedError('Database must be overridden in ProviderScope');
-});
-
 /// Global task repository instance.
+/// Uses platform-specific implementation via conditional imports.
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
-  return TaskRepository(ref.read(databaseProvider));
+  return TaskRepository();
 });
 
 /// Notifier that triggers rebuilds when tasks change.

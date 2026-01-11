@@ -30,8 +30,8 @@ magick "$SCRIPT_DIR/timeflow-logo-maskable.svg" -resize 512x512 "$WEB_ICONS_DIR/
 echo "  Creating Icon-maskable-192.png..."
 magick "$SCRIPT_DIR/timeflow-logo-maskable.svg" -resize 192x192 "$WEB_ICONS_DIR/Icon-maskable-192.png"
 
-# Generate favicon
+# Generate favicon (use maskable version for solid background)
 echo "  Creating favicon.png..."
-magick "$SCRIPT_DIR/timeflow-logo.svg" -resize 32x32 "$WEB_DIR/favicon.png"
+magick "$SCRIPT_DIR/timeflow-logo-maskable.svg" -resize 32x32 "$WEB_DIR/favicon.png"
 
 echo "Done! Icons regenerated successfully."

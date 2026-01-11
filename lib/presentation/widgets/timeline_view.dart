@@ -8,6 +8,8 @@ import 'package:timeflow/domain/entities/task.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
 import 'package:timeflow/presentation/providers/task_provider.dart';
 import 'package:timeflow/presentation/screens/task_detail_screen.dart';
+import 'package:timeflow/presentation/widgets/confluence_modal.dart';
+import 'package:timeflow/presentation/widgets/merged_task_card.dart';
 import 'package:timeflow/presentation/widgets/reminder_line.dart';
 import 'package:timeflow/presentation/widgets/task_card.dart';
 import 'package:timeflow/services/reminder_sound_service.dart';
@@ -865,33 +867,122 @@ class _TaskCardsLayerMultiDayState
         final overlappingGroups = _groupOverlappingTasks(tasks);
         final positionedCards = <Widget>[];
 
+        final use24Hour = ref.watch(settingsProvider).use24HourFormat;
+
+        // Minimum width for a readable task card title
+        const minReadableWidth = 120.0;
+
         for (final group in overlappingGroups) {
-          final columnCount = group.length;
-          for (int i = 0; i < group.length; i++) {
-            final task = group[i];
-            final columnWidth = availableWidth / columnCount;
-            final left = i * columnWidth;
+          final columnWidth = availableWidth / group.length;
+          final useColumns = columnWidth >= minReadableWidth;
 
-            final reminderState = _getReminderState(task);
-            final effectiveMinutes = _getEffectiveReminderMinutes(task);
-            final reminderTime = effectiveMinutes != null
-                ? task.startTime.subtract(Duration(minutes: effectiveMinutes))
-                : null;
+          if (group.length == 1 || useColumns) {
+            // Render individual TaskCards (side-by-side if multiple)
+            for (int i = 0; i < group.length; i++) {
+              final task = group[i];
+              final reminderState = _getReminderState(task);
+              final effectiveMinutes = _getEffectiveReminderMinutes(task);
+              final reminderTime = effectiveMinutes != null
+                  ? task.startTime.subtract(Duration(minutes: effectiveMinutes))
+                  : null;
 
-            final use24Hour = ref.watch(settingsProvider).use24HourFormat;
-            final isDragging = _draggingTask?.id == task.id;
-            final cardTop = isDragging
-                ? _dragStartTop + _dragOffsetY
-                : _calculateTop(task.startTime, task.duration);
+              final isDragging = _draggingTask?.id == task.id;
+              final cardTop = isDragging
+                  ? _dragStartTop + _dragOffsetY
+                  : _calculateTop(task.startTime, task.duration);
 
-            // Show preview time while dragging
-            Task displayTask = task;
-            if (isDragging) {
-              final previewTime = _getDragPreviewTime();
-              if (previewTime != null) {
-                displayTask = task.copyWith(
-                  startTime: previewTime,
-                  endTime: previewTime.add(task.duration),
+              // Calculate horizontal position for side-by-side layout
+              final left = i * columnWidth;
+              final cardWidth = columnWidth - 4;
+
+              // Show preview time while dragging
+              Task displayTask = task;
+              if (isDragging) {
+                final previewTime = _getDragPreviewTime();
+                if (previewTime != null) {
+                  displayTask = task.copyWith(
+                    startTime: previewTime,
+                    endTime: previewTime.add(task.duration),
+                  );
+                }
+              }
+
+              positionedCards.add(
+                Positioned(
+                  top: cardTop,
+                  left: left,
+                  width: cardWidth,
+                  height: _calculateHeight(task.duration),
+                  child: GestureDetector(
+                    onLongPressStart: (_) => _onDragStart(
+                      task,
+                      _calculateTop(task.startTime, task.duration),
+                    ),
+                    onLongPressMoveUpdate: (details) => _onDragUpdate(details.localOffsetFromOrigin.dy - _dragOffsetY),
+                    onLongPressEnd: (_) => _onDragEnd(),
+                    onLongPressCancel: _onDragCancel,
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: isDragging ? 0 : 200),
+                      transform: isDragging
+                          ? (Matrix4.identity()..scale(1.03))
+                          : Matrix4.identity(),
+                      transformAlignment: Alignment.center,
+                      decoration: isDragging
+                          ? BoxDecoration(
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            )
+                          : null,
+                      child: TaskCard(
+                        task: displayTask,
+                        reminderState: reminderState,
+                        reminderTime: reminderTime,
+                        onTap: isDragging ? null : () => _openTaskDetail(context, task),
+                        onComplete: isDragging ? null : () => _toggleComplete(ref, task),
+                        onDelete: isDragging ? null : () => _deleteTask(ref, task),
+                        onReminderAcknowledged: reminderState == ReminderState.triggered
+                            ? () => _acknowledgeReminder(task.id)
+                            : null,
+                        onReminderRescheduled: reminderState == ReminderState.acknowledged
+                            ? () => _rescheduleReminder(task)
+                            : null,
+                        use24HourFormat: use24Hour,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+          } else {
+            // Multiple tasks too narrow - render MergedTaskCard (Confluent Merge)
+            final earliestStart = group
+                .map((t) => t.startTime)
+                .reduce((a, b) => a.isBefore(b) ? a : b);
+            final latestEnd = group
+                .map((t) => t.endTime)
+                .reduce((a, b) => a.isAfter(b) ? a : b);
+            final mergedDuration = latestEnd.difference(earliestStart);
+
+            final cardTop = _calculateTop(earliestStart, mergedDuration);
+            final cardHeight = _calculateHeight(mergedDuration);
+
+            // Build reminder states and times maps
+            final reminderStates = <String, ReminderState>{};
+            final reminderTimes = <String, DateTime>{};
+            for (final task in group) {
+              final state = _getReminderState(task);
+              if (state != null) {
+                reminderStates[task.id] = state;
+              }
+              final effectiveMinutes = _getEffectiveReminderMinutes(task);
+              if (effectiveMinutes != null) {
+                reminderTimes[task.id] = task.startTime.subtract(
+                  Duration(minutes: effectiveMinutes),
                 );
               }
             }
@@ -899,50 +990,15 @@ class _TaskCardsLayerMultiDayState
             positionedCards.add(
               Positioned(
                 top: cardTop,
-                left: left,
-                width: columnWidth - 4,
-                height: _calculateHeight(task.duration),
-                child: GestureDetector(
-                  onLongPressStart: (_) => _onDragStart(
-                    task,
-                    _calculateTop(task.startTime, task.duration),
-                  ),
-                  onLongPressMoveUpdate: (details) => _onDragUpdate(details.localOffsetFromOrigin.dy - _dragOffsetY),
-                  onLongPressEnd: (_) => _onDragEnd(),
-                  onLongPressCancel: _onDragCancel,
-                  child: AnimatedContainer(
-                    duration: Duration(milliseconds: isDragging ? 0 : 200),
-                    transform: isDragging
-                        ? (Matrix4.identity()..scale(1.03))
-                        : Matrix4.identity(),
-                    transformAlignment: Alignment.center,
-                    decoration: isDragging
-                        ? BoxDecoration(
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          )
-                        : null,
-                    child: TaskCard(
-                      task: displayTask,
-                      reminderState: reminderState,
-                      reminderTime: reminderTime,
-                      onTap: isDragging ? null : () => _openTaskDetail(context, task),
-                      onComplete: isDragging ? null : () => _toggleComplete(ref, task),
-                      onDelete: isDragging ? null : () => _deleteTask(ref, task),
-                      onReminderAcknowledged: reminderState == ReminderState.triggered
-                          ? () => _acknowledgeReminder(task.id)
-                          : null,
-                      onReminderRescheduled: reminderState == ReminderState.acknowledged
-                          ? () => _rescheduleReminder(task)
-                          : null,
-                      use24HourFormat: use24Hour,
-                    ),
-                  ),
+                left: 0,
+                width: availableWidth - 4,
+                height: cardHeight,
+                child: MergedTaskCard(
+                  tasks: group,
+                  use24HourFormat: use24Hour,
+                  reminderStates: reminderStates,
+                  reminderTimes: reminderTimes,
+                  onTap: () => _showConfluenceModal(context, group, use24Hour),
                 ),
               ),
             );
@@ -979,6 +1035,53 @@ class _TaskCardsLayerMultiDayState
         _adjustedReminderMinutes.remove(task.id);
       }
     });
+  }
+
+  void _showConfluenceModal(
+    BuildContext context,
+    List<Task> tasks,
+    bool use24Hour,
+  ) {
+    // Build reminder states and times for the modal
+    final reminderStates = <String, ReminderState>{};
+    final reminderTimes = <String, DateTime>{};
+    for (final task in tasks) {
+      final state = _getReminderState(task);
+      if (state != null) {
+        reminderStates[task.id] = state;
+      }
+      final effectiveMinutes = _getEffectiveReminderMinutes(task);
+      if (effectiveMinutes != null) {
+        reminderTimes[task.id] = task.startTime.subtract(
+          Duration(minutes: effectiveMinutes),
+        );
+      }
+    }
+
+    showConfluenceModal(
+      context: context,
+      tasks: tasks,
+      use24HourFormat: use24Hour,
+      reminderStates: reminderStates,
+      reminderTimes: reminderTimes,
+      onTaskTap: (task) {
+        Navigator.of(context).pop();
+        _openTaskDetail(context, task);
+      },
+      onTaskComplete: (task) {
+        _toggleComplete(ref, task);
+      },
+      onTaskDelete: (task) {
+        _deleteTask(ref, task);
+        Navigator.of(context).pop();
+      },
+      onReminderAcknowledged: (task) {
+        _acknowledgeReminder(task.id);
+      },
+      onReminderRescheduled: (task) {
+        _rescheduleReminder(task);
+      },
+    );
   }
 
   ReminderState? _getReminderState(Task task) {

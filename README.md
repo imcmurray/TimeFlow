@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/images/timeflow-logo.png" alt="TimeFlow Logo" width="128" height="128">
+</p>
+
 # TimeFlow
 
 > Experience time as a gentle flowing river, not a pressure cooker

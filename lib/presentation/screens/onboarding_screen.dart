@@ -6,8 +6,8 @@ import 'package:timeflow/presentation/screens/timeline_screen.dart';
 
 /// Onboarding screen shown on first app launch.
 ///
-/// Introduces users to TimeFlow's core concepts through a 4-slide walkthrough:
-/// Welcome, NOW Line, Tasks, and Get Started.
+/// Introduces users to TimeFlow's core concepts through a 5-slide walkthrough:
+/// Welcome, NOW Line, Tasks, Confluent Merge, and Get Started.
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -18,7 +18,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  static const int _totalPages = 4;
+  static const int _totalPages = 5;
 
   @override
   void dispose() {
@@ -61,6 +61,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   _WelcomeSlide(isDark: isDark),
                   _NowLineSlide(isDark: isDark),
                   _TasksSlide(isDark: isDark),
+                  _ConfluentMergeSlide(isDark: isDark),
                   _GetStartedSlide(isDark: isDark),
                 ],
               ),
@@ -227,10 +228,13 @@ class _WelcomeSlide extends StatelessWidget {
   Widget build(BuildContext context) {
     return _OnboardingSlide(
       isDark: isDark,
-      icon: Icon(
-        Icons.schedule,
-        size: 80,
-        color: AppColors.primaryBlue,
+      icon: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Image.asset(
+          'assets/images/timeflow-logo.png',
+          width: 120,
+          height: 120,
+        ),
       ),
       title: 'Welcome to TimeFlow',
       tagline: 'Experience time as a gentle flowing river, not a pressure cooker.',
@@ -334,6 +338,27 @@ class _TasksSlide extends StatelessWidget {
       tagline: 'Add tasks with a simple tap.',
       description:
           'Use the + button to add tasks. Set times, add reminders, mark important items, and even attach photos. Swipe right on any task to complete it.',
+    );
+  }
+}
+
+class _ConfluentMergeSlide extends StatelessWidget {
+  const _ConfluentMergeSlide({required this.isDark});
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return _OnboardingSlide(
+      isDark: isDark,
+      icon: Icon(
+        Icons.merge_type,
+        size: 80,
+        color: AppColors.primaryBlue,
+      ),
+      title: 'Confluent Merge',
+      tagline: 'Rivers converging into one.',
+      description:
+          'When multiple tasks overlap, they merge into a single unified card—like rivers converging into a stronger stream. Tap the merged card to see individual tasks.',
     );
   }
 }

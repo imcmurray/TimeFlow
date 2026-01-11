@@ -51,6 +51,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ref.read(settingsProvider.notifier).setUpcomingTasksAboveNow(value);
             },
           ),
+          SwitchListTile(
+            secondary: const Icon(Icons.access_time),
+            title: const Text('24-Hour Time'),
+            subtitle: const Text('Display time as 14:30 instead of 2:30 PM'),
+            value: ref.watch(settingsProvider).use24HourFormat,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setUse24HourFormat(value);
+            },
+          ),
 
           const Divider(),
 

@@ -31,6 +31,9 @@ class Settings {
   /// Options: 'chime', 'bell', 'alert', 'soft'
   final String reminderSound;
 
+  /// Whether to display time in 24-hour format (14:30) vs 12-hour (2:30 PM).
+  final bool use24HourFormat;
+
   const Settings({
     this.theme = 'auto',
     this.defaultReminderMinutes = 10,
@@ -41,6 +44,7 @@ class Settings {
     this.bringWindowToFrontOnReminder = true,
     this.reminderSoundEnabled = true,
     this.reminderSound = 'chime',
+    this.use24HourFormat = false,
   });
 
   /// Default settings for first-time users.
@@ -57,6 +61,7 @@ class Settings {
     bool? bringWindowToFrontOnReminder,
     bool? reminderSoundEnabled,
     String? reminderSound,
+    bool? use24HourFormat,
   }) {
     return Settings(
       theme: theme ?? this.theme,
@@ -68,6 +73,7 @@ class Settings {
       bringWindowToFrontOnReminder: bringWindowToFrontOnReminder ?? this.bringWindowToFrontOnReminder,
       reminderSoundEnabled: reminderSoundEnabled ?? this.reminderSoundEnabled,
       reminderSound: reminderSound ?? this.reminderSound,
+      use24HourFormat: use24HourFormat ?? this.use24HourFormat,
     );
   }
 
@@ -83,7 +89,8 @@ class Settings {
         other.upcomingTasksAboveNow == upcomingTasksAboveNow &&
         other.bringWindowToFrontOnReminder == bringWindowToFrontOnReminder &&
         other.reminderSoundEnabled == reminderSoundEnabled &&
-        other.reminderSound == reminderSound;
+        other.reminderSound == reminderSound &&
+        other.use24HourFormat == use24HourFormat;
   }
 
   @override
@@ -98,6 +105,7 @@ class Settings {
       bringWindowToFrontOnReminder,
       reminderSoundEnabled,
       reminderSound,
+      use24HourFormat,
     );
   }
 
@@ -107,6 +115,7 @@ class Settings {
         'timelineDensity: $timelineDensity, notificationsEnabled: $notificationsEnabled, '
         'firstLaunch: $firstLaunch, upcomingTasksAboveNow: $upcomingTasksAboveNow, '
         'bringWindowToFrontOnReminder: $bringWindowToFrontOnReminder, '
-        'reminderSoundEnabled: $reminderSoundEnabled, reminderSound: $reminderSound)';
+        'reminderSoundEnabled: $reminderSoundEnabled, reminderSound: $reminderSound, '
+        'use24HourFormat: $use24HourFormat)';
   }
 }

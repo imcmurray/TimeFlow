@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:timeflow/core/theme/app_colors.dart';
@@ -347,6 +348,7 @@ class TimelineViewState extends ConsumerState<TimelineView> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final use24Hour = ref.watch(settingsProvider).use24HourFormat;
 
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
@@ -378,6 +380,7 @@ class TimelineViewState extends ConsumerState<TimelineView> {
                   referenceDate: _referenceDate,
                   daysLoadedBefore: _daysLoadedBefore,
                   daysLoadedAfter: _daysLoadedAfter,
+                  use24HourFormat: use24Hour,
                 ),
               ),
 
@@ -421,6 +424,7 @@ class TimelineViewState extends ConsumerState<TimelineView> {
               _NowLineScrollable(
                 currentTime: _currentTime,
                 nowOffset: _getOffsetForDateTime(_currentTime),
+                use24HourFormat: use24Hour,
               ),
             ],
           ),
@@ -437,6 +441,7 @@ class _HourMarkersMultiDay extends StatelessWidget {
   final DateTime referenceDate;
   final int daysLoadedBefore;
   final int daysLoadedAfter;
+  final bool use24HourFormat;
 
   const _HourMarkersMultiDay({
     required this.hourHeight,
@@ -444,6 +449,7 @@ class _HourMarkersMultiDay extends StatelessWidget {
     required this.referenceDate,
     required this.daysLoadedBefore,
     required this.daysLoadedAfter,
+    this.use24HourFormat = false,
   });
 
   int get _totalDays => daysLoadedBefore + daysLoadedAfter + 1;
@@ -495,6 +501,9 @@ class _HourMarkersMultiDay extends StatelessWidget {
   }
 
   String _formatHour(int hour) {
+    if (use24HourFormat) {
+      return '${hour.toString().padLeft(2, '0')}:00';
+    }
     if (hour == 0) return '12 AM';
     if (hour == 12) return '12 PM';
     if (hour < 12) return '$hour AM';
@@ -642,6 +651,11 @@ class _TaskCardsLayerMultiDayState
 
   static const _reminderOptions = [60, 30, 15, 10, 5, 0];
 
+  // Drag state for long-press task repositioning
+  Task? _draggingTask;
+  double _dragOffsetY = 0.0;
+  double _dragStartTop = 0.0;
+
   @override
   void initState() {
     super.initState();
@@ -689,6 +703,154 @@ class _TaskCardsLayerMultiDayState
     }
   }
 
+  DateTime _getDateTimeAtOffset(double offset) {
+    final referenceOffset = widget.upcomingTasksAboveNow
+        ? widget.daysLoadedAfter * 24 * widget.hourHeight
+        : widget.daysLoadedBefore * 24 * widget.hourHeight;
+
+    double hoursFromReference;
+    if (widget.upcomingTasksAboveNow) {
+      hoursFromReference = (referenceOffset - offset) / widget.hourHeight;
+    } else {
+      hoursFromReference = (offset - referenceOffset) / widget.hourHeight;
+    }
+
+    return widget.referenceDate.add(Duration(minutes: (hoursFromReference * 60).round()));
+  }
+
+  void _onDragStart(Task task, double currentTop) {
+    setState(() {
+      _draggingTask = task;
+      _dragStartTop = currentTop;
+      _dragOffsetY = 0.0;
+    });
+    HapticFeedback.mediumImpact();
+  }
+
+  void _onDragUpdate(double deltaY) {
+    if (_draggingTask == null) return;
+    setState(() {
+      _dragOffsetY += deltaY;
+    });
+  }
+
+  Future<bool?> _showMoveRecurringDialog(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Move Recurring Task'),
+        content: const Text(
+          'Do you want to move only this instance or all future instances?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('This instance'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('All future'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _onDragEnd() async {
+    if (_draggingTask == null) return;
+
+    final task = _draggingTask!;
+    final newTop = _dragStartTop + _dragOffsetY;
+
+    // Account for timeline direction when getting time from offset
+    final rawDateTime = widget.upcomingTasksAboveNow
+        ? _getDateTimeAtOffset(newTop + _calculateHeight(task.duration))
+        : _getDateTimeAtOffset(newTop);
+
+    // Snap to 5-minute intervals
+    final snappedMinutes = (rawDateTime.minute / 5).round() * 5;
+    final snappedStart = DateTime(
+      rawDateTime.year,
+      rawDateTime.month,
+      rawDateTime.day,
+      rawDateTime.hour + (snappedMinutes >= 60 ? 1 : 0),
+      snappedMinutes % 60,
+    );
+    final newEndTime = snappedStart.add(task.duration);
+
+    // Clear drag state first so UI updates
+    setState(() {
+      _draggingTask = null;
+      _dragOffsetY = 0.0;
+      _dragStartTop = 0.0;
+    });
+
+    // Check if this is a recurring task
+    if (task.recurringTemplateId != null) {
+      final editAll = await _showMoveRecurringDialog(context);
+      if (editAll == null) return; // Cancelled
+
+      if (editAll) {
+        // Calculate time delta and apply to all future instances
+        final timeDelta = snappedStart.difference(task.startTime);
+
+        ref.read(taskRepositoryProvider).updateFutureByTemplateId(
+          task.recurringTemplateId!,
+          task.startTime,
+          (existingTask) => existingTask.copyWith(
+            startTime: existingTask.startTime.add(timeDelta),
+            endTime: existingTask.endTime.add(timeDelta),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
+        HapticFeedback.lightImpact();
+        return;
+      }
+    }
+
+    // Update single instance
+    final updated = task.copyWith(
+      startTime: snappedStart,
+      endTime: newEndTime,
+      updatedAt: DateTime.now(),
+    );
+    ref.read(taskRepositoryProvider).save(updated);
+    ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
+    HapticFeedback.lightImpact();
+  }
+
+  void _onDragCancel() {
+    setState(() {
+      _draggingTask = null;
+      _dragOffsetY = 0.0;
+      _dragStartTop = 0.0;
+    });
+  }
+
+  DateTime? _getDragPreviewTime() {
+    if (_draggingTask == null) return null;
+
+    final newTop = _dragStartTop + _dragOffsetY;
+    final rawDateTime = widget.upcomingTasksAboveNow
+        ? _getDateTimeAtOffset(newTop + _calculateHeight(_draggingTask!.duration))
+        : _getDateTimeAtOffset(newTop);
+
+    // Snap to 5-minute intervals
+    final snappedMinutes = (rawDateTime.minute / 5).round() * 5;
+    return DateTime(
+      rawDateTime.year,
+      rawDateTime.month,
+      rawDateTime.day,
+      rawDateTime.hour + (snappedMinutes >= 60 ? 1 : 0),
+      snappedMinutes % 60,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tasks = ref.watch(tasksForRangeProvider(widget.loadedRange));
@@ -716,25 +878,71 @@ class _TaskCardsLayerMultiDayState
                 ? task.startTime.subtract(Duration(minutes: effectiveMinutes))
                 : null;
 
+            final use24Hour = ref.watch(settingsProvider).use24HourFormat;
+            final isDragging = _draggingTask?.id == task.id;
+            final cardTop = isDragging
+                ? _dragStartTop + _dragOffsetY
+                : _calculateTop(task.startTime, task.duration);
+
+            // Show preview time while dragging
+            Task displayTask = task;
+            if (isDragging) {
+              final previewTime = _getDragPreviewTime();
+              if (previewTime != null) {
+                displayTask = task.copyWith(
+                  startTime: previewTime,
+                  endTime: previewTime.add(task.duration),
+                );
+              }
+            }
+
             positionedCards.add(
               Positioned(
-                top: _calculateTop(task.startTime, task.duration),
+                top: cardTop,
                 left: left,
                 width: columnWidth - 4,
                 height: _calculateHeight(task.duration),
-                child: TaskCard(
-                  task: task,
-                  reminderState: reminderState,
-                  reminderTime: reminderTime,
-                  onTap: () => _openTaskDetail(context, task),
-                  onComplete: () => _toggleComplete(ref, task),
-                  onDelete: () => _deleteTask(ref, task),
-                  onReminderAcknowledged: reminderState == ReminderState.triggered
-                      ? () => _acknowledgeReminder(task.id)
-                      : null,
-                  onReminderRescheduled: reminderState == ReminderState.acknowledged
-                      ? () => _rescheduleReminder(task)
-                      : null,
+                child: GestureDetector(
+                  onLongPressStart: (_) => _onDragStart(
+                    task,
+                    _calculateTop(task.startTime, task.duration),
+                  ),
+                  onLongPressMoveUpdate: (details) => _onDragUpdate(details.localOffsetFromOrigin.dy - _dragOffsetY),
+                  onLongPressEnd: (_) => _onDragEnd(),
+                  onLongPressCancel: _onDragCancel,
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: isDragging ? 0 : 200),
+                    transform: isDragging
+                        ? (Matrix4.identity()..scale(1.03))
+                        : Matrix4.identity(),
+                    transformAlignment: Alignment.center,
+                    decoration: isDragging
+                        ? BoxDecoration(
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          )
+                        : null,
+                    child: TaskCard(
+                      task: displayTask,
+                      reminderState: reminderState,
+                      reminderTime: reminderTime,
+                      onTap: isDragging ? null : () => _openTaskDetail(context, task),
+                      onComplete: isDragging ? null : () => _toggleComplete(ref, task),
+                      onDelete: isDragging ? null : () => _deleteTask(ref, task),
+                      onReminderAcknowledged: reminderState == ReminderState.triggered
+                          ? () => _acknowledgeReminder(task.id)
+                          : null,
+                      onReminderRescheduled: reminderState == ReminderState.acknowledged
+                          ? () => _rescheduleReminder(task)
+                          : null,
+                      use24HourFormat: use24Hour,
+                    ),
+                  ),
                 ),
               ),
             );
@@ -910,13 +1118,20 @@ class _TaskCardsLayerMultiDayState
 class _NowLineScrollable extends StatelessWidget {
   final DateTime currentTime;
   final double nowOffset;
+  final bool use24HourFormat;
 
   const _NowLineScrollable({
     required this.currentTime,
     required this.nowOffset,
+    this.use24HourFormat = false,
   });
 
   String _formatTime(DateTime time) {
+    if (use24HourFormat) {
+      final hour = time.hour.toString().padLeft(2, '0');
+      final minute = time.minute.toString().padLeft(2, '0');
+      return '$hour:$minute';
+    }
     final hour = time.hour == 0
         ? 12
         : time.hour > 12

@@ -31,6 +31,11 @@ class Task {
   /// Recurrence rule string (e.g., 'daily', 'weekly', null for one-time).
   final String? recurringPattern;
 
+  /// Template ID linking recurring task instances together.
+  /// Null for non-recurring tasks. For recurring tasks, all instances
+  /// share the same templateId to enable "edit all" functionality.
+  final String? recurringTemplateId;
+
   /// Additional notes for the task.
   final String? notes;
 
@@ -56,6 +61,7 @@ class Task {
     this.isCompleted = false,
     this.reminderMinutes,
     this.recurringPattern,
+    this.recurringTemplateId,
     this.notes,
     this.attachmentPath,
     this.color,
@@ -89,6 +95,7 @@ class Task {
     bool? isCompleted,
     int? reminderMinutes,
     String? recurringPattern,
+    String? recurringTemplateId,
     String? notes,
     String? attachmentPath,
     String? color,
@@ -105,6 +112,7 @@ class Task {
       isCompleted: isCompleted ?? this.isCompleted,
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
       recurringPattern: recurringPattern ?? this.recurringPattern,
+      recurringTemplateId: recurringTemplateId ?? this.recurringTemplateId,
       notes: notes ?? this.notes,
       attachmentPath: attachmentPath ?? this.attachmentPath,
       color: color ?? this.color,

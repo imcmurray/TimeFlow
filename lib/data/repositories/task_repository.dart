@@ -41,9 +41,54 @@ class TaskRepository {
     _tasks[task.id] = task;
   }
 
+  /// Saves multiple tasks at once.
+  void saveAll(List<Task> tasks) {
+    for (final task in tasks) {
+      _tasks[task.id] = task;
+    }
+  }
+
+  /// Returns all tasks with the given recurring template ID.
+  List<Task> getByTemplateId(String templateId) {
+    return _tasks.values
+        .where((task) => task.recurringTemplateId == templateId)
+        .toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+  }
+
+  /// Updates all tasks with the given template ID that are on or after the given date.
+  /// Applies the update function to each matching task.
+  void updateFutureByTemplateId(
+    String templateId,
+    DateTime fromDate,
+    Task Function(Task) update,
+  ) {
+    final tasksToUpdate = _tasks.values
+        .where((task) =>
+            task.recurringTemplateId == templateId &&
+            !task.startTime.isBefore(fromDate))
+        .toList();
+
+    for (final task in tasksToUpdate) {
+      _tasks[task.id] = update(task);
+    }
+  }
+
   /// Deletes a task by its ID.
   void delete(String id) {
     _tasks.remove(id);
+  }
+
+  /// Deletes all tasks with the given recurring template ID.
+  void deleteByTemplateId(String templateId) {
+    _tasks.removeWhere((_, task) => task.recurringTemplateId == templateId);
+  }
+
+  /// Deletes all future tasks with the given template ID (from the given date onwards).
+  void deleteFutureByTemplateId(String templateId, DateTime fromDate) {
+    _tasks.removeWhere((_, task) =>
+        task.recurringTemplateId == templateId &&
+        !task.startTime.isBefore(fromDate));
   }
 
   /// Returns all tasks.

@@ -13,6 +13,7 @@ class SettingsNotifier extends Notifier<Settings> {
   static const _keyBringWindowToFront = 'timeflow_bring_window_to_front';
   static const _keyReminderSoundEnabled = 'timeflow_reminder_sound_enabled';
   static const _keyReminderSound = 'timeflow_reminder_sound';
+  static const _keyUse24HourFormat = 'timeflow_use_24_hour_format';
 
   SharedPreferences? _prefs;
 
@@ -34,6 +35,7 @@ class SettingsNotifier extends Notifier<Settings> {
       bringWindowToFrontOnReminder: _prefs!.getBool(_keyBringWindowToFront) ?? true,
       reminderSoundEnabled: _prefs!.getBool(_keyReminderSoundEnabled) ?? true,
       reminderSound: _prefs!.getString(_keyReminderSound) ?? 'chime',
+      use24HourFormat: _prefs!.getBool(_keyUse24HourFormat) ?? false,
     );
   }
 
@@ -93,6 +95,12 @@ class SettingsNotifier extends Notifier<Settings> {
     state = state.copyWith(reminderSound: sound);
     await _ensurePrefs();
     await _prefs!.setString(_keyReminderSound, sound);
+  }
+
+  Future<void> setUse24HourFormat(bool value) async {
+    state = state.copyWith(use24HourFormat: value);
+    await _ensurePrefs();
+    await _prefs!.setBool(_keyUse24HourFormat, value);
   }
 }
 

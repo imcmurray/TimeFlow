@@ -35,6 +35,9 @@ class TaskCard extends StatefulWidget {
   /// Callback when acknowledged reminder is tapped to reschedule.
   final VoidCallback? onReminderRescheduled;
 
+  /// Whether to use 24-hour time format.
+  final bool use24HourFormat;
+
   const TaskCard({
     super.key,
     required this.task,
@@ -45,6 +48,7 @@ class TaskCard extends StatefulWidget {
     this.onDelete,
     this.onReminderAcknowledged,
     this.onReminderRescheduled,
+    this.use24HourFormat = false,
   });
 
   @override
@@ -248,11 +252,12 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
   Widget _buildContent(BuildContext context, BoxConstraints constraints, Color cardColor) {
     final availableHeight = constraints.maxHeight;
     final padding = availableHeight < 40 ? 4.0 : 8.0;
-    final showTime = availableHeight >= 50;
-    final showDescription = availableHeight >= 80 &&
+    final contentHeight = availableHeight - (padding * 2);
+    final showTime = contentHeight >= 45;
+    final showDescription = contentHeight >= 85 &&
         widget.task.description != null &&
         widget.task.description!.isNotEmpty;
-    final showIndicators = availableHeight >= 60;
+    final showIndicators = contentHeight >= 55;
 
     return ClipRect(
       child: Padding(
@@ -446,6 +451,11 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
   }
 
   String _formatTime(DateTime time) {
+    if (widget.use24HourFormat) {
+      final hour = time.hour.toString().padLeft(2, '0');
+      final minute = time.minute.toString().padLeft(2, '0');
+      return '$hour:$minute';
+    }
     final hour = time.hour == 0
         ? 12
         : time.hour > 12

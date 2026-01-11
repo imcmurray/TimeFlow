@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeflow/core/theme/app_theme.dart';
+import 'package:timeflow/data/datasources/database.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/providers/task_provider.dart';
 import 'package:timeflow/presentation/screens/onboarding_screen.dart';
 import 'package:timeflow/presentation/screens/timeline_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final database = AppDatabase();
+
   runApp(
-    const ProviderScope(
-      child: TimeFlowApp(),
+    ProviderScope(
+      overrides: [
+        databaseProvider.overrideWithValue(database),
+      ],
+      child: const TimeFlowApp(),
     ),
   );
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timeflow/data/datasources/database.dart' show AppDatabase;
 import 'package:timeflow/data/repositories/task_repository.dart';
 import 'package:timeflow/domain/entities/task.dart';
 
@@ -32,9 +33,14 @@ class DateRange {
       );
 }
 
+/// Database provider - must be overridden in main.dart ProviderScope.
+final databaseProvider = Provider<AppDatabase>((ref) {
+  throw UnimplementedError('Database must be overridden in ProviderScope');
+});
+
 /// Global task repository instance.
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
-  return TaskRepository();
+  return TaskRepository(ref.read(databaseProvider));
 });
 
 /// Notifier that triggers rebuilds when tasks change.
@@ -55,13 +61,14 @@ final taskNotifierProvider = NotifierProvider<TaskNotifier, int>(
 /// Returns all tasks for a specific date.
 ///
 /// Watches the taskNotifier to rebuild when tasks change.
-final tasksForDateProvider = Provider.family<List<Task>, DateTime>((ref, date) {
+final tasksForDateProvider =
+    FutureProvider.family<List<Task>, DateTime>((ref, date) async {
   ref.watch(taskNotifierProvider);
   return ref.read(taskRepositoryProvider).getTasksForDate(date);
 });
 
 /// Returns all tasks.
-final allTasksProvider = Provider<List<Task>>((ref) {
+final allTasksProvider = FutureProvider<List<Task>>((ref) async {
   ref.watch(taskNotifierProvider);
   return ref.read(taskRepositoryProvider).getAll();
 });
@@ -70,7 +77,7 @@ final allTasksProvider = Provider<List<Task>>((ref) {
 ///
 /// Watches the taskNotifier to rebuild when tasks change.
 final tasksForRangeProvider =
-    Provider.family<List<Task>, DateRange>((ref, range) {
+    FutureProvider.family<List<Task>, DateRange>((ref, range) async {
   ref.watch(taskNotifierProvider);
   return ref.read(taskRepositoryProvider).getTasksForRange(range.start, range.end);
 });
@@ -78,9 +85,9 @@ final tasksForRangeProvider =
 /// Returns a set of dates that have tasks scheduled.
 ///
 /// Used by the calendar overview to show task indicators.
-final datesWithTasksProvider = Provider<Set<DateTime>>((ref) {
+final datesWithTasksProvider = FutureProvider<Set<DateTime>>((ref) async {
   ref.watch(taskNotifierProvider);
-  final tasks = ref.read(taskRepositoryProvider).getAll();
+  final tasks = await ref.read(taskRepositoryProvider).getAll();
   return tasks
       .map((t) => DateTime(t.startTime.year, t.startTime.month, t.startTime.day))
       .toSet();

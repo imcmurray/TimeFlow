@@ -57,10 +57,13 @@ class _CalendarOverviewState extends ConsumerState<CalendarOverview> {
 
   @override
   Widget build(BuildContext context) {
-    final datesWithTasks = ref.watch(datesWithTasksProvider);
+    final datesWithTasksAsync = ref.watch(datesWithTasksProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Column(
+    return datesWithTasksAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('Error: $error')),
+      data: (datesWithTasks) => Column(
       children: [
         // Month navigation with arrow buttons
         Padding(
@@ -114,6 +117,7 @@ class _CalendarOverviewState extends ConsumerState<CalendarOverview> {
           ),
         ),
       ],
+    ),
     );
   }
 }

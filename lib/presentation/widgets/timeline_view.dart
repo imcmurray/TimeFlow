@@ -800,7 +800,7 @@ class _TaskCardsLayerMultiDayState
         // Calculate time delta and apply to all future instances
         final timeDelta = snappedStart.difference(task.startTime);
 
-        ref.read(taskRepositoryProvider).updateFutureByTemplateId(
+        await ref.read(taskRepositoryProvider).updateFutureByTemplateId(
           task.recurringTemplateId!,
           task.startTime,
           (existingTask) => existingTask.copyWith(
@@ -821,7 +821,7 @@ class _TaskCardsLayerMultiDayState
       endTime: newEndTime,
       updatedAt: DateTime.now(),
     );
-    ref.read(taskRepositoryProvider).save(updated);
+    await ref.read(taskRepositoryProvider).save(updated);
     ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
     HapticFeedback.lightImpact();
   }
@@ -855,12 +855,22 @@ class _TaskCardsLayerMultiDayState
 
   @override
   Widget build(BuildContext context) {
-    final tasks = ref.watch(tasksForRangeProvider(widget.loadedRange));
+    final tasksAsync = ref.watch(tasksForRangeProvider(widget.loadedRange));
 
-    if (tasks.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    return tasksAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('Error loading tasks: $error')),
+      data: (tasks) {
+        if (tasks.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
+        return _buildTasksLayout(context, tasks);
+      },
+    );
+  }
+
+  Widget _buildTasksLayout(BuildContext context, List<Task> tasks) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableWidth = constraints.maxWidth;
@@ -1203,17 +1213,17 @@ class _TaskCardsLayerMultiDayState
     );
   }
 
-  void _toggleComplete(WidgetRef ref, Task task) {
+  Future<void> _toggleComplete(WidgetRef ref, Task task) async {
     final updated = task.copyWith(
       isCompleted: !task.isCompleted,
       updatedAt: DateTime.now(),
     );
-    ref.read(taskRepositoryProvider).save(updated);
+    await ref.read(taskRepositoryProvider).save(updated);
     ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
   }
 
-  void _deleteTask(WidgetRef ref, Task task) {
-    ref.read(taskRepositoryProvider).delete(task.id);
+  Future<void> _deleteTask(WidgetRef ref, Task task) async {
+    await ref.read(taskRepositoryProvider).delete(task.id);
     ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
   }
 }

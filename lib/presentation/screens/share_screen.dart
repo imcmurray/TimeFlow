@@ -27,7 +27,8 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
   final GlobalKey _previewKey = GlobalKey();
 
   List<Task> _getFilteredTasks() {
-    final tasks = ref.read(tasksForDateProvider(widget.date));
+    final tasksAsync = ref.read(tasksForDateProvider(widget.date));
+    final tasks = tasksAsync.value ?? [];
     return tasks.where((task) {
       final taskStartHour = task.startTime.hour;
       final taskEndHour = task.endTime.hour + (task.endTime.minute > 0 ? 1 : 0);

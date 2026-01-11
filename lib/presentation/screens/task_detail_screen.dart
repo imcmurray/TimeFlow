@@ -212,7 +212,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       if (editAll) {
         final templateId = widget.task!.recurringTemplateId!;
         final originalStartTime = widget.task!.startTime;
-        repository.updateFutureByTemplateId(
+        await repository.updateFutureByTemplateId(
           templateId,
           originalStartTime,
           (existingTask) {
@@ -278,7 +278,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
     if (!_isEditing && _recurringPattern != null) {
       final instances = RecurringTaskService.generateInstances(task);
-      repository.saveAll(instances);
+      await repository.saveAll(instances);
       ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
 
       if (mounted) {
@@ -293,7 +293,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       return;
     }
 
-    repository.save(task);
+    await repository.save(task);
     ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
 
     if (mounted) {
@@ -319,18 +319,20 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              ref.read(taskRepositoryProvider).delete(widget.task!.id);
+            onPressed: () async {
+              await ref.read(taskRepositoryProvider).delete(widget.task!.id);
               ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
 
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(context).pop(); // Close detail screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Task deleted'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+              if (context.mounted) {
+                Navigator.of(context).pop(); // Close dialog
+                Navigator.of(context).pop(); // Close detail screen
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Task deleted'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),

@@ -121,6 +121,44 @@ class Task {
     );
   }
 
+  /// Converts this task to a JSON map for export.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'description': description,
+        'startTime': startTime.toIso8601String(),
+        'endTime': endTime.toIso8601String(),
+        'isImportant': isImportant,
+        'isCompleted': isCompleted,
+        'reminderMinutes': reminderMinutes,
+        'recurringPattern': recurringPattern,
+        'recurringTemplateId': recurringTemplateId,
+        'notes': notes,
+        'attachmentPath': attachmentPath,
+        'color': color,
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
+      };
+
+  /// Creates a Task from a JSON map.
+  factory Task.fromJson(Map<String, dynamic> json) => Task(
+        id: json['id'] as String,
+        title: json['title'] as String,
+        description: json['description'] as String?,
+        startTime: DateTime.parse(json['startTime'] as String),
+        endTime: DateTime.parse(json['endTime'] as String),
+        isImportant: json['isImportant'] as bool? ?? false,
+        isCompleted: json['isCompleted'] as bool? ?? false,
+        reminderMinutes: json['reminderMinutes'] as int?,
+        recurringPattern: json['recurringPattern'] as String?,
+        recurringTemplateId: json['recurringTemplateId'] as String?,
+        notes: json['notes'] as String?,
+        attachmentPath: json['attachmentPath'] as String?,
+        color: json['color'] as String?,
+        createdAt: DateTime.parse(json['createdAt'] as String),
+        updatedAt: DateTime.parse(json['updatedAt'] as String),
+      );
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;

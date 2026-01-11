@@ -1,9 +1,15 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:timeflow/build_info.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/providers/task_provider.dart';
 import 'package:timeflow/services/reminder_sound_service.dart';
 
 /// Settings screen for app preferences and customization.
@@ -116,6 +122,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const Divider(),
 
+          // Data Section
+          _SectionHeader(title: 'Data'),
+          ListTile(
+            leading: const Icon(Icons.upload_file),
+            title: const Text('Export Tasks'),
+            subtitle: const Text('Save tasks to a JSON file'),
+            onTap: () => _exportTasks(),
+          ),
+          ListTile(
+            leading: const Icon(Icons.download),
+            title: const Text('Import Tasks'),
+            subtitle: const Text('Load tasks from a JSON file'),
+            onTap: () => _importTasks(),
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete_forever, color: Colors.red),
+            title: const Text('Delete All Tasks'),
+            subtitle: const Text('Permanently remove all tasks'),
+            onTap: () => _showDeleteAllTasksDialog(),
+          ),
+
+          const Divider(),
+
           // About Section
           _SectionHeader(title: 'About'),
           ListTile(
@@ -161,6 +190,140 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (density < 0.8) return 'Compact';
     if (density > 1.2) return 'Spacious';
     return 'Normal';
+  }
+
+  Future<void> _showDeleteAllTasksDialog() async {
+    final taskCount = await ref.read(taskRepositoryProvider).count();
+    if (!mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete All Tasks?'),
+        content: Text(
+          'This will permanently delete all $taskCount task(s). '
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete All'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await ref.read(taskRepositoryProvider).clear();
+      ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('All tasks deleted'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _exportTasks() async {
+    final jsonString = await ref.read(taskRepositoryProvider).exportToJson();
+    final fileName =
+        'timeflow_backup_${DateTime.now().toIso8601String().split('T')[0]}.json';
+
+    if (Platform.isLinux) {
+      final homeDir = Platform.environment['HOME'] ?? '/tmp';
+      final documentsDir = Directory('$homeDir/Documents');
+      if (!await documentsDir.exists()) {
+        await documentsDir.create(recursive: true);
+      }
+      final file = File('${documentsDir.path}/$fileName');
+      await file.writeAsString(jsonString);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Exported to ${file.path}'),
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Open Folder',
+              onPressed: () => Process.run('xdg-open', [documentsDir.path]),
+            ),
+          ),
+        );
+      }
+    } else {
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/$fileName');
+      await file.writeAsString(jsonString);
+      await Share.shareXFiles([XFile(file.path)], subject: 'TimeFlow Backup');
+    }
+  }
+
+  Future<void> _importTasks() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+
+    if (result == null || result.files.isEmpty) return;
+
+    final file = File(result.files.single.path!);
+    final jsonString = await file.readAsString();
+
+    if (!mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Import Tasks?'),
+        content: const Text(
+          'This will add all tasks from the backup file. '
+          'Existing tasks with the same ID will be updated.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Import'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final count =
+          await ref.read(taskRepositoryProvider).importFromJson(jsonString);
+      ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Imported $count task(s)'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Import failed: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   void _showThemeDialog() {

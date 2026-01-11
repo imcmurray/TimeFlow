@@ -350,10 +350,13 @@ class _ConfluentMergeSlide extends StatelessWidget {
   Widget build(BuildContext context) {
     return _OnboardingSlide(
       isDark: isDark,
-      icon: Icon(
-        Icons.merge_type,
-        size: 80,
-        color: AppColors.primaryBlue,
+      icon: Transform.rotate(
+        angle: 3.14159265 / 2, // 90 degrees - pointing down
+        child: Icon(
+          Icons.merge_type,
+          size: 80,
+          color: AppColors.primaryBlue,
+        ),
       ),
       title: 'Confluent Merge',
       tagline: 'Rivers converging into one.',

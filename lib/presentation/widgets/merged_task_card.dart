@@ -228,6 +228,11 @@ class _MergedTaskCardState extends State<MergedTaskCard>
         final showTimeRange = contentHeight >= 60;
         final showColorDots = contentHeight >= 100;
 
+        // Calculate available height for titles (subtract space for other elements)
+        var titleHeight = contentHeight;
+        if (showTimeRange) titleHeight -= 24; // time range + spacing
+        if (showColorDots) titleHeight -= 20; // color dots + spacing
+
         return ClipRect(
           child: Padding(
             padding: EdgeInsets.all(padding),
@@ -240,7 +245,7 @@ class _MergedTaskCardState extends State<MergedTaskCard>
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(child: _buildTitleList(context, contentHeight)),
+                      Expanded(child: _buildTitleList(context, titleHeight)),
                       _buildReminderSummary(),
                     ],
                   ),
@@ -275,8 +280,8 @@ class _MergedTaskCardState extends State<MergedTaskCard>
       });
 
     // Limit number of titles based on available height
-    // Each title row is ~20px, reserve space for "+N more" if needed
-    final maxTitles = (availableHeight / 22).floor().clamp(1, sortedTasks.length);
+    // Each title row is ~16px (14px text + 2px padding)
+    final maxTitles = (availableHeight / 16).floor().clamp(1, sortedTasks.length);
     final displayTasks = sortedTasks.take(maxTitles).toList();
     final remainingCount = sortedTasks.length - maxTitles;
 

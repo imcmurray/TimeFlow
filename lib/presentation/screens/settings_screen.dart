@@ -309,17 +309,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       applicationName: 'TimeFlow',
       applicationVersion: '1.0.0',
-      applicationIcon: Container(
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Icon(
-          Icons.water_drop,
-          size: 32,
-          color: Theme.of(context).colorScheme.primary,
+      applicationIcon: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Image.asset(
+          'assets/images/timeflow-logo.png',
+          width: 64,
+          height: 64,
         ),
       ),
       children: [

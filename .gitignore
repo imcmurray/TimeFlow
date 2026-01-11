@@ -105,6 +105,8 @@ playwright/.cache/
 *.png
 !web/icons/*.png
 !web/favicon.png
+!assets/images/*.png
+!assets/branding/*.svg
 test-*.js
 regression-*.js
 debug-*.js

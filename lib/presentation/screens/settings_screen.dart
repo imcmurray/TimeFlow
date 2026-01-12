@@ -1,13 +1,9 @@
-import 'dart:io';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:timeflow/build_info.dart';
+import 'package:timeflow/presentation/helpers/file_export.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
 import 'package:timeflow/presentation/providers/task_provider.dart';
 import 'package:timeflow/services/reminder_sound_service.dart';
@@ -236,45 +232,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final fileName =
         'timeflow_backup_${DateTime.now().toIso8601String().split('T')[0]}.json';
 
-    if (Platform.isLinux) {
-      final homeDir = Platform.environment['HOME'] ?? '/tmp';
-      final documentsDir = Directory('$homeDir/Documents');
-      if (!await documentsDir.exists()) {
-        await documentsDir.create(recursive: true);
-      }
-      final file = File('${documentsDir.path}/$fileName');
-      await file.writeAsString(jsonString);
+    final result = await exportJsonFile(jsonString, fileName);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Exported to ${file.path}'),
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: 'Open Folder',
-              onPressed: () => Process.run('xdg-open', [documentsDir.path]),
-            ),
-          ),
-        );
-      }
+    if (!mounted) return;
+
+    if (result.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.filePath != null
+              ? 'Exported to ${result.filePath}'
+              : 'Export complete'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } else {
-      final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/$fileName');
-      await file.writeAsString(jsonString);
-      await Share.shareXFiles([XFile(file.path)], subject: 'TimeFlow Backup');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Export failed: ${result.error}'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
   Future<void> _importTasks() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['json'],
-    );
+    final fileResult = await pickAndReadJsonFile();
 
-    if (result == null || result.files.isEmpty) return;
-
-    final file = File(result.files.single.path!);
-    final jsonString = await file.readAsString();
+    if (!fileResult.success || fileResult.content == null) {
+      if (fileResult.error != 'No file selected' && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to read file: ${fileResult.error}'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
 
     if (!mounted) return;
 
@@ -302,8 +296,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (confirmed != true || !mounted) return;
 
     try {
-      final count =
-          await ref.read(taskRepositoryProvider).importFromJson(jsonString);
+      final count = await ref
+          .read(taskRepositoryProvider)
+          .importFromJson(fileResult.content!);
       ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
 
       if (mounted) {

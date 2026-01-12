@@ -15,6 +15,9 @@ build/
 **/android/gradlew.bat
 **/android/local.properties
 **/android/**/GeneratedPluginRegistrant.java
+**/android/key.properties
+*.jks
+*.keystore
 
 # iOS/XCode
 **/ios/**/*.mode1v3
@@ -106,6 +109,7 @@ playwright/.cache/
 !web/icons/*.png
 !web/favicon.png
 !assets/images/*.png
+!**/android/**/mipmap-*/ic_launcher.png
 !assets/branding/*.svg
 test-*.js
 regression-*.js

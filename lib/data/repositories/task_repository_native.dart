@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:timeflow/data/datasources/database.dart';
 import 'package:timeflow/data/repositories/task_repository.dart';
 import 'package:timeflow/domain/entities/task.dart' as domain;
+import 'package:timeflow/domain/entities/task_category.dart';
 
 /// Native implementation using Drift/SQLite.
 class TaskRepositoryImpl implements TaskRepository {
@@ -29,6 +30,7 @@ class TaskRepositoryImpl implements TaskRepository {
       notes: Value(task.notes),
       attachmentPath: Value(task.attachmentPath),
       color: Value(task.color),
+      category: Value(task.category.value),
       createdAt: Value(task.createdAt),
       updatedAt: Value(task.updatedAt),
     );
@@ -50,6 +52,7 @@ class TaskRepositoryImpl implements TaskRepository {
       notes: row.notes,
       attachmentPath: row.attachmentPath,
       color: row.color,
+      category: TaskCategoryExtension.fromString(row.category),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );

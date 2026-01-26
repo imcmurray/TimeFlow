@@ -1,0 +1,84 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate build info
+        run: |
+          chmod +x ./scripts/generate_build_info.sh
+          ./scripts/generate_build_info.sh
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate drift code
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+
+      - name: Build debug APK
+        run: flutter build apk --debug
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: timeflow-debug
+          path: build/app/outputs/flutter-apk/app-debug.apk
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: timeflow-release
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Get version info
+        id: version
+        run: |
+          echo "commit=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Create Release (on main branch push)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: android-${{ steps.version.outputs.date }}-${{ steps.version.outputs.commit }}
+          name: Android Build ${{ steps.version.outputs.date }}
+          body: |
+            Automated Android build from main branch.
+
+            **Commit:** ${{ github.sha }}
+            **Branch:** main
+
+            Download the APK and install on your Android device.
+          files: |
+            build/app/outputs/flutter-apk/app-debug.apk
+            build/app/outputs/flutter-apk/app-release.apk
+          prerelease: true

@@ -8,10 +8,14 @@ import 'package:timeflow/domain/entities/task.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
 import 'package:timeflow/presentation/providers/task_provider.dart';
 import 'package:timeflow/presentation/screens/task_detail_screen.dart';
+import 'package:timeflow/presentation/widgets/ambient_particles.dart';
+import 'package:timeflow/presentation/widgets/breathing_room_indicator.dart';
 import 'package:timeflow/presentation/widgets/confluence_modal.dart';
+import 'package:timeflow/presentation/widgets/day_boundary_marker.dart';
 import 'package:timeflow/presentation/widgets/merged_task_card.dart';
 import 'package:timeflow/presentation/widgets/reminder_line.dart';
 import 'package:timeflow/presentation/widgets/task_card.dart';
+import 'package:timeflow/presentation/widgets/time_of_day_background.dart';
 import 'package:timeflow/services/reminder_sound_service.dart';
 import 'package:window_to_front/window_to_front.dart';
 
@@ -351,86 +355,111 @@ class TimelineViewState extends ConsumerState<TimelineView> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final use24Hour = ref.watch(settingsProvider).use24HourFormat;
+    final currentHour = _currentTime.hour;
 
-    return NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        if (notification is ScrollStartNotification) {
-          if (notification.dragDetails != null) {
-            _isUserScrolling = true;
-          }
-        } else if (notification is ScrollEndNotification) {
-          _isUserScrolling = false;
-        }
-        return false;
-      },
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        physics: const BouncingScrollPhysics(),
-        child: SizedBox(
-          height: _totalHeight + MediaQuery.of(context).size.height,
-          child: Stack(
-            children: [
-              // Hour markers and day dividers
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: 60,
-                child: _HourMarkersMultiDay(
-                  hourHeight: _hourHeight,
-                  upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
-                  referenceDate: _referenceDate,
-                  daysLoadedBefore: _daysLoadedBefore,
-                  daysLoadedAfter: _daysLoadedAfter,
-                  use24HourFormat: use24Hour,
-                ),
-              ),
+    // Particle color based on time of day
+    final particleColor = TimeOfDayBackground.getAccentColor(currentHour, isDark: isDark);
 
-              // Timeline line
-              Positioned(
-                left: 56,
-                top: 0,
-                bottom: 0,
-                width: 2,
-                child: Container(
-                  color: isDark ? AppColors.timelineDark : AppColors.timelineLight,
-                ),
+    return TimeOfDayBackground(
+      hour: currentHour,
+      isDark: isDark,
+      child: Stack(
+        children: [
+          // Ambient particles layer (behind content)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AmbientParticles(
+                particleCount: 25,
+                color: particleColor.withOpacity(0.4),
+                driftDown: true,
+                speed: 0.5,
               ),
-
-              // Day dividers (full width)
-              _DayDividers(
-                hourHeight: _hourHeight,
-                upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
-                referenceDate: _referenceDate,
-                daysLoadedBefore: _daysLoadedBefore,
-                daysLoadedAfter: _daysLoadedAfter,
-              ),
-
-              // Task cards area
-              Positioned(
-                left: 70,
-                right: 16,
-                top: 0,
-                bottom: 0,
-                child: _TaskCardsLayerMultiDay(
-                  hourHeight: _hourHeight,
-                  upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
-                  referenceDate: _referenceDate,
-                  daysLoadedBefore: _daysLoadedBefore,
-                  daysLoadedAfter: _daysLoadedAfter,
-                  loadedRange: _loadedRange,
-                ),
-              ),
-
-              // NOW line (scrolls with content)
-              _NowLineScrollable(
-                currentTime: _currentTime,
-                nowOffset: _getOffsetForDateTime(_currentTime),
-                use24HourFormat: use24Hour,
-              ),
-            ],
+            ),
           ),
-        ),
+
+          // Main timeline content
+          NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (notification is ScrollStartNotification) {
+                if (notification.dragDetails != null) {
+                  _isUserScrolling = true;
+                }
+              } else if (notification is ScrollEndNotification) {
+                _isUserScrolling = false;
+              }
+              return false;
+            },
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              physics: const BouncingScrollPhysics(),
+              child: SizedBox(
+                height: _totalHeight + MediaQuery.of(context).size.height,
+                child: Stack(
+                  children: [
+                    // Hour markers and day dividers
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 60,
+                      child: _HourMarkersMultiDay(
+                        hourHeight: _hourHeight,
+                        upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                        referenceDate: _referenceDate,
+                        daysLoadedBefore: _daysLoadedBefore,
+                        daysLoadedAfter: _daysLoadedAfter,
+                        use24HourFormat: use24Hour,
+                      ),
+                    ),
+
+                    // Timeline line
+                    Positioned(
+                      left: 56,
+                      top: 0,
+                      bottom: 0,
+                      width: 2,
+                      child: Container(
+                        color: isDark ? AppColors.timelineDark : AppColors.timelineLight,
+                      ),
+                    ),
+
+                    // Day dividers (full width) - now with sunrise/sunset icons
+                    _DayDividers(
+                      hourHeight: _hourHeight,
+                      upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                      referenceDate: _referenceDate,
+                      daysLoadedBefore: _daysLoadedBefore,
+                      daysLoadedAfter: _daysLoadedAfter,
+                    ),
+
+                    // Task cards area with breathing room indicators
+                    Positioned(
+                      left: 70,
+                      right: 16,
+                      top: 0,
+                      bottom: 0,
+                      child: _TaskCardsLayerMultiDay(
+                        hourHeight: _hourHeight,
+                        upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                        referenceDate: _referenceDate,
+                        daysLoadedBefore: _daysLoadedBefore,
+                        daysLoadedAfter: _daysLoadedAfter,
+                        loadedRange: _loadedRange,
+                      ),
+                    ),
+
+                    // NOW line (scrolls with content)
+                    _NowLineScrollable(
+                      currentTime: _currentTime,
+                      nowOffset: _getOffsetForDateTime(_currentTime),
+                      use24HourFormat: use24Hour,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -544,7 +573,6 @@ class _DayDividers extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final dividers = <Widget>[];
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -559,65 +587,18 @@ class _DayDividers extends StatelessWidget {
 
       dividers.add(
         Positioned(
-          top: offset - 12,
+          top: offset - 16,
           left: 70,
           right: 16,
-          child: Row(
-            children: [
-              Expanded(
-                child: Container(
-                  height: 1,
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  _formatDayLabel(date, isToday),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
-                    color: isToday
-                        ? colorScheme.primary
-                        : colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  height: 1,
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                ),
-              ),
-            ],
+          child: SimpleDayDivider(
+            date: date,
+            isToday: isToday,
           ),
         ),
       );
     }
 
     return Stack(children: dividers);
-  }
-
-  String _formatDayLabel(DateTime date, bool isToday) {
-    if (isToday) return 'Today';
-
-    final now = DateTime.now();
-    final yesterday = DateTime(now.year, now.month, now.day - 1);
-    final tomorrow = DateTime(now.year, now.month, now.day + 1);
-
-    if (date.year == yesterday.year &&
-        date.month == yesterday.month &&
-        date.day == yesterday.day) {
-      return 'Yesterday';
-    }
-
-    if (date.year == tomorrow.year &&
-        date.month == tomorrow.month &&
-        date.day == tomorrow.day) {
-      return 'Tomorrow';
-    }
-
-    return DateFormat('EEEE, MMM d').format(date);
   }
 }
 

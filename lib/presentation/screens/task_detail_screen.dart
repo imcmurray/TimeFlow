@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:timeflow/domain/entities/task.dart';
+import 'package:timeflow/domain/entities/task_category.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
 import 'package:timeflow/presentation/providers/task_provider.dart';
 import 'package:timeflow/services/recurring_task_service.dart';
@@ -38,6 +39,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   bool _isImportant = false;
   int? _reminderMinutes;
   String? _recurringPattern;
+  TaskCategory _category = TaskCategory.none;
 
   bool get _isEditing => widget.task != null;
 
@@ -58,6 +60,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       _isImportant = task.isImportant;
       _reminderMinutes = task.reminderMinutes;
       _recurringPattern = task.recurringPattern;
+      _category = task.category;
     } else {
       final taskDate = DateTime(initialDate.year, initialDate.month, initialDate.day);
       final nextHour = (now.hour + 1).clamp(0, 23);
@@ -272,6 +275,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       notes: notes.isEmpty ? null : notes,
       attachmentPath: widget.task?.attachmentPath,
       color: widget.task?.color,
+      category: _category,
       createdAt: widget.task?.createdAt ?? now,
       updatedAt: now,
     );
@@ -469,6 +473,15 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               ],
               onChanged: (value) {
                 setState(() => _recurringPattern = value);
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // Category selector
+            CategorySelector(
+              value: _category,
+              onChanged: (value) {
+                setState(() => _category = value ?? TaskCategory.none);
               },
             ),
             const SizedBox(height: 16),

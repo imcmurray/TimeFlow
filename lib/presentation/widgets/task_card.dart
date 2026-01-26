@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:timeflow/core/theme/app_colors.dart';
 import 'package:timeflow/domain/entities/task.dart';
+import 'package:timeflow/domain/entities/task_category.dart';
 import 'package:timeflow/presentation/widgets/reminder_line.dart';
 
 /// A card widget representing a single task on the timeline.
@@ -344,16 +345,31 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
               ),
             ],
 
-            // Recurring indicator (only if no reminder badge shown in title)
-            if (showIndicators && widget.task.recurringPattern != null) ...[
+            // Category badge and recurring indicator
+            if (showIndicators) ...[
               const SizedBox(height: 4),
-              Icon(
-                Icons.repeat,
-                size: 14,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withOpacity(0.4),
+              Row(
+                children: [
+                  // Category badge
+                  if (widget.task.category != TaskCategory.none)
+                    CategoryBadge(
+                      category: widget.task.category,
+                      compact: true,
+                    ),
+                  // Recurring indicator
+                  if (widget.task.recurringPattern != null) ...[
+                    if (widget.task.category != TaskCategory.none)
+                      const SizedBox(width: 6),
+                    Icon(
+                      Icons.repeat,
+                      size: 14,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.4),
+                    ),
+                  ],
+                ],
               ),
             ],
           ],

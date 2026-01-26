@@ -1,3 +1,5 @@
+import 'package:timeflow/domain/entities/task_category.dart';
+
 /// Domain entity representing a Task in TimeFlow.
 ///
 /// Tasks are the core data model, representing scheduled activities
@@ -45,6 +47,9 @@ class Task {
   /// Custom color override for the task card (hex string).
   final String? color;
 
+  /// Category for organizing tasks by type.
+  final TaskCategory category;
+
   /// Timestamp when the task was created.
   final DateTime createdAt;
 
@@ -65,6 +70,7 @@ class Task {
     this.notes,
     this.attachmentPath,
     this.color,
+    this.category = TaskCategory.none,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -99,6 +105,7 @@ class Task {
     String? notes,
     String? attachmentPath,
     String? color,
+    TaskCategory? category,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -116,6 +123,7 @@ class Task {
       notes: notes ?? this.notes,
       attachmentPath: attachmentPath ?? this.attachmentPath,
       color: color ?? this.color,
+      category: category ?? this.category,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -136,6 +144,7 @@ class Task {
         'notes': notes,
         'attachmentPath': attachmentPath,
         'color': color,
+        'category': category.value,
         'createdAt': createdAt.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
       };
@@ -155,6 +164,7 @@ class Task {
         notes: json['notes'] as String?,
         attachmentPath: json['attachmentPath'] as String?,
         color: json['color'] as String?,
+        category: TaskCategoryExtension.fromString(json['category'] as String?),
         createdAt: DateTime.parse(json['createdAt'] as String),
         updatedAt: DateTime.parse(json['updatedAt'] as String),
       );

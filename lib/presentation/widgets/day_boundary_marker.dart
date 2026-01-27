@@ -350,51 +350,47 @@ class DayWatermark extends StatelessWidget {
 
     // Slightly more visible color for secondary info
     final secondaryColor = isToday
-        ? colorScheme.primary.withOpacity(isDark ? 0.18 : 0.12)
-        : (isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05));
+        ? colorScheme.primary.withOpacity(isDark ? 0.10 : 0.06)
+        : (isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.025));
 
     // Holiday color (more prominent)
     final holidayColor = isToday
-        ? colorScheme.primary.withOpacity(isDark ? 0.25 : 0.18)
-        : (isDark ? Colors.amber.withOpacity(0.15) : Colors.amber.withOpacity(0.25));
+        ? colorScheme.primary.withOpacity(isDark ? 0.18 : 0.12)
+        : (isDark ? Colors.amber.withOpacity(0.12) : Colors.amber.withOpacity(0.18));
 
-    // Build info items
-    final infoItems = <Widget>[];
+    // Build the secondary info line (Week X • Q1 • Day 28)
+    final infoParts = <String>[];
 
-    // Week number
     if (showWeekNumber) {
       final weekNum = HolidaysService.getWeekNumber(date);
-      infoItems.add(_buildInfoChip('W$weekNum', secondaryColor));
+      infoParts.add('WEEK $weekNum');
     }
 
-    // Quarter
     if (showQuarter) {
       final quarter = HolidaysService.getQuarter(date);
-      infoItems.add(_buildInfoChip('Q$quarter', secondaryColor));
+      infoParts.add('Q$quarter');
     }
 
-    // Day of year
     if (showDayOfYear) {
       final dayOfYear = HolidaysService.getDayOfYear(date);
-      infoItems.add(_buildInfoChip('Day $dayOfYear', secondaryColor));
+      infoParts.add('DAY $dayOfYear');
     }
 
-    // Days remaining
     if (showDaysRemaining) {
       final remaining = HolidaysService.getDaysRemainingInYear(date);
-      infoItems.add(_buildInfoChip('$remaining left', secondaryColor));
-    }
-
-    // Moon phase
-    if (showMoonPhase) {
-      final moonEmoji = HolidaysService.getMoonPhaseEmoji(date);
-      infoItems.add(_buildInfoChip(moonEmoji, secondaryColor, isEmoji: true));
+      infoParts.add('$remaining LEFT');
     }
 
     // Holiday name
     String? holidayName;
     if (showHolidays) {
       holidayName = HolidaysService.getShortHolidayName(date);
+    }
+
+    // Moon phase
+    String? moonPhase;
+    if (showMoonPhase) {
+      moonPhase = HolidaysService.getMoonPhaseEmoji(date);
     }
 
     return SizedBox(
@@ -405,7 +401,7 @@ class DayWatermark extends StatelessWidget {
           Positioned(
             left: 0,
             right: 0,
-            top: 20, // Offset from top to position in early morning area
+            top: 10,
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -420,44 +416,55 @@ class DayWatermark extends StatelessWidget {
                       height: 1.0,
                     ),
                   ),
-                  // Day name below
+
+                  // Day name
                   Text(
                     dayName.toUpperCase(),
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      letterSpacing: 4,
+                      letterSpacing: 6,
                       color: watermarkColor,
                     ),
                   ),
-                  // Holiday name (if any)
+
+                  // Holiday name (if any) - slightly more prominent
                   if (holidayName != null) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: holidayColor.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        holidayName,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: holidayColor,
-                          letterSpacing: 1,
-                        ),
+                    const SizedBox(height: 12),
+                    Text(
+                      holidayName.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 3,
+                        color: holidayColor,
                       ),
                     ),
                   ],
-                  // Info row (week number, quarter, etc.)
-                  if (infoItems.isNotEmpty) ...[
+
+                  // Secondary info line (Week • Quarter • Day of Year)
+                  if (infoParts.isNotEmpty) ...[
+                    const SizedBox(height: holidayName != null ? 8 : 16),
+                    Text(
+                      infoParts.join('  •  '),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 2,
+                        color: secondaryColor,
+                      ),
+                    ),
+                  ],
+
+                  // Moon phase on its own line
+                  if (moonPhase != null) ...[
                     const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      alignment: WrapAlignment.center,
-                      children: infoItems,
+                    Text(
+                      moonPhase,
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: secondaryColor,
+                      ),
                     ),
                   ],
                 ],
@@ -465,25 +472,6 @@ class DayWatermark extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildInfoChip(String text, Color color, {bool isEmoji = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: isEmoji ? 16 : 11,
-          fontWeight: FontWeight.w600,
-          color: color,
-          letterSpacing: isEmoji ? 0 : 0.5,
-        ),
       ),
     );
   }

@@ -417,6 +417,15 @@ class TimelineViewState extends ConsumerState<TimelineView> {
                   daysLoadedAfter: _daysLoadedAfter,
                 ),
 
+                // Day watermarks (large background date numbers)
+                _DayWatermarks(
+                  hourHeight: _hourHeight,
+                  upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                  referenceDate: _referenceDate,
+                  daysLoadedBefore: _daysLoadedBefore,
+                  daysLoadedAfter: _daysLoadedAfter,
+                ),
+
                 // Task cards area with breathing room indicators
                 Positioned(
                   left: 70,
@@ -634,6 +643,82 @@ class _DayDividers extends StatelessWidget {
     }
 
     return Stack(children: dividers);
+  }
+}
+
+/// Displays large watermark dates in the background of each day.
+class _DayWatermarks extends StatelessWidget {
+  final double hourHeight;
+  final bool upcomingTasksAboveNow;
+  final DateTime referenceDate;
+  final int daysLoadedBefore;
+  final int daysLoadedAfter;
+
+  const _DayWatermarks({
+    required this.hourHeight,
+    required this.upcomingTasksAboveNow,
+    required this.referenceDate,
+    required this.daysLoadedBefore,
+    required this.daysLoadedAfter,
+  });
+
+  double _getOffsetForHour(int dayOffset, int hour) {
+    final hoursFromReference = (dayOffset * 24) + hour;
+    final referenceOffset = upcomingTasksAboveNow
+        ? daysLoadedAfter * 24 * hourHeight
+        : daysLoadedBefore * 24 * hourHeight;
+
+    if (upcomingTasksAboveNow) {
+      return referenceOffset - (hoursFromReference * hourHeight);
+    } else {
+      return referenceOffset + (hoursFromReference * hourHeight);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final watermarks = <Widget>[];
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // Position watermarks in the early morning hours (around 4-8 AM)
+    // This area typically has fewer tasks
+    const watermarkStartHour = 4;
+    const watermarkHeightHours = 5; // Spans about 5 hours
+
+    for (int dayOffset = -daysLoadedBefore; dayOffset <= daysLoadedAfter; dayOffset++) {
+      final date = referenceDate.add(Duration(days: dayOffset));
+
+      final isToday = date.year == today.year &&
+          date.month == today.month &&
+          date.day == today.day;
+
+      // Calculate position for this day's watermark
+      final topOffset = _getOffsetForHour(dayOffset, watermarkStartHour);
+      final bottomOffset = _getOffsetForHour(dayOffset, watermarkStartHour + watermarkHeightHours);
+
+      // For upcomingTasksAboveNow, the bottom offset is smaller than top offset
+      final actualTop = upcomingTasksAboveNow ? bottomOffset : topOffset;
+      final height = (watermarkHeightHours * hourHeight).abs();
+
+      watermarks.add(
+        Positioned(
+          top: actualTop,
+          left: 70,
+          right: 16,
+          height: height,
+          child: IgnorePointer(
+            child: DayWatermark(
+              date: date,
+              isToday: isToday,
+              height: height,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Stack(children: watermarks);
   }
 }
 

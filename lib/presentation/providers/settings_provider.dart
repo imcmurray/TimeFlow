@@ -14,6 +14,9 @@ class SettingsNotifier extends Notifier<Settings> {
   static const _keyReminderSoundEnabled = 'timeflow_reminder_sound_enabled';
   static const _keyReminderSound = 'timeflow_reminder_sound';
   static const _keyUse24HourFormat = 'timeflow_use_24_hour_format';
+  static const _keyLatitude = 'timeflow_latitude';
+  static const _keyLongitude = 'timeflow_longitude';
+  static const _keyShowSunTimes = 'timeflow_show_sun_times';
 
   SharedPreferences? _prefs;
 
@@ -36,6 +39,9 @@ class SettingsNotifier extends Notifier<Settings> {
       reminderSoundEnabled: _prefs!.getBool(_keyReminderSoundEnabled) ?? true,
       reminderSound: _prefs!.getString(_keyReminderSound) ?? 'chime',
       use24HourFormat: _prefs!.getBool(_keyUse24HourFormat) ?? false,
+      latitude: _prefs!.getDouble(_keyLatitude) ?? 40.0,
+      longitude: _prefs!.getDouble(_keyLongitude) ?? -74.0,
+      showSunTimes: _prefs!.getBool(_keyShowSunTimes) ?? true,
     );
   }
 
@@ -101,6 +107,31 @@ class SettingsNotifier extends Notifier<Settings> {
     state = state.copyWith(use24HourFormat: value);
     await _ensurePrefs();
     await _prefs!.setBool(_keyUse24HourFormat, value);
+  }
+
+  Future<void> setLatitude(double value) async {
+    state = state.copyWith(latitude: value);
+    await _ensurePrefs();
+    await _prefs!.setDouble(_keyLatitude, value);
+  }
+
+  Future<void> setLongitude(double value) async {
+    state = state.copyWith(longitude: value);
+    await _ensurePrefs();
+    await _prefs!.setDouble(_keyLongitude, value);
+  }
+
+  Future<void> setLocation(double latitude, double longitude) async {
+    state = state.copyWith(latitude: latitude, longitude: longitude);
+    await _ensurePrefs();
+    await _prefs!.setDouble(_keyLatitude, latitude);
+    await _prefs!.setDouble(_keyLongitude, longitude);
+  }
+
+  Future<void> setShowSunTimes(bool value) async {
+    state = state.copyWith(showSunTimes: value);
+    await _ensurePrefs();
+    await _prefs!.setBool(_keyShowSunTimes, value);
   }
 }
 

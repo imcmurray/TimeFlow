@@ -34,6 +34,17 @@ class Settings {
   /// Whether to display time in 24-hour format (14:30) vs 12-hour (2:30 PM).
   final bool use24HourFormat;
 
+  /// User's latitude for sunrise/sunset calculations.
+  /// Default is approximately 40°N (northern US/Europe).
+  final double latitude;
+
+  /// User's longitude for sunrise/sunset calculations.
+  /// Default is approximately 74°W (US East Coast).
+  final double longitude;
+
+  /// Whether to show sunrise/sunset indicators on the timeline.
+  final bool showSunTimes;
+
   const Settings({
     this.theme = 'auto',
     this.defaultReminderMinutes = 10,
@@ -45,6 +56,9 @@ class Settings {
     this.reminderSoundEnabled = true,
     this.reminderSound = 'chime',
     this.use24HourFormat = false,
+    this.latitude = 40.0,
+    this.longitude = -74.0,
+    this.showSunTimes = true,
   });
 
   /// Default settings for first-time users.
@@ -62,6 +76,9 @@ class Settings {
     bool? reminderSoundEnabled,
     String? reminderSound,
     bool? use24HourFormat,
+    double? latitude,
+    double? longitude,
+    bool? showSunTimes,
   }) {
     return Settings(
       theme: theme ?? this.theme,
@@ -74,6 +91,9 @@ class Settings {
       reminderSoundEnabled: reminderSoundEnabled ?? this.reminderSoundEnabled,
       reminderSound: reminderSound ?? this.reminderSound,
       use24HourFormat: use24HourFormat ?? this.use24HourFormat,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      showSunTimes: showSunTimes ?? this.showSunTimes,
     );
   }
 
@@ -90,7 +110,10 @@ class Settings {
         other.bringWindowToFrontOnReminder == bringWindowToFrontOnReminder &&
         other.reminderSoundEnabled == reminderSoundEnabled &&
         other.reminderSound == reminderSound &&
-        other.use24HourFormat == use24HourFormat;
+        other.use24HourFormat == use24HourFormat &&
+        other.latitude == latitude &&
+        other.longitude == longitude &&
+        other.showSunTimes == showSunTimes;
   }
 
   @override
@@ -106,6 +129,9 @@ class Settings {
       reminderSoundEnabled,
       reminderSound,
       use24HourFormat,
+      latitude,
+      longitude,
+      showSunTimes,
     );
   }
 
@@ -116,6 +142,7 @@ class Settings {
         'firstLaunch: $firstLaunch, upcomingTasksAboveNow: $upcomingTasksAboveNow, '
         'bringWindowToFrontOnReminder: $bringWindowToFrontOnReminder, '
         'reminderSoundEnabled: $reminderSoundEnabled, reminderSound: $reminderSound, '
-        'use24HourFormat: $use24HourFormat)';
+        'use24HourFormat: $use24HourFormat, latitude: $latitude, longitude: $longitude, '
+        'showSunTimes: $showSunTimes)';
   }
 }

@@ -8,7 +8,6 @@ import 'package:timeflow/domain/entities/task.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
 import 'package:timeflow/presentation/providers/task_provider.dart';
 import 'package:timeflow/presentation/screens/task_detail_screen.dart';
-import 'package:timeflow/presentation/widgets/ambient_particles.dart';
 import 'package:timeflow/presentation/widgets/breathing_room_indicator.dart';
 import 'package:timeflow/presentation/widgets/confluence_modal.dart';
 import 'package:timeflow/presentation/widgets/day_boundary_marker.dart';
@@ -17,6 +16,7 @@ import 'package:timeflow/presentation/widgets/reminder_line.dart';
 import 'package:timeflow/presentation/widgets/task_card.dart';
 import 'package:timeflow/presentation/widgets/time_of_day_background.dart';
 import 'package:timeflow/services/reminder_sound_service.dart';
+import 'package:timeflow/services/sun_times_service.dart';
 import 'package:window_to_front/window_to_front.dart';
 
 /// The main scrollable timeline widget with continuous multi-day flow.
@@ -357,27 +357,12 @@ class TimelineViewState extends ConsumerState<TimelineView> {
     final use24Hour = ref.watch(settingsProvider).use24HourFormat;
     final currentHour = _currentTime.hour;
 
-    // Particle color based on time of day
-    final particleColor = TimeOfDayBackground.getAccentColor(currentHour, isDark: isDark);
-
     return TimeOfDayBackground(
       hour: currentHour,
       isDark: isDark,
       child: Stack(
         children: [
-          // Ambient particles layer (behind content)
-          Positioned.fill(
-            child: IgnorePointer(
-              child: AmbientParticles(
-                particleCount: 25,
-                color: particleColor.withOpacity(0.4),
-                driftDown: true,
-                speed: 0.5,
-              ),
-            ),
-          ),
-
-          // Main timeline content
+          // Scrollable timeline content
           NotificationListener<ScrollNotification>(
             onNotification: (notification) {
               if (notification is ScrollStartNotification) {
@@ -447,17 +432,17 @@ class TimelineViewState extends ConsumerState<TimelineView> {
                         loadedRange: _loadedRange,
                       ),
                     ),
-
-                    // NOW line (scrolls with content)
-                    _NowLineScrollable(
-                      currentTime: _currentTime,
-                      nowOffset: _getOffsetForDateTime(_currentTime),
-                      use24HourFormat: use24Hour,
-                    ),
                   ],
                 ),
               ),
             ),
+          ),
+
+          // Fixed NOW line (stays in place at 75% down the screen)
+          _FixedNowLine(
+            currentTime: _currentTime,
+            use24HourFormat: use24Hour,
+            nowLinePosition: _nowLinePosition,
           ),
         ],
       ),
@@ -465,8 +450,8 @@ class TimelineViewState extends ConsumerState<TimelineView> {
   }
 }
 
-/// Displays hour markers for multiple days.
-class _HourMarkersMultiDay extends StatelessWidget {
+/// Displays hour markers for multiple days with sunrise/sunset indicators.
+class _HourMarkersMultiDay extends ConsumerWidget {
   final double hourHeight;
   final bool upcomingTasksAboveNow;
   final DateTime referenceDate;
@@ -499,29 +484,81 @@ class _HourMarkersMultiDay extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final markerColor = isDark ? AppColors.hourMarkerDark : AppColors.hourMarkerLight;
+    final settings = ref.watch(settingsProvider);
+
+    // Pre-calculate sun times for each day if enabled
+    final Map<int, SunTimes> sunTimesMap = {};
+    if (settings.showSunTimes) {
+      for (int dayOffset = -daysLoadedBefore; dayOffset <= daysLoadedAfter; dayOffset++) {
+        final date = referenceDate.add(Duration(days: dayOffset));
+        sunTimesMap[dayOffset] = SunTimesService.calculate(
+          date: date,
+          latitude: settings.latitude,
+          longitude: settings.longitude,
+        );
+      }
+    }
 
     final markers = <Widget>[];
 
     // Generate hour markers for each day
     for (int dayOffset = -daysLoadedBefore; dayOffset <= daysLoadedAfter; dayOffset++) {
+      final sunTimes = sunTimesMap[dayOffset];
+
       for (int hour = 0; hour < 24; hour++) {
         final offset = _getOffsetForHour(dayOffset, hour);
+
+        // Check if this hour is sunrise or sunset
+        final isSunrise = settings.showSunTimes &&
+            sunTimes != null &&
+            sunTimes.sunriseHour == hour;
+        final isSunset = settings.showSunTimes &&
+            sunTimes != null &&
+            sunTimes.sunsetHour == hour;
+
         markers.add(
           Positioned(
             top: offset - 8,
-            left: 8,
-            right: 8,
-            child: Text(
-              _formatHour(hour),
-              style: TextStyle(
-                fontSize: 12,
-                color: markerColor,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.right,
+            left: 4,
+            right: 4,
+            child: Row(
+              children: [
+                // Sun indicator (sunrise/sunset icon)
+                if (isSunrise || isSunset)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 2),
+                    child: Icon(
+                      isSunrise ? Icons.wb_sunny : Icons.nightlight_round,
+                      size: 12,
+                      color: isSunrise
+                          ? const Color(0xFFFFB74D) // Amber/orange for sunrise
+                          : const Color(0xFF7986CB), // Indigo for sunset
+                    ),
+                  )
+                else
+                  const SizedBox(width: 14), // Placeholder to align text
+                // Hour text
+                Expanded(
+                  child: Text(
+                    _formatHour(hour),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: (isSunrise || isSunset)
+                          ? (isSunrise
+                              ? const Color(0xFFFFB74D)
+                              : const Color(0xFF7986CB))
+                          : markerColor,
+                      fontWeight: (isSunrise || isSunset)
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+              ],
             ),
           ),
         );
@@ -1335,6 +1372,141 @@ class _NowLineScrollable extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Fixed NOW line that stays in place on screen at a specified position.
+/// The calendar content scrolls to meet this fixed line.
+class _FixedNowLine extends StatelessWidget {
+  final DateTime currentTime;
+  final bool use24HourFormat;
+  final double nowLinePosition;
+
+  const _FixedNowLine({
+    required this.currentTime,
+    required this.nowLinePosition,
+    this.use24HourFormat = false,
+  });
+
+  String _formatTime(DateTime time) {
+    if (use24HourFormat) {
+      final hour = time.hour.toString().padLeft(2, '0');
+      final minute = time.minute.toString().padLeft(2, '0');
+      return '$hour:$minute';
+    }
+    final hour = time.hour == 0
+        ? 12
+        : time.hour > 12
+            ? time.hour - 12
+            : time.hour;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lineColor = isDark ? AppColors.nowLineDark : AppColors.nowLineLight;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final nowY = screenHeight * nowLinePosition;
+
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          // Glow effect behind the line
+          Positioned(
+            left: 0,
+            right: 0,
+            top: nowY - 20,
+            height: 40,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    lineColor.withValues(alpha: 0),
+                    lineColor.withValues(alpha: 0.4),
+                    lineColor.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Main NOW line
+          Positioned(
+            left: 0,
+            right: 0,
+            top: nowY - 1,
+            height: 2,
+            child: Container(
+              decoration: BoxDecoration(
+                color: lineColor,
+                boxShadow: [
+                  BoxShadow(
+                    color: lineColor.withValues(alpha: 0.5),
+                    blurRadius: 4,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Time badge
+          Positioned(
+            right: 16,
+            top: nowY - 14,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: lineColor,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: lineColor.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                _formatTime(currentTime),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+
+          // NOW label
+          Positioned(
+            left: 12,
+            top: nowY - 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: lineColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'NOW',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -242,6 +242,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               isImportant: _isImportant,
               reminderMinutes: _reminderMinutes,
               notes: notes.isEmpty ? null : notes,
+              category: _category,
               updatedAt: now,
             );
           },

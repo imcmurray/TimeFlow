@@ -17,7 +17,15 @@ class SettingsNotifier extends Notifier<Settings> {
   static const _keyUse24HourFormat = 'timeflow_use_24_hour_format';
   static const _keyLatitude = 'timeflow_latitude';
   static const _keyLongitude = 'timeflow_longitude';
+  static const _keyTimezoneOffsetHours = 'timeflow_timezone_offset_hours';
   static const _keyShowSunTimes = 'timeflow_show_sun_times';
+  // Watermark settings keys
+  static const _keyWatermarkShowWeekNumber = 'timeflow_watermark_show_week_number';
+  static const _keyWatermarkShowDayOfYear = 'timeflow_watermark_show_day_of_year';
+  static const _keyWatermarkShowHolidays = 'timeflow_watermark_show_holidays';
+  static const _keyWatermarkShowMoonPhase = 'timeflow_watermark_show_moon_phase';
+  static const _keyWatermarkShowQuarter = 'timeflow_watermark_show_quarter';
+  static const _keyWatermarkShowDaysRemaining = 'timeflow_watermark_show_days_remaining';
 
   SharedPreferences? _prefs;
 
@@ -47,6 +55,12 @@ class SettingsNotifier extends Notifier<Settings> {
       longitude = SunTimesService.estimateLongitudeFromTimezone();
     }
 
+    // Load timezone offset (null means auto-detect)
+    double? timezoneOffsetHours;
+    if (_prefs!.containsKey(_keyTimezoneOffsetHours)) {
+      timezoneOffsetHours = _prefs!.getDouble(_keyTimezoneOffsetHours);
+    }
+
     state = Settings(
       theme: _prefs!.getString(_keyTheme) ?? 'auto',
       defaultReminderMinutes: _prefs!.getInt(_keyDefaultReminderMinutes) ?? 10,
@@ -60,7 +74,14 @@ class SettingsNotifier extends Notifier<Settings> {
       use24HourFormat: _prefs!.getBool(_keyUse24HourFormat) ?? false,
       latitude: latitude,
       longitude: longitude,
+      timezoneOffsetHours: timezoneOffsetHours,
       showSunTimes: _prefs!.getBool(_keyShowSunTimes) ?? true,
+      watermarkShowWeekNumber: _prefs!.getBool(_keyWatermarkShowWeekNumber) ?? true,
+      watermarkShowDayOfYear: _prefs!.getBool(_keyWatermarkShowDayOfYear) ?? false,
+      watermarkShowHolidays: _prefs!.getBool(_keyWatermarkShowHolidays) ?? true,
+      watermarkShowMoonPhase: _prefs!.getBool(_keyWatermarkShowMoonPhase) ?? false,
+      watermarkShowQuarter: _prefs!.getBool(_keyWatermarkShowQuarter) ?? false,
+      watermarkShowDaysRemaining: _prefs!.getBool(_keyWatermarkShowDaysRemaining) ?? false,
     );
   }
 
@@ -151,6 +172,56 @@ class SettingsNotifier extends Notifier<Settings> {
     state = state.copyWith(showSunTimes: value);
     await _ensurePrefs();
     await _prefs!.setBool(_keyShowSunTimes, value);
+  }
+
+  Future<void> setTimezoneOffsetHours(double? value) async {
+    if (value == null) {
+      state = state.copyWith(clearTimezoneOffset: true);
+      await _ensurePrefs();
+      await _prefs!.remove(_keyTimezoneOffsetHours);
+    } else {
+      state = state.copyWith(timezoneOffsetHours: value);
+      await _ensurePrefs();
+      await _prefs!.setDouble(_keyTimezoneOffsetHours, value);
+    }
+  }
+
+  // Watermark settings setters
+
+  Future<void> setWatermarkShowWeekNumber(bool value) async {
+    state = state.copyWith(watermarkShowWeekNumber: value);
+    await _ensurePrefs();
+    await _prefs!.setBool(_keyWatermarkShowWeekNumber, value);
+  }
+
+  Future<void> setWatermarkShowDayOfYear(bool value) async {
+    state = state.copyWith(watermarkShowDayOfYear: value);
+    await _ensurePrefs();
+    await _prefs!.setBool(_keyWatermarkShowDayOfYear, value);
+  }
+
+  Future<void> setWatermarkShowHolidays(bool value) async {
+    state = state.copyWith(watermarkShowHolidays: value);
+    await _ensurePrefs();
+    await _prefs!.setBool(_keyWatermarkShowHolidays, value);
+  }
+
+  Future<void> setWatermarkShowMoonPhase(bool value) async {
+    state = state.copyWith(watermarkShowMoonPhase: value);
+    await _ensurePrefs();
+    await _prefs!.setBool(_keyWatermarkShowMoonPhase, value);
+  }
+
+  Future<void> setWatermarkShowQuarter(bool value) async {
+    state = state.copyWith(watermarkShowQuarter: value);
+    await _ensurePrefs();
+    await _prefs!.setBool(_keyWatermarkShowQuarter, value);
+  }
+
+  Future<void> setWatermarkShowDaysRemaining(bool value) async {
+    state = state.copyWith(watermarkShowDaysRemaining: value);
+    await _ensurePrefs();
+    await _prefs!.setBool(_keyWatermarkShowDaysRemaining, value);
   }
 }
 

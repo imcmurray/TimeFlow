@@ -68,6 +68,88 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const Divider(),
 
+          // Location & Time Section
+          _SectionHeader(title: 'Location & Time'),
+          SwitchListTile(
+            secondary: const Icon(Icons.wb_sunny_outlined),
+            title: const Text('Show Sunrise/Sunset'),
+            subtitle: const Text('Display sun times on timeline'),
+            value: ref.watch(settingsProvider).showSunTimes,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setShowSunTimes(value);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.schedule),
+            title: const Text('Timezone'),
+            subtitle: Text(_getTimezoneLabel(ref.watch(settingsProvider).timezoneOffsetHours)),
+            enabled: ref.watch(settingsProvider).showSunTimes,
+            onTap: ref.watch(settingsProvider).showSunTimes
+                ? () => _showTimezoneDialog()
+                : null,
+          ),
+
+          const Divider(),
+
+          // Day Watermark Section
+          _SectionHeader(title: 'Day Watermark'),
+          SwitchListTile(
+            secondary: const Icon(Icons.format_list_numbered),
+            title: const Text('Week Number'),
+            subtitle: const Text('Show W1, W2, etc.'),
+            value: ref.watch(settingsProvider).watermarkShowWeekNumber,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setWatermarkShowWeekNumber(value);
+            },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.celebration),
+            title: const Text('Holidays'),
+            subtitle: const Text('Show US federal holidays'),
+            value: ref.watch(settingsProvider).watermarkShowHolidays,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setWatermarkShowHolidays(value);
+            },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.nightlight_round),
+            title: const Text('Moon Phase'),
+            subtitle: const Text('Show current moon phase'),
+            value: ref.watch(settingsProvider).watermarkShowMoonPhase,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setWatermarkShowMoonPhase(value);
+            },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.pie_chart_outline),
+            title: const Text('Quarter'),
+            subtitle: const Text('Show Q1, Q2, Q3, Q4'),
+            value: ref.watch(settingsProvider).watermarkShowQuarter,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setWatermarkShowQuarter(value);
+            },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.event),
+            title: const Text('Day of Year'),
+            subtitle: const Text('Show Day 1 through Day 365'),
+            value: ref.watch(settingsProvider).watermarkShowDayOfYear,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setWatermarkShowDayOfYear(value);
+            },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.timer_outlined),
+            title: const Text('Days Remaining'),
+            subtitle: const Text('Show days left in the year'),
+            value: ref.watch(settingsProvider).watermarkShowDaysRemaining,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setWatermarkShowDaysRemaining(value);
+            },
+          ),
+
+          const Divider(),
+
           // Notifications Section
           _SectionHeader(title: 'Notifications'),
           SwitchListTile(
@@ -493,6 +575,95 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  String _getTimezoneLabel(double? offset) {
+    if (offset == null) {
+      // Auto-detect from device
+      final deviceOffset = DateTime.now().timeZoneOffset.inMinutes / 60.0;
+      final sign = deviceOffset >= 0 ? '+' : '';
+      return 'Auto (UTC$sign${deviceOffset.toStringAsFixed(deviceOffset.truncateToDouble() == deviceOffset ? 0 : 1)})';
+    }
+    final sign = offset >= 0 ? '+' : '';
+    return 'UTC$sign${offset.toStringAsFixed(offset.truncateToDouble() == offset ? 0 : 1)}';
+  }
+
+  void _showTimezoneDialog() {
+    final currentOffset = ref.read(settingsProvider).timezoneOffsetHours;
+
+    // Common timezone offsets
+    final timezones = <MapEntry<String, double?>>[
+      const MapEntry('Auto-detect from device', null),
+      const MapEntry('UTC-12 (Baker Island)', -12),
+      const MapEntry('UTC-11 (American Samoa)', -11),
+      const MapEntry('UTC-10 (Hawaii)', -10),
+      const MapEntry('UTC-9 (Alaska)', -9),
+      const MapEntry('UTC-8 (Pacific Time)', -8),
+      const MapEntry('UTC-7 (Mountain Time)', -7),
+      const MapEntry('UTC-6 (Central Time)', -6),
+      const MapEntry('UTC-5 (Eastern Time)', -5),
+      const MapEntry('UTC-4 (Atlantic Time)', -4),
+      const MapEntry('UTC-3 (Argentina)', -3),
+      const MapEntry('UTC-2 (Mid-Atlantic)', -2),
+      const MapEntry('UTC-1 (Azores)', -1),
+      const MapEntry('UTC+0 (London, GMT)', 0),
+      const MapEntry('UTC+1 (Paris, Berlin)', 1),
+      const MapEntry('UTC+2 (Athens, Cairo)', 2),
+      const MapEntry('UTC+3 (Moscow)', 3),
+      const MapEntry('UTC+4 (Dubai)', 4),
+      const MapEntry('UTC+5 (Pakistan)', 5),
+      const MapEntry('UTC+5:30 (India)', 5.5),
+      const MapEntry('UTC+6 (Bangladesh)', 6),
+      const MapEntry('UTC+7 (Bangkok)', 7),
+      const MapEntry('UTC+8 (Singapore, Perth)', 8),
+      const MapEntry('UTC+9 (Tokyo)', 9),
+      const MapEntry('UTC+9:30 (Adelaide)', 9.5),
+      const MapEntry('UTC+10 (Sydney)', 10),
+      const MapEntry('UTC+11 (Solomon Islands)', 11),
+      const MapEntry('UTC+12 (Auckland)', 12),
+      const MapEntry('UTC+13 (Samoa)', 13),
+      const MapEntry('UTC+14 (Line Islands)', 14),
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Timezone'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: ListView.builder(
+            itemCount: timezones.length,
+            itemBuilder: (context, index) {
+              final tz = timezones[index];
+              final isSelected = currentOffset == tz.value;
+              return ListTile(
+                title: Text(tz.key),
+                leading: Radio<double?>(
+                  value: tz.value,
+                  groupValue: currentOffset,
+                  onChanged: (value) {
+                    ref.read(settingsProvider.notifier).setTimezoneOffsetHours(value);
+                    Navigator.pop(context);
+                  },
+                ),
+                selected: isSelected,
+                onTap: () {
+                  ref.read(settingsProvider.notifier).setTimezoneOffsetHours(tz.value);
+                  Navigator.pop(context);
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
       ),
     );
   }

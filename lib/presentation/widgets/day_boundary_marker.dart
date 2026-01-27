@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:timeflow/services/holidays_service.dart';
 
 /// Visual marker indicating day boundaries with sunrise/sunset theming.
 ///
@@ -313,12 +314,24 @@ class DayWatermark extends StatelessWidget {
   final DateTime date;
   final bool isToday;
   final double height;
+  final bool showWeekNumber;
+  final bool showDayOfYear;
+  final bool showHolidays;
+  final bool showMoonPhase;
+  final bool showQuarter;
+  final bool showDaysRemaining;
 
   const DayWatermark({
     super.key,
     required this.date,
     required this.isToday,
     required this.height,
+    this.showWeekNumber = true,
+    this.showDayOfYear = false,
+    this.showHolidays = true,
+    this.showMoonPhase = false,
+    this.showQuarter = false,
+    this.showDaysRemaining = false,
   });
 
   @override
@@ -334,6 +347,55 @@ class DayWatermark extends StatelessWidget {
     final watermarkColor = isToday
         ? colorScheme.primary.withOpacity(isDark ? 0.12 : 0.08)
         : (isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03));
+
+    // Slightly more visible color for secondary info
+    final secondaryColor = isToday
+        ? colorScheme.primary.withOpacity(isDark ? 0.18 : 0.12)
+        : (isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05));
+
+    // Holiday color (more prominent)
+    final holidayColor = isToday
+        ? colorScheme.primary.withOpacity(isDark ? 0.25 : 0.18)
+        : (isDark ? Colors.amber.withOpacity(0.15) : Colors.amber.withOpacity(0.25));
+
+    // Build info items
+    final infoItems = <Widget>[];
+
+    // Week number
+    if (showWeekNumber) {
+      final weekNum = HolidaysService.getWeekNumber(date);
+      infoItems.add(_buildInfoChip('W$weekNum', secondaryColor));
+    }
+
+    // Quarter
+    if (showQuarter) {
+      final quarter = HolidaysService.getQuarter(date);
+      infoItems.add(_buildInfoChip('Q$quarter', secondaryColor));
+    }
+
+    // Day of year
+    if (showDayOfYear) {
+      final dayOfYear = HolidaysService.getDayOfYear(date);
+      infoItems.add(_buildInfoChip('Day $dayOfYear', secondaryColor));
+    }
+
+    // Days remaining
+    if (showDaysRemaining) {
+      final remaining = HolidaysService.getDaysRemainingInYear(date);
+      infoItems.add(_buildInfoChip('$remaining left', secondaryColor));
+    }
+
+    // Moon phase
+    if (showMoonPhase) {
+      final moonEmoji = HolidaysService.getMoonPhaseEmoji(date);
+      infoItems.add(_buildInfoChip(moonEmoji, secondaryColor, isEmoji: true));
+    }
+
+    // Holiday name
+    String? holidayName;
+    if (showHolidays) {
+      holidayName = HolidaysService.getShortHolidayName(date);
+    }
 
     return SizedBox(
       height: height,
@@ -368,11 +430,60 @@ class DayWatermark extends StatelessWidget {
                       color: watermarkColor,
                     ),
                   ),
+                  // Holiday name (if any)
+                  if (holidayName != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: holidayColor.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        holidayName,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: holidayColor,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                  ],
+                  // Info row (week number, quarter, etc.)
+                  if (infoItems.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      alignment: WrapAlignment.center,
+                      children: infoItems,
+                    ),
+                  ],
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(String text, Color color, {bool isEmoji = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: isEmoji ? 16 : 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+          letterSpacing: isEmoji ? 0 : 0.5,
+        ),
       ),
     );
   }

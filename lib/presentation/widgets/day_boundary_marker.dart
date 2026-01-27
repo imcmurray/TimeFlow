@@ -444,13 +444,13 @@ class DayWatermark extends StatelessWidget {
 
                   // Secondary info line (Week • Quarter • Day of Year)
                   if (infoParts.isNotEmpty) ...[
-                    SizedBox(height: holidayName != null ? 8 : 16),
+                    SizedBox(height: holidayName != null ? 12 : 20),
                     Text(
                       infoParts.join('  •  '),
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        letterSpacing: 2,
+                        letterSpacing: 3,
                         color: secondaryColor,
                       ),
                     ),
@@ -458,11 +458,11 @@ class DayWatermark extends StatelessWidget {
 
                   // Moon phase on its own line
                   if (moonPhase != null) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Text(
                       moonPhase,
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 28,
                         color: secondaryColor,
                       ),
                     ),

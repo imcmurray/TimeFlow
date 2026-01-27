@@ -42,8 +42,32 @@ class Settings {
   /// Default is 0.0 which signals auto-detection from device timezone.
   final double longitude;
 
+  /// Manual timezone offset in hours (e.g., -5 for EST, +1 for CET).
+  /// Null means auto-detect from device.
+  final double? timezoneOffsetHours;
+
   /// Whether to show sunrise/sunset indicators on the timeline.
   final bool showSunTimes;
+
+  // Watermark display options
+
+  /// Whether to show week number in day watermark.
+  final bool watermarkShowWeekNumber;
+
+  /// Whether to show day of year in day watermark.
+  final bool watermarkShowDayOfYear;
+
+  /// Whether to show holidays in day watermark.
+  final bool watermarkShowHolidays;
+
+  /// Whether to show moon phase in day watermark.
+  final bool watermarkShowMoonPhase;
+
+  /// Whether to show quarter in day watermark.
+  final bool watermarkShowQuarter;
+
+  /// Whether to show days remaining in year in day watermark.
+  final bool watermarkShowDaysRemaining;
 
   const Settings({
     this.theme = 'auto',
@@ -58,7 +82,14 @@ class Settings {
     this.use24HourFormat = false,
     this.latitude = 45.0,
     this.longitude = 0.0,
+    this.timezoneOffsetHours,
     this.showSunTimes = true,
+    this.watermarkShowWeekNumber = true,
+    this.watermarkShowDayOfYear = false,
+    this.watermarkShowHolidays = true,
+    this.watermarkShowMoonPhase = false,
+    this.watermarkShowQuarter = false,
+    this.watermarkShowDaysRemaining = false,
   });
 
   /// Default settings for first-time users.
@@ -78,7 +109,15 @@ class Settings {
     bool? use24HourFormat,
     double? latitude,
     double? longitude,
+    double? timezoneOffsetHours,
+    bool clearTimezoneOffset = false,
     bool? showSunTimes,
+    bool? watermarkShowWeekNumber,
+    bool? watermarkShowDayOfYear,
+    bool? watermarkShowHolidays,
+    bool? watermarkShowMoonPhase,
+    bool? watermarkShowQuarter,
+    bool? watermarkShowDaysRemaining,
   }) {
     return Settings(
       theme: theme ?? this.theme,
@@ -93,7 +132,14 @@ class Settings {
       use24HourFormat: use24HourFormat ?? this.use24HourFormat,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      timezoneOffsetHours: clearTimezoneOffset ? null : (timezoneOffsetHours ?? this.timezoneOffsetHours),
       showSunTimes: showSunTimes ?? this.showSunTimes,
+      watermarkShowWeekNumber: watermarkShowWeekNumber ?? this.watermarkShowWeekNumber,
+      watermarkShowDayOfYear: watermarkShowDayOfYear ?? this.watermarkShowDayOfYear,
+      watermarkShowHolidays: watermarkShowHolidays ?? this.watermarkShowHolidays,
+      watermarkShowMoonPhase: watermarkShowMoonPhase ?? this.watermarkShowMoonPhase,
+      watermarkShowQuarter: watermarkShowQuarter ?? this.watermarkShowQuarter,
+      watermarkShowDaysRemaining: watermarkShowDaysRemaining ?? this.watermarkShowDaysRemaining,
     );
   }
 
@@ -113,7 +159,14 @@ class Settings {
         other.use24HourFormat == use24HourFormat &&
         other.latitude == latitude &&
         other.longitude == longitude &&
-        other.showSunTimes == showSunTimes;
+        other.timezoneOffsetHours == timezoneOffsetHours &&
+        other.showSunTimes == showSunTimes &&
+        other.watermarkShowWeekNumber == watermarkShowWeekNumber &&
+        other.watermarkShowDayOfYear == watermarkShowDayOfYear &&
+        other.watermarkShowHolidays == watermarkShowHolidays &&
+        other.watermarkShowMoonPhase == watermarkShowMoonPhase &&
+        other.watermarkShowQuarter == watermarkShowQuarter &&
+        other.watermarkShowDaysRemaining == watermarkShowDaysRemaining;
   }
 
   @override
@@ -131,7 +184,14 @@ class Settings {
       use24HourFormat,
       latitude,
       longitude,
+      timezoneOffsetHours,
       showSunTimes,
+      watermarkShowWeekNumber,
+      watermarkShowDayOfYear,
+      watermarkShowHolidays,
+      watermarkShowMoonPhase,
+      watermarkShowQuarter,
+      watermarkShowDaysRemaining,
     );
   }
 
@@ -143,6 +203,12 @@ class Settings {
         'bringWindowToFrontOnReminder: $bringWindowToFrontOnReminder, '
         'reminderSoundEnabled: $reminderSoundEnabled, reminderSound: $reminderSound, '
         'use24HourFormat: $use24HourFormat, latitude: $latitude, longitude: $longitude, '
-        'showSunTimes: $showSunTimes)';
+        'timezoneOffsetHours: $timezoneOffsetHours, showSunTimes: $showSunTimes, '
+        'watermarkShowWeekNumber: $watermarkShowWeekNumber, '
+        'watermarkShowDayOfYear: $watermarkShowDayOfYear, '
+        'watermarkShowHolidays: $watermarkShowHolidays, '
+        'watermarkShowMoonPhase: $watermarkShowMoonPhase, '
+        'watermarkShowQuarter: $watermarkShowQuarter, '
+        'watermarkShowDaysRemaining: $watermarkShowDaysRemaining)';
   }
 }

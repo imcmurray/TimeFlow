@@ -505,6 +505,7 @@ class _HourMarkersMultiDay extends ConsumerWidget {
           date: date,
           latitude: settings.latitude,
           longitude: settings.longitude,
+          timezoneOffsetHours: settings.timezoneOffsetHours,
         );
       }
     }
@@ -647,7 +648,7 @@ class _DayDividers extends StatelessWidget {
 }
 
 /// Displays large watermark dates in the background of each day.
-class _DayWatermarks extends StatelessWidget {
+class _DayWatermarks extends ConsumerWidget {
   final double hourHeight;
   final bool upcomingTasksAboveNow;
   final DateTime referenceDate;
@@ -676,7 +677,8 @@ class _DayWatermarks extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
     final watermarks = <Widget>[];
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -712,6 +714,12 @@ class _DayWatermarks extends StatelessWidget {
               date: date,
               isToday: isToday,
               height: height,
+              showWeekNumber: settings.watermarkShowWeekNumber,
+              showDayOfYear: settings.watermarkShowDayOfYear,
+              showHolidays: settings.watermarkShowHolidays,
+              showMoonPhase: settings.watermarkShowMoonPhase,
+              showQuarter: settings.watermarkShowQuarter,
+              showDaysRemaining: settings.watermarkShowDaysRemaining,
             ),
           ),
         ),

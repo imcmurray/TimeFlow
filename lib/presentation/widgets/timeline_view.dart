@@ -357,94 +357,101 @@ class TimelineViewState extends ConsumerState<TimelineView> {
     final use24Hour = ref.watch(settingsProvider).use24HourFormat;
     final currentHour = _currentTime.hour;
 
+    // Calculate the NOW line offset for scrollable content
+    final nowOffset = _getOffsetForDateTime(_currentTime);
+
     return TimeOfDayBackground(
       hour: currentHour,
       isDark: isDark,
-      child: Stack(
-        children: [
-          // Scrollable timeline content
-          NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              if (notification is ScrollStartNotification) {
-                if (notification.dragDetails != null) {
-                  _isUserScrolling = true;
-                }
-              } else if (notification is ScrollEndNotification) {
-                _isUserScrolling = false;
-              }
-              return false;
-            },
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              physics: const BouncingScrollPhysics(),
-              child: SizedBox(
-                height: _totalHeight + MediaQuery.of(context).size.height,
-                child: Stack(
-                  children: [
-                    // Hour markers and day dividers
-                    Positioned(
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: 60,
-                      child: _HourMarkersMultiDay(
-                        hourHeight: _hourHeight,
-                        upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
-                        referenceDate: _referenceDate,
-                        daysLoadedBefore: _daysLoadedBefore,
-                        daysLoadedAfter: _daysLoadedAfter,
-                        use24HourFormat: use24Hour,
-                      ),
-                    ),
-
-                    // Timeline line
-                    Positioned(
-                      left: 56,
-                      top: 0,
-                      bottom: 0,
-                      width: 2,
-                      child: Container(
-                        color: isDark ? AppColors.timelineDark : AppColors.timelineLight,
-                      ),
-                    ),
-
-                    // Day dividers (full width) - now with sunrise/sunset icons
-                    _DayDividers(
-                      hourHeight: _hourHeight,
-                      upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
-                      referenceDate: _referenceDate,
-                      daysLoadedBefore: _daysLoadedBefore,
-                      daysLoadedAfter: _daysLoadedAfter,
-                    ),
-
-                    // Task cards area with breathing room indicators
-                    Positioned(
-                      left: 70,
-                      right: 16,
-                      top: 0,
-                      bottom: 0,
-                      child: _TaskCardsLayerMultiDay(
-                        hourHeight: _hourHeight,
-                        upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
-                        referenceDate: _referenceDate,
-                        daysLoadedBefore: _daysLoadedBefore,
-                        daysLoadedAfter: _daysLoadedAfter,
-                        loadedRange: _loadedRange,
-                      ),
-                    ),
-                  ],
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollStartNotification) {
+            if (notification.dragDetails != null) {
+              _isUserScrolling = true;
+            }
+          } else if (notification is ScrollEndNotification) {
+            _isUserScrolling = false;
+          }
+          return false;
+        },
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(),
+          child: SizedBox(
+            height: _totalHeight + MediaQuery.of(context).size.height,
+            child: Stack(
+              children: [
+                // Hour markers and day dividers
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 60,
+                  child: _HourMarkersMultiDay(
+                    hourHeight: _hourHeight,
+                    upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                    referenceDate: _referenceDate,
+                    daysLoadedBefore: _daysLoadedBefore,
+                    daysLoadedAfter: _daysLoadedAfter,
+                    use24HourFormat: use24Hour,
+                  ),
                 ),
-              ),
+
+                // Timeline line
+                Positioned(
+                  left: 56,
+                  top: 0,
+                  bottom: 0,
+                  width: 2,
+                  child: Container(
+                    color: isDark ? AppColors.timelineDark : AppColors.timelineLight,
+                  ),
+                ),
+
+                // Day dividers (full width) - now with sunrise/sunset icons
+                _DayDividers(
+                  hourHeight: _hourHeight,
+                  upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                  referenceDate: _referenceDate,
+                  daysLoadedBefore: _daysLoadedBefore,
+                  daysLoadedAfter: _daysLoadedAfter,
+                ),
+
+                // Day watermarks (large background date numbers)
+                _DayWatermarks(
+                  hourHeight: _hourHeight,
+                  upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                  referenceDate: _referenceDate,
+                  daysLoadedBefore: _daysLoadedBefore,
+                  daysLoadedAfter: _daysLoadedAfter,
+                ),
+
+                // Task cards area with breathing room indicators
+                Positioned(
+                  left: 70,
+                  right: 16,
+                  top: 0,
+                  bottom: 0,
+                  child: _TaskCardsLayerMultiDay(
+                    hourHeight: _hourHeight,
+                    upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                    referenceDate: _referenceDate,
+                    daysLoadedBefore: _daysLoadedBefore,
+                    daysLoadedAfter: _daysLoadedAfter,
+                    loadedRange: _loadedRange,
+                  ),
+                ),
+
+                // Scrollable NOW line (scrolls with content)
+                _NowLineScrollable(
+                  currentTime: _currentTime,
+                  nowOffset: nowOffset,
+                  use24HourFormat: use24Hour,
+                ),
+              ],
             ),
           ),
-
-          // Fixed NOW line (stays in place at 75% down the screen)
-          _FixedNowLine(
-            currentTime: _currentTime,
-            use24HourFormat: use24Hour,
-            nowLinePosition: _nowLinePosition,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -636,6 +643,82 @@ class _DayDividers extends StatelessWidget {
     }
 
     return Stack(children: dividers);
+  }
+}
+
+/// Displays large watermark dates in the background of each day.
+class _DayWatermarks extends StatelessWidget {
+  final double hourHeight;
+  final bool upcomingTasksAboveNow;
+  final DateTime referenceDate;
+  final int daysLoadedBefore;
+  final int daysLoadedAfter;
+
+  const _DayWatermarks({
+    required this.hourHeight,
+    required this.upcomingTasksAboveNow,
+    required this.referenceDate,
+    required this.daysLoadedBefore,
+    required this.daysLoadedAfter,
+  });
+
+  double _getOffsetForHour(int dayOffset, int hour) {
+    final hoursFromReference = (dayOffset * 24) + hour;
+    final referenceOffset = upcomingTasksAboveNow
+        ? daysLoadedAfter * 24 * hourHeight
+        : daysLoadedBefore * 24 * hourHeight;
+
+    if (upcomingTasksAboveNow) {
+      return referenceOffset - (hoursFromReference * hourHeight);
+    } else {
+      return referenceOffset + (hoursFromReference * hourHeight);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final watermarks = <Widget>[];
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // Position watermarks in the early morning hours (around 4-8 AM)
+    // This area typically has fewer tasks
+    const watermarkStartHour = 4;
+    const watermarkHeightHours = 5; // Spans about 5 hours
+
+    for (int dayOffset = -daysLoadedBefore; dayOffset <= daysLoadedAfter; dayOffset++) {
+      final date = referenceDate.add(Duration(days: dayOffset));
+
+      final isToday = date.year == today.year &&
+          date.month == today.month &&
+          date.day == today.day;
+
+      // Calculate position for this day's watermark
+      final topOffset = _getOffsetForHour(dayOffset, watermarkStartHour);
+      final bottomOffset = _getOffsetForHour(dayOffset, watermarkStartHour + watermarkHeightHours);
+
+      // For upcomingTasksAboveNow, the bottom offset is smaller than top offset
+      final actualTop = upcomingTasksAboveNow ? bottomOffset : topOffset;
+      final height = (watermarkHeightHours * hourHeight).abs();
+
+      watermarks.add(
+        Positioned(
+          top: actualTop,
+          left: 70,
+          right: 16,
+          height: height,
+          child: IgnorePointer(
+            child: DayWatermark(
+              date: date,
+              isToday: isToday,
+              height: height,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Stack(children: watermarks);
   }
 }
 

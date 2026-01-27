@@ -35,11 +35,11 @@ class Settings {
   final bool use24HourFormat;
 
   /// User's latitude for sunrise/sunset calculations.
-  /// Default is approximately 40°N (northern US/Europe).
+  /// Default is 45°N (mid-latitude, reasonable for most users).
   final double latitude;
 
   /// User's longitude for sunrise/sunset calculations.
-  /// Default is approximately 74°W (US East Coast).
+  /// Default is 0.0 which signals auto-detection from device timezone.
   final double longitude;
 
   /// Whether to show sunrise/sunset indicators on the timeline.
@@ -56,8 +56,8 @@ class Settings {
     this.reminderSoundEnabled = true,
     this.reminderSound = 'chime',
     this.use24HourFormat = false,
-    this.latitude = 40.0,
-    this.longitude = -74.0,
+    this.latitude = 45.0,
+    this.longitude = 0.0,
     this.showSunTimes = true,
   });
 

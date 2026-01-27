@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timeflow/domain/entities/settings.dart';
+import 'package:timeflow/services/sun_times_service.dart';
 
 /// Notifier for managing app settings state with persistence.
 class SettingsNotifier extends Notifier<Settings> {
@@ -28,6 +29,24 @@ class SettingsNotifier extends Notifier<Settings> {
 
   Future<void> _loadSettings() async {
     _prefs = await SharedPreferences.getInstance();
+
+    // Auto-detect location from timezone if not previously set
+    final hasCustomLocation = _prefs!.containsKey(_keyLatitude) &&
+        _prefs!.containsKey(_keyLongitude);
+
+    double latitude;
+    double longitude;
+
+    if (hasCustomLocation) {
+      latitude = _prefs!.getDouble(_keyLatitude) ?? 45.0;
+      longitude = _prefs!.getDouble(_keyLongitude) ?? 0.0;
+    } else {
+      // Estimate location from device timezone
+      // Use mid-latitude (45) as default, estimate longitude from timezone
+      latitude = 45.0;
+      longitude = SunTimesService.estimateLongitudeFromTimezone();
+    }
+
     state = Settings(
       theme: _prefs!.getString(_keyTheme) ?? 'auto',
       defaultReminderMinutes: _prefs!.getInt(_keyDefaultReminderMinutes) ?? 10,
@@ -39,8 +58,8 @@ class SettingsNotifier extends Notifier<Settings> {
       reminderSoundEnabled: _prefs!.getBool(_keyReminderSoundEnabled) ?? true,
       reminderSound: _prefs!.getString(_keyReminderSound) ?? 'chime',
       use24HourFormat: _prefs!.getBool(_keyUse24HourFormat) ?? false,
-      latitude: _prefs!.getDouble(_keyLatitude) ?? 40.0,
-      longitude: _prefs!.getDouble(_keyLongitude) ?? -74.0,
+      latitude: latitude,
+      longitude: longitude,
       showSunTimes: _prefs!.getBool(_keyShowSunTimes) ?? true,
     );
   }

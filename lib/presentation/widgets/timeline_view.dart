@@ -357,94 +357,92 @@ class TimelineViewState extends ConsumerState<TimelineView> {
     final use24Hour = ref.watch(settingsProvider).use24HourFormat;
     final currentHour = _currentTime.hour;
 
+    // Calculate the NOW line offset for scrollable content
+    final nowOffset = _getOffsetForDateTime(_currentTime);
+
     return TimeOfDayBackground(
       hour: currentHour,
       isDark: isDark,
-      child: Stack(
-        children: [
-          // Scrollable timeline content
-          NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              if (notification is ScrollStartNotification) {
-                if (notification.dragDetails != null) {
-                  _isUserScrolling = true;
-                }
-              } else if (notification is ScrollEndNotification) {
-                _isUserScrolling = false;
-              }
-              return false;
-            },
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              physics: const BouncingScrollPhysics(),
-              child: SizedBox(
-                height: _totalHeight + MediaQuery.of(context).size.height,
-                child: Stack(
-                  children: [
-                    // Hour markers and day dividers
-                    Positioned(
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: 60,
-                      child: _HourMarkersMultiDay(
-                        hourHeight: _hourHeight,
-                        upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
-                        referenceDate: _referenceDate,
-                        daysLoadedBefore: _daysLoadedBefore,
-                        daysLoadedAfter: _daysLoadedAfter,
-                        use24HourFormat: use24Hour,
-                      ),
-                    ),
-
-                    // Timeline line
-                    Positioned(
-                      left: 56,
-                      top: 0,
-                      bottom: 0,
-                      width: 2,
-                      child: Container(
-                        color: isDark ? AppColors.timelineDark : AppColors.timelineLight,
-                      ),
-                    ),
-
-                    // Day dividers (full width) - now with sunrise/sunset icons
-                    _DayDividers(
-                      hourHeight: _hourHeight,
-                      upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
-                      referenceDate: _referenceDate,
-                      daysLoadedBefore: _daysLoadedBefore,
-                      daysLoadedAfter: _daysLoadedAfter,
-                    ),
-
-                    // Task cards area with breathing room indicators
-                    Positioned(
-                      left: 70,
-                      right: 16,
-                      top: 0,
-                      bottom: 0,
-                      child: _TaskCardsLayerMultiDay(
-                        hourHeight: _hourHeight,
-                        upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
-                        referenceDate: _referenceDate,
-                        daysLoadedBefore: _daysLoadedBefore,
-                        daysLoadedAfter: _daysLoadedAfter,
-                        loadedRange: _loadedRange,
-                      ),
-                    ),
-                  ],
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollStartNotification) {
+            if (notification.dragDetails != null) {
+              _isUserScrolling = true;
+            }
+          } else if (notification is ScrollEndNotification) {
+            _isUserScrolling = false;
+          }
+          return false;
+        },
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(),
+          child: SizedBox(
+            height: _totalHeight + MediaQuery.of(context).size.height,
+            child: Stack(
+              children: [
+                // Hour markers and day dividers
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 60,
+                  child: _HourMarkersMultiDay(
+                    hourHeight: _hourHeight,
+                    upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                    referenceDate: _referenceDate,
+                    daysLoadedBefore: _daysLoadedBefore,
+                    daysLoadedAfter: _daysLoadedAfter,
+                    use24HourFormat: use24Hour,
+                  ),
                 ),
-              ),
+
+                // Timeline line
+                Positioned(
+                  left: 56,
+                  top: 0,
+                  bottom: 0,
+                  width: 2,
+                  child: Container(
+                    color: isDark ? AppColors.timelineDark : AppColors.timelineLight,
+                  ),
+                ),
+
+                // Day dividers (full width) - now with sunrise/sunset icons
+                _DayDividers(
+                  hourHeight: _hourHeight,
+                  upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                  referenceDate: _referenceDate,
+                  daysLoadedBefore: _daysLoadedBefore,
+                  daysLoadedAfter: _daysLoadedAfter,
+                ),
+
+                // Task cards area with breathing room indicators
+                Positioned(
+                  left: 70,
+                  right: 16,
+                  top: 0,
+                  bottom: 0,
+                  child: _TaskCardsLayerMultiDay(
+                    hourHeight: _hourHeight,
+                    upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                    referenceDate: _referenceDate,
+                    daysLoadedBefore: _daysLoadedBefore,
+                    daysLoadedAfter: _daysLoadedAfter,
+                    loadedRange: _loadedRange,
+                  ),
+                ),
+
+                // Scrollable NOW line (scrolls with content)
+                _NowLineScrollable(
+                  currentTime: _currentTime,
+                  nowOffset: nowOffset,
+                  use24HourFormat: use24Hour,
+                ),
+              ],
             ),
           ),
-
-          // Fixed NOW line (stays in place at 75% down the screen)
-          _FixedNowLine(
-            currentTime: _currentTime,
-            use24HourFormat: use24Hour,
-            nowLinePosition: _nowLinePosition,
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -5,22 +5,48 @@ import 'dart:math' as math;
 /// Uses a simplified solar position algorithm that provides reasonably
 /// accurate times for most locations. Accuracy is typically within a few minutes.
 class SunTimesService {
-  /// Default latitude (approximately northern US/Europe).
-  static const double defaultLatitude = 40.0;
+  /// Default latitude (approximately mid-latitude).
+  static const double defaultLatitude = 45.0;
 
-  /// Default longitude (approximately central US).
-  static const double defaultLongitude = -74.0;
+  /// Default longitude - will be estimated from timezone if not set.
+  static const double defaultLongitude = 0.0;
+
+  /// Estimates longitude from the device's timezone offset.
+  /// Timezones are roughly based on 15 degrees of longitude per hour.
+  static double estimateLongitudeFromTimezone() {
+    final now = DateTime.now();
+    final offsetHours = now.timeZoneOffset.inMinutes / 60.0;
+    // Each hour of timezone offset ≈ 15 degrees of longitude
+    return offsetHours * 15.0;
+  }
+
+  /// Gets the timezone offset in hours for the current device.
+  static double getTimezoneOffsetHours() {
+    return DateTime.now().timeZoneOffset.inMinutes / 60.0;
+  }
 
   /// Calculates sunrise and sunset times for a given date and location.
   ///
   /// Returns a [SunTimes] record with sunrise and sunset as DateTime objects.
   /// If the sun doesn't rise or set on this day (polar regions), returns null
   /// for those values.
+  ///
+  /// The [timezoneOffsetHours] parameter should be the device's timezone offset
+  /// (e.g., -5 for EST, +1 for CET). If not provided, it will be auto-detected.
   static SunTimes calculate({
     required DateTime date,
     double latitude = defaultLatitude,
     double longitude = defaultLongitude,
+    double? timezoneOffsetHours,
   }) {
+    // Use provided timezone offset or detect from device
+    final tzOffset = timezoneOffsetHours ?? getTimezoneOffsetHours();
+
+    // If longitude is 0 (default/unset), estimate from timezone
+    final effectiveLongitude = (longitude == 0.0)
+        ? estimateLongitudeFromTimezone()
+        : longitude;
+
     // Day of year (1-366)
     final dayOfYear = _dayOfYear(date);
 
@@ -58,19 +84,20 @@ class SunTimesService {
     // Convert hour angle to hours
     final hourAngleHours = hourAngle * 180 / math.pi / 15;
 
-    // Solar noon (approximately 12:00 adjusted for longitude)
-    // Simplified: assumes local time zone roughly aligns with longitude
-    final solarNoon = 12.0 - longitude / 15;
-
     // Equation of time correction (simplified)
     final eot = _equationOfTime(dayOfYear);
 
-    // Adjusted solar noon
-    final adjustedNoon = solarNoon - eot / 60;
+    // Calculate solar noon in UTC, then convert to local time
+    // Solar noon at longitude 0 is 12:00 UTC
+    // Each 15 degrees of longitude shifts solar noon by 1 hour
+    final solarNoonUTC = 12.0 - effectiveLongitude / 15 - eot / 60;
 
-    // Sunrise and sunset times
-    final sunriseHour = adjustedNoon - hourAngleHours;
-    final sunsetHour = adjustedNoon + hourAngleHours;
+    // Convert to local time by adding timezone offset
+    final solarNoonLocal = solarNoonUTC + tzOffset;
+
+    // Sunrise and sunset times in local time
+    final sunriseHour = solarNoonLocal - hourAngleHours;
+    final sunsetHour = solarNoonLocal + hourAngleHours;
 
     return SunTimes(
       sunrise: _hoursToDateTime(date, sunriseHour),

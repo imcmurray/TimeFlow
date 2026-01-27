@@ -444,7 +444,7 @@ class DayWatermark extends StatelessWidget {
 
                   // Secondary info line (Week • Quarter • Day of Year)
                   if (infoParts.isNotEmpty) ...[
-                    const SizedBox(height: holidayName != null ? 8 : 16),
+                    SizedBox(height: holidayName != null ? 8 : 16),
                     Text(
                       infoParts.join('  •  '),
                       style: TextStyle(

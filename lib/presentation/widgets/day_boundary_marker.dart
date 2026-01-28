@@ -310,6 +310,7 @@ class SimpleDayDivider extends StatelessWidget {
 
 /// Large watermark date displayed in the background of each day.
 /// Shows a big day number that's semi-transparent so tasks can overlay it.
+/// Supports brightness boost on hover/tap via [isHighlighted].
 class DayWatermark extends StatelessWidget {
   final DateTime date;
   final bool isToday;
@@ -320,6 +321,8 @@ class DayWatermark extends StatelessWidget {
   final bool showMoonPhase;
   final bool showQuarter;
   final bool showDaysRemaining;
+  /// When true, displays watermark at higher opacity (brighter)
+  final bool isHighlighted;
 
   const DayWatermark({
     super.key,
@@ -332,6 +335,7 @@ class DayWatermark extends StatelessWidget {
     this.showMoonPhase = false,
     this.showQuarter = false,
     this.showDaysRemaining = false,
+    this.isHighlighted = false,
   });
 
   @override
@@ -343,20 +347,38 @@ class DayWatermark extends StatelessWidget {
     final dayNumber = date.day.toString();
     final dayName = DateFormat('EEEE').format(date);
 
-    // Color for the watermark - subtle but visible
+    // Opacity multiplier for highlighted state (3x brighter when highlighted)
+    final opacityMultiplier = isHighlighted ? 3.0 : 1.0;
+
+    // Color for the watermark - subtle but visible, boosted when highlighted
+    final baseWatermarkOpacity = isToday
+        ? (isDark ? 0.12 : 0.08)
+        : (isDark ? 0.04 : 0.03);
     final watermarkColor = isToday
-        ? colorScheme.primary.withOpacity(isDark ? 0.12 : 0.08)
-        : (isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03));
+        ? colorScheme.primary.withOpacity((baseWatermarkOpacity * opacityMultiplier).clamp(0.0, 0.5))
+        : (isDark
+            ? Colors.white.withOpacity((baseWatermarkOpacity * opacityMultiplier).clamp(0.0, 0.3))
+            : Colors.black.withOpacity((baseWatermarkOpacity * opacityMultiplier).clamp(0.0, 0.2)));
 
     // Slightly more visible color for secondary info
+    final baseSecondaryOpacity = isToday
+        ? (isDark ? 0.10 : 0.06)
+        : (isDark ? 0.03 : 0.025);
     final secondaryColor = isToday
-        ? colorScheme.primary.withOpacity(isDark ? 0.10 : 0.06)
-        : (isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.025));
+        ? colorScheme.primary.withOpacity((baseSecondaryOpacity * opacityMultiplier).clamp(0.0, 0.4))
+        : (isDark
+            ? Colors.white.withOpacity((baseSecondaryOpacity * opacityMultiplier).clamp(0.0, 0.25))
+            : Colors.black.withOpacity((baseSecondaryOpacity * opacityMultiplier).clamp(0.0, 0.15)));
 
     // Holiday color (more prominent)
+    final baseHolidayOpacity = isToday
+        ? (isDark ? 0.18 : 0.12)
+        : (isDark ? 0.12 : 0.18);
     final holidayColor = isToday
-        ? colorScheme.primary.withOpacity(isDark ? 0.18 : 0.12)
-        : (isDark ? Colors.amber.withOpacity(0.12) : Colors.amber.withOpacity(0.18));
+        ? colorScheme.primary.withOpacity((baseHolidayOpacity * opacityMultiplier).clamp(0.0, 0.6))
+        : (isDark
+            ? Colors.amber.withOpacity((baseHolidayOpacity * opacityMultiplier).clamp(0.0, 0.5))
+            : Colors.amber.withOpacity((baseHolidayOpacity * opacityMultiplier).clamp(0.0, 0.5)));
 
     // Build the secondary info line (Week X • Q1 • Day 28)
     final infoParts = <String>[];
@@ -393,7 +415,9 @@ class DayWatermark extends StatelessWidget {
       moonPhase = HolidaysService.getMoonPhaseEmoji(date);
     }
 
-    return SizedBox(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
       height: height,
       child: Stack(
         children: [
@@ -407,64 +431,69 @@ class DayWatermark extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Big day number
-                  Text(
-                    dayNumber,
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 300),
                     style: TextStyle(
                       fontSize: 120,
                       fontWeight: FontWeight.w800,
                       color: watermarkColor,
                       height: 1.0,
                     ),
+                    child: Text(dayNumber),
                   ),
 
                   // Day name
-                  Text(
-                    dayName.toUpperCase(),
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 300),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 6,
                       color: watermarkColor,
                     ),
+                    child: Text(dayName.toUpperCase()),
                   ),
 
                   // Holiday name (if any) - slightly more prominent
                   if (holidayName != null) ...[
                     const SizedBox(height: 12),
-                    Text(
-                      holidayName.toUpperCase(),
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 300),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 3,
                         color: holidayColor,
                       ),
+                      child: Text(holidayName.toUpperCase()),
                     ),
                   ],
 
                   // Secondary info line (Week • Quarter • Day of Year)
                   if (infoParts.isNotEmpty) ...[
                     SizedBox(height: holidayName != null ? 12 : 20),
-                    Text(
-                      infoParts.join('  •  '),
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 300),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 3,
                         color: secondaryColor,
                       ),
+                      child: Text(infoParts.join('  •  ')),
                     ),
                   ],
 
                   // Moon phase on its own line
                   if (moonPhase != null) ...[
                     const SizedBox(height: 12),
-                    Text(
-                      moonPhase,
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 300),
                       style: TextStyle(
                         fontSize: 28,
                         color: secondaryColor,
                       ),
+                      child: Text(moonPhase),
                     ),
                   ],
                 ],

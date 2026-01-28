@@ -1858,7 +1858,7 @@ s.id=c
 b.appendChild(s)
 A.bcX(s,a,"normal normal 14px sans-serif")},
 bcX(a,b,c){var s,r,q,p=v.G
-a.append(p.document.createTextNode(b+" flt-scene-host {  font: "+c+";}"+b+" flt-semantics input[type=range] {  appearance: none;  -webkit-appearance: none;  width: 100%;  position: absolute;  border: none;  top: 0;  right: 0;  bottom: 0;  left: 0;}"+b+" input::selection {  background-color: transparent;}"+b+" textarea::selection {  background-color: transparent;}"+b+" flt-semantics input,"+b+" flt-semantics textarea,"+b+' flt-semantics [contentEditable="true"] {  caret-color: transparent;}'+b+" .flt-text-editing::placeholder {  opacity: 0;}"+b+":focus { outline: none;}"))
+a.append(p.document.createTextNode(b+" flt-scene-host {  font: "+c+";}"+b+" flt-semantics input[type=range] {  appearance: none;  -webkit-appearance: none;  width: 100%;  position: absolute;  border: none;  top: 0;  right: 0;  bottom: 0;  left: 0;}"+b+" input::selection {  background-color: transparent;}"+b+" textarea::selection {  background-color: transparent;}"+b+" flt-semantics input,"+b+" flt-semantics textarea,"+b+' flt-semantics [contentEditable="true"] {  caret-color: transparent;}'+b+" .flt-text-editing::placeholder {  opacity: 0;}"+b+":focus { outline: rgb(0, 0, 0) none 0px;}"))
 if($.bD().gef()===B.bC)a.append(p.document.createTextNode(b+" * {  -webkit-tap-highlight-color: transparent;}"+b+" flt-semantics input[type=range]::-webkit-slider-thumb {  -webkit-appearance: none;}"))
 if($.bD().gef()===B.dA)a.append(p.document.createTextNode(b+" flt-paragraph,"+b+" flt-span {  line-height: 100%;}"))
 if($.bD().gef()===B.d5||$.bD().gef()===B.bC)a.append(p.document.createTextNode(b+" .transparentTextEditing:-webkit-autofill,"+b+" .transparentTextEditing:-webkit-autofill:hover,"+b+" .transparentTextEditing:-webkit-autofill:focus,"+b+" .transparentTextEditing:-webkit-autofill:active {  opacity: 0 !important;}"))
@@ -32065,7 +32065,7 @@ $S:2}
 A.aL4.prototype={
 $1(a){var s=A.dX().b
 s=s==null?null:s.canvasKitBaseUrl
-return(s==null?"https://www.gstatic.com/flutter-canvaskit/78fc3012e45889657f72359b005af7beac47ba3d/":s)+a},
+return(s==null?"https://www.gstatic.com/flutter-canvaskit/db373eb85a06eb3d706af362a45d42d0972f4b46/":s)+a},
 $S:55}
 A.Sh.prototype={
 gA(a){var s=this.a
@@ -103336,10 +103336,10 @@ c=d.rx
 d=A.aPh("Branch: main",A.cz(a1,a1,c==null?d.k3:c,a1,a1,a1,a1,a1,a2,a1,a1,12,a1,a1,a1,a1,a1,!0,a1,a1,a1,a1,a1,a1,a1,a1))
 c=A.E(b5).ax
 b=c.rx
-c=A.aPh("Commit: 1443837",A.cz(a1,a1,b==null?c.k3:b,a1,a1,a1,a1,a1,a2,a1,a1,12,a1,a1,a1,a1,a1,!0,a1,a1,a1,a1,a1,a1,a1,a1))
+c=A.aPh("Commit: 0a0f211",A.cz(a1,a1,b==null?c.k3:b,a1,a1,a1,a1,a1,a2,a1,a1,12,a1,a1,a1,a1,a1,!0,a1,a1,a1,a1,a1,a1,a1,a1))
 b=A.E(b5).ax
 a=b.rx
-return A.tV(a3,a1,A.aOF(A.b([new A.oi("Appearance",a1),a7,a8,a9,b0,B.cQ,new A.oi("Location & Time",a1),b1,b2,B.cQ,new A.oi("Day Watermark",a1),b4,b3,s,r,q,p,B.cQ,new A.oi("Notifications",a1),n,o,m,l,k,B.cQ,new A.oi("Data",a1),a4,j,a5,B.cQ,new A.oi("About",a1),a6,A.ce(a1,A.bV(A.b([e,B.jC,d,B.e3,c,B.e3,A.aPh("Built: 2026-01-27T09:24:01Z",A.cz(a1,a1,a==null?b.k3:a,a1,a1,a1,a1,a1,a2,a1,a1,12,a1,a1,a1,a1,a1,!0,a1,a1,a1,a1,a1,a1,a1,a1))],f),B.a8,B.m,B.r,0,B.D),B.n,a1,a1,new A.bY(i,a1,g,h,a1,a1,B.R),a1,a1,B.q1,B.Kd,a1,a1,a1),A.h_(!1,a1,a1,a1,!0,a1,a1,!0,a1,B.M5,a1,new A.aGo(a0),!1,a1,a1,a1,B.a38,a1,B.Da,a1,a1,a1),A.h_(!1,a1,a1,a1,!0,a1,a1,!0,a1,B.Mt,a1,new A.aGp(a0),!1,a1,a1,a1,a1,a1,B.Dd,a1,a1,a1),A.h_(!1,a1,a1,a1,!0,a1,a1,!0,a1,B.M0,a1,new A.aGq(a0),!1,a1,a1,a1,a1,a1,B.Dc,a1,a1,a1)],f),a1,a1,!1),a1,a1)},
+return A.tV(a3,a1,A.aOF(A.b([new A.oi("Appearance",a1),a7,a8,a9,b0,B.cQ,new A.oi("Location & Time",a1),b1,b2,B.cQ,new A.oi("Day Watermark",a1),b4,b3,s,r,q,p,B.cQ,new A.oi("Notifications",a1),n,o,m,l,k,B.cQ,new A.oi("Data",a1),a4,j,a5,B.cQ,new A.oi("About",a1),a6,A.ce(a1,A.bV(A.b([e,B.jC,d,B.e3,c,B.e3,A.aPh("Built: 2026-01-28T01:22:28Z",A.cz(a1,a1,a==null?b.k3:a,a1,a1,a1,a1,a1,a2,a1,a1,12,a1,a1,a1,a1,a1,!0,a1,a1,a1,a1,a1,a1,a1,a1))],f),B.a8,B.m,B.r,0,B.D),B.n,a1,a1,new A.bY(i,a1,g,h,a1,a1,B.R),a1,a1,B.q1,B.Kd,a1,a1,a1),A.h_(!1,a1,a1,a1,!0,a1,a1,!0,a1,B.M5,a1,new A.aGo(a0),!1,a1,a1,a1,B.a38,a1,B.Da,a1,a1,a1),A.h_(!1,a1,a1,a1,!0,a1,a1,!0,a1,B.Mt,a1,new A.aGp(a0),!1,a1,a1,a1,a1,a1,B.Dd,a1,a1,a1),A.h_(!1,a1,a1,a1,!0,a1,a1,!0,a1,B.M0,a1,new A.aGq(a0),!1,a1,a1,a1,a1,a1,B.Dc,a1,a1,a1)],f),a1,a1,!1),a1,a1)},
 att(a){switch(a){case"light":return"Light"
 case"dark":return"Dark"
 case"auto":default:return"System default"}},
@@ -103683,7 +103683,7 @@ $0(){A.bC(this.a,!1).cQ(null)
 return null},
 $S:0}
 A.aFW.prototype={
-$1(a){var s=null,r=t.p,q=A.bV(A.b([A.ao("Version: "+this.a.c,s,s,s,s,s,s,s),A.ao("Build: #1 (1443837)",s,s,s,s,s,s,s),B.bA,B.a4s,B.jC,A.hr(!1,s,!0,A.ao("View or create issues on GitHub",s,s,s,A.cz(s,s,A.E(a).ax.b,s,B.hv,s,s,s,s,s,s,s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s,s),s,!0,s,s,s,s,s,s,s,s,s,s,s,new A.aFU(),s,s,s,s)],r),B.a8,B.m,B.a0,0,B.D)
+$1(a){var s=null,r=t.p,q=A.bV(A.b([A.ao("Version: "+this.a.c,s,s,s,s,s,s,s),A.ao("Build: #1 (0a0f211)",s,s,s,s,s,s,s),B.bA,B.a4s,B.jC,A.hr(!1,s,!0,A.ao("View or create issues on GitHub",s,s,s,A.cz(s,s,A.E(a).ax.b,s,B.hv,s,s,s,s,s,s,s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s,s),s,!0,s,s,s,s,s,s,s,s,s,s,s,new A.aFU(),s,s,s,s)],r),B.a8,B.m,B.a0,0,B.D)
 return A.hN(A.b([A.dD(B.nl,new A.aFV(a),s)],r),q,!1,B.Da)},
 $S:20}
 A.aFU.prototype={

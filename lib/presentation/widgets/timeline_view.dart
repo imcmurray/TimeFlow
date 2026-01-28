@@ -418,12 +418,13 @@ class TimelineViewState extends ConsumerState<TimelineView> {
                 ),
 
                 // Day watermarks (large background date numbers)
-                _DayWatermarks(
+                _DayWatermarksWithTasks(
                   hourHeight: _hourHeight,
                   upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
                   referenceDate: _referenceDate,
                   daysLoadedBefore: _daysLoadedBefore,
                   daysLoadedAfter: _daysLoadedAfter,
+                  loadedRange: _loadedRange,
                 ),
 
                 // Task cards area with breathing room indicators
@@ -477,7 +478,7 @@ class _HourMarkersMultiDay extends ConsumerWidget {
 
   int get _totalDays => daysLoadedBefore + daysLoadedAfter + 1;
 
-  double _getOffsetForHour(int dayOffset, int hour) {
+  double _getOffsetForHour(int dayOffset, double hour) {
     final hoursFromReference = (dayOffset * 24) + hour;
     final referenceOffset = upcomingTasksAboveNow
         ? daysLoadedAfter * 24 * hourHeight
@@ -488,6 +489,11 @@ class _HourMarkersMultiDay extends ConsumerWidget {
     } else {
       return referenceOffset + (hoursFromReference * hourHeight);
     }
+  }
+
+  double _getOffsetForDateTime(int dayOffset, DateTime time) {
+    final fractionalHour = time.hour + (time.minute / 60.0);
+    return _getOffsetForHour(dayOffset, fractionalHour);
   }
 
   @override
@@ -517,15 +523,7 @@ class _HourMarkersMultiDay extends ConsumerWidget {
       final sunTimes = sunTimesMap[dayOffset];
 
       for (int hour = 0; hour < 24; hour++) {
-        final offset = _getOffsetForHour(dayOffset, hour);
-
-        // Check if this hour is sunrise or sunset
-        final isSunrise = settings.showSunTimes &&
-            sunTimes != null &&
-            sunTimes.sunriseHour == hour;
-        final isSunset = settings.showSunTimes &&
-            sunTimes != null &&
-            sunTimes.sunsetHour == hour;
+        final offset = _getOffsetForHour(dayOffset, hour.toDouble());
 
         markers.add(
           Positioned(
@@ -534,34 +532,15 @@ class _HourMarkersMultiDay extends ConsumerWidget {
             right: 4,
             child: Row(
               children: [
-                // Sun indicator (sunrise/sunset icon)
-                if (isSunrise || isSunset)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 2),
-                    child: Icon(
-                      isSunrise ? Icons.wb_sunny : Icons.nightlight_round,
-                      size: 12,
-                      color: isSunrise
-                          ? const Color(0xFFFFB74D) // Amber/orange for sunrise
-                          : const Color(0xFF7986CB), // Indigo for sunset
-                    ),
-                  )
-                else
-                  const SizedBox(width: 14), // Placeholder to align text
+                const SizedBox(width: 14), // Placeholder to align text
                 // Hour text
                 Expanded(
                   child: Text(
                     _formatHour(hour),
                     style: TextStyle(
                       fontSize: 11,
-                      color: (isSunrise || isSunset)
-                          ? (isSunrise
-                              ? const Color(0xFFFFB74D)
-                              : const Color(0xFF7986CB))
-                          : markerColor,
-                      fontWeight: (isSunrise || isSunset)
-                          ? FontWeight.w600
-                          : FontWeight.w500,
+                      color: markerColor,
+                      fontWeight: FontWeight.w500,
                     ),
                     textAlign: TextAlign.right,
                   ),
@@ -570,6 +549,75 @@ class _HourMarkersMultiDay extends ConsumerWidget {
             ),
           ),
         );
+      }
+
+      // Add exact sunrise/sunset time markers (positioned precisely between hours)
+      if (settings.showSunTimes && sunTimes != null) {
+        // Sunrise marker
+        if (sunTimes.sunrise != null && !sunTimes.isPolarDay && !sunTimes.isPolarNight) {
+          final sunriseOffset = _getOffsetForDateTime(dayOffset, sunTimes.sunrise!);
+          markers.add(
+            Positioned(
+              top: sunriseOffset - 8,
+              left: 2,
+              right: 2,
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.wb_sunny,
+                    size: 10,
+                    color: Color(0xFFFFB74D),
+                  ),
+                  const SizedBox(width: 1),
+                  Expanded(
+                    child: Text(
+                      _formatExactTime(sunTimes.sunrise!),
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: Color(0xFFFFB74D),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Sunset marker
+        if (sunTimes.sunset != null && !sunTimes.isPolarDay && !sunTimes.isPolarNight) {
+          final sunsetOffset = _getOffsetForDateTime(dayOffset, sunTimes.sunset!);
+          markers.add(
+            Positioned(
+              top: sunsetOffset - 8,
+              left: 2,
+              right: 2,
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.nightlight_round,
+                    size: 10,
+                    color: Color(0xFF7986CB),
+                  ),
+                  const SizedBox(width: 1),
+                  Expanded(
+                    child: Text(
+                      _formatExactTime(sunTimes.sunset!),
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: Color(0xFF7986CB),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
       }
     }
 
@@ -584,6 +632,15 @@ class _HourMarkersMultiDay extends ConsumerWidget {
     if (hour == 12) return '12 PM';
     if (hour < 12) return '$hour AM';
     return '${hour - 12} PM';
+  }
+
+  String _formatExactTime(DateTime time) {
+    if (use24HourFormat) {
+      return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    }
+    final hour = time.hour == 0 ? 12 : (time.hour > 12 ? time.hour - 12 : time.hour);
+    final period = time.hour >= 12 ? 'p' : 'a';
+    return '$hour:${time.minute.toString().padLeft(2, '0')}$period';
   }
 }
 
@@ -648,60 +705,159 @@ class _DayDividers extends StatelessWidget {
 }
 
 /// Displays large watermark dates in the background of each day.
-class _DayWatermarks extends ConsumerWidget {
+/// Adjusts position based on task overlap to avoid covering events.
+class _DayWatermarksWithTasks extends ConsumerStatefulWidget {
   final double hourHeight;
   final bool upcomingTasksAboveNow;
   final DateTime referenceDate;
   final int daysLoadedBefore;
   final int daysLoadedAfter;
+  final DateRange loadedRange;
 
-  const _DayWatermarks({
+  const _DayWatermarksWithTasks({
     required this.hourHeight,
     required this.upcomingTasksAboveNow,
     required this.referenceDate,
     required this.daysLoadedBefore,
     required this.daysLoadedAfter,
+    required this.loadedRange,
   });
 
-  double _getOffsetForHour(int dayOffset, int hour) {
-    final hoursFromReference = (dayOffset * 24) + hour;
-    final referenceOffset = upcomingTasksAboveNow
-        ? daysLoadedAfter * 24 * hourHeight
-        : daysLoadedBefore * 24 * hourHeight;
+  @override
+  ConsumerState<_DayWatermarksWithTasks> createState() => _DayWatermarksWithTasksState();
+}
 
-    if (upcomingTasksAboveNow) {
-      return referenceOffset - (hoursFromReference * hourHeight);
+class _DayWatermarksWithTasksState extends ConsumerState<_DayWatermarksWithTasks> {
+  // Track which day watermarks are currently highlighted (by day offset)
+  final Map<int, DateTime> _highlightedWatermarks = {};
+  Timer? _highlightTimer;
+
+  @override
+  void dispose() {
+    _highlightTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onWatermarkInteraction(int dayOffset) {
+    setState(() {
+      _highlightedWatermarks[dayOffset] = DateTime.now();
+    });
+    _startHighlightTimer();
+  }
+
+  void _startHighlightTimer() {
+    _highlightTimer?.cancel();
+    _highlightTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final now = DateTime.now();
+      final expiredKeys = <int>[];
+      for (final entry in _highlightedWatermarks.entries) {
+        if (now.difference(entry.value).inSeconds >= 30) {
+          expiredKeys.add(entry.key);
+        }
+      }
+      if (expiredKeys.isNotEmpty) {
+        setState(() {
+          for (final key in expiredKeys) {
+            _highlightedWatermarks.remove(key);
+          }
+        });
+      }
+      if (_highlightedWatermarks.isEmpty) {
+        _highlightTimer?.cancel();
+      }
+    });
+  }
+
+  double _getOffsetForHour(int dayOffset, double hour) {
+    final hoursFromReference = (dayOffset * 24) + hour;
+    final referenceOffset = widget.upcomingTasksAboveNow
+        ? widget.daysLoadedAfter * 24 * widget.hourHeight
+        : widget.daysLoadedBefore * 24 * widget.hourHeight;
+
+    if (widget.upcomingTasksAboveNow) {
+      return referenceOffset - (hoursFromReference * widget.hourHeight);
     } else {
-      return referenceOffset + (hoursFromReference * hourHeight);
+      return referenceOffset + (hoursFromReference * widget.hourHeight);
     }
   }
 
+  /// Find the best start hour for watermark (moving it earlier if tasks overlap)
+  int _findBestWatermarkStartHour(DateTime date, List<Task> tasks, int defaultStartHour, int watermarkHeightHours) {
+    final dayStart = DateTime(date.year, date.month, date.day);
+
+    // Try positions from the default down to 0 (midnight)
+    for (int startHour = defaultStartHour; startHour >= 0; startHour--) {
+      final watermarkStart = dayStart.add(Duration(hours: startHour));
+      final watermarkEnd = dayStart.add(Duration(hours: startHour + watermarkHeightHours));
+
+      bool hasOverlap = false;
+      for (final task in tasks) {
+        // Check if task is on this day and overlaps with watermark time range
+        if (task.startTime.isBefore(watermarkEnd) && task.endTime.isAfter(watermarkStart)) {
+          hasOverlap = true;
+          break;
+        }
+      }
+
+      if (!hasOverlap) {
+        return startHour;
+      }
+    }
+
+    // If all positions have overlap, use 0 (midnight) and let events overwrite
+    return 0;
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
-    final watermarks = <Widget>[];
+    final tasksAsync = ref.watch(tasksForRangeProvider(widget.loadedRange));
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    // Position watermarks in the early morning hours (around 4-8 AM)
-    // This area typically has fewer tasks
-    const watermarkStartHour = 4;
+    return tasksAsync.when(
+      loading: () => _buildWatermarks(context, settings, today, []),
+      error: (_, __) => _buildWatermarks(context, settings, today, []),
+      data: (tasks) => _buildWatermarks(context, settings, today, tasks),
+    );
+  }
+
+  Widget _buildWatermarks(BuildContext context, dynamic settings, DateTime today, List<Task> tasks) {
+    final watermarks = <Widget>[];
+
+    // Default position - early morning hours (around 4-8 AM)
+    const defaultWatermarkStartHour = 4;
     const watermarkHeightHours = 5; // Spans about 5 hours
 
-    for (int dayOffset = -daysLoadedBefore; dayOffset <= daysLoadedAfter; dayOffset++) {
-      final date = referenceDate.add(Duration(days: dayOffset));
+    for (int dayOffset = -widget.daysLoadedBefore; dayOffset <= widget.daysLoadedAfter; dayOffset++) {
+      final date = widget.referenceDate.add(Duration(days: dayOffset));
 
       final isToday = date.year == today.year &&
           date.month == today.month &&
           date.day == today.day;
 
+      // Filter tasks for this day
+      final dayStart = DateTime(date.year, date.month, date.day);
+      final dayEnd = dayStart.add(const Duration(days: 1));
+      final dayTasks = tasks.where((t) =>
+        t.startTime.isBefore(dayEnd) && t.endTime.isAfter(dayStart)
+      ).toList();
+
+      // Find the best position for the watermark (avoiding task overlap)
+      final watermarkStartHour = _findBestWatermarkStartHour(
+        date, dayTasks, defaultWatermarkStartHour, watermarkHeightHours
+      );
+
       // Calculate position for this day's watermark
-      final topOffset = _getOffsetForHour(dayOffset, watermarkStartHour);
-      final bottomOffset = _getOffsetForHour(dayOffset, watermarkStartHour + watermarkHeightHours);
+      final topOffset = _getOffsetForHour(dayOffset, watermarkStartHour.toDouble());
+      final bottomOffset = _getOffsetForHour(dayOffset, (watermarkStartHour + watermarkHeightHours).toDouble());
 
       // For upcomingTasksAboveNow, the bottom offset is smaller than top offset
-      final actualTop = upcomingTasksAboveNow ? bottomOffset : topOffset;
-      final height = (watermarkHeightHours * hourHeight).abs();
+      final actualTop = widget.upcomingTasksAboveNow ? bottomOffset : topOffset;
+      final height = (watermarkHeightHours * widget.hourHeight).abs();
+
+      // Check if this watermark is highlighted
+      final isHighlighted = _highlightedWatermarks.containsKey(dayOffset);
 
       watermarks.add(
         Positioned(
@@ -709,17 +865,23 @@ class _DayWatermarks extends ConsumerWidget {
           left: 70,
           right: 16,
           height: height,
-          child: IgnorePointer(
-            child: DayWatermark(
-              date: date,
-              isToday: isToday,
-              height: height,
-              showWeekNumber: settings.watermarkShowWeekNumber,
-              showDayOfYear: settings.watermarkShowDayOfYear,
-              showHolidays: settings.watermarkShowHolidays,
-              showMoonPhase: settings.watermarkShowMoonPhase,
-              showQuarter: settings.watermarkShowQuarter,
-              showDaysRemaining: settings.watermarkShowDaysRemaining,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => _onWatermarkInteraction(dayOffset),
+            child: MouseRegion(
+              onEnter: (_) => _onWatermarkInteraction(dayOffset),
+              child: DayWatermark(
+                date: date,
+                isToday: isToday,
+                height: height,
+                showWeekNumber: settings.watermarkShowWeekNumber,
+                showDayOfYear: settings.watermarkShowDayOfYear,
+                showHolidays: settings.watermarkShowHolidays,
+                showMoonPhase: settings.watermarkShowMoonPhase,
+                showQuarter: settings.watermarkShowQuarter,
+                showDaysRemaining: settings.watermarkShowDaysRemaining,
+                isHighlighted: isHighlighted,
+              ),
             ),
           ),
         ),

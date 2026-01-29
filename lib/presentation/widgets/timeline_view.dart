@@ -49,7 +49,8 @@ class TimelineView extends ConsumerStatefulWidget {
   ConsumerState<TimelineView> createState() => TimelineViewState();
 }
 
-class TimelineViewState extends ConsumerState<TimelineView> {
+class TimelineViewState extends ConsumerState<TimelineView>
+    with WidgetsBindingObserver {
   late final ScrollController _scrollController;
   Timer? _autoScrollTimer;
   Timer? _timeUpdateTimer;
@@ -57,6 +58,7 @@ class TimelineViewState extends ConsumerState<TimelineView> {
   bool _wasNowLineVisible = true;
   DateTime? _lastReportedVisibleDate;
   DateTime _currentTime = DateTime.now();
+  DateTime _lastUpdateTime = DateTime.now();
 
   /// Height in pixels per hour of timeline.
   static const double _hourHeight = 80.0;
@@ -78,6 +80,9 @@ class TimelineViewState extends ConsumerState<TimelineView> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+
+    // Register lifecycle observer to detect when app resumes
+    WidgetsBinding.instance.addObserver(this);
 
     // Set reference to today's midnight
     final now = DateTime.now();
@@ -103,6 +108,7 @@ class TimelineViewState extends ConsumerState<TimelineView> {
     _timeUpdateTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() {
         _currentTime = DateTime.now();
+        _lastUpdateTime = DateTime.now();
       });
     });
   }
@@ -116,11 +122,64 @@ class TimelineViewState extends ConsumerState<TimelineView> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _autoScrollTimer?.cancel();
     _timeUpdateTimer?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.resumed) {
+      // App has come back to foreground - immediately sync the NOW line
+      _syncNowLinePosition();
+    }
+  }
+
+  /// Syncs the NOW line position when returning from background.
+  /// This handles cases where the user left the app running and returns hours later.
+  void _syncNowLinePosition() {
+    final now = DateTime.now();
+    final timeSinceLastUpdate = now.difference(_lastUpdateTime);
+
+    // Always update current time
+    setState(() {
+      _currentTime = now;
+      _lastUpdateTime = now;
+    });
+
+    // If significant time has passed (more than 30 seconds), also update reference date
+    // in case we've crossed midnight while the app was in background
+    if (timeSinceLastUpdate.inSeconds > 30) {
+      final newReferenceDate = DateTime(now.year, now.month, now.day);
+      if (newReferenceDate != _referenceDate) {
+        _referenceDate = newReferenceDate;
+        _updateLoadedRange();
+      }
+
+      // Jump to NOW position (animated if not too far, immediate otherwise)
+      if (_scrollController.hasClients && !_isUserScrolling) {
+        final targetOffset = _calculateNowScrollOffset();
+        final currentOffset = _scrollController.offset;
+        final distance = (targetOffset - currentOffset).abs();
+
+        // If we've drifted significantly (more than 4 hours), jump immediately
+        // Otherwise animate smoothly
+        if (distance > _hourHeight * 4) {
+          _scrollController.jumpTo(targetOffset);
+        } else {
+          _scrollController.animateTo(
+            targetOffset,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+    }
   }
 
   /// Total number of days in the loaded range.

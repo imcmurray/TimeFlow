@@ -80,6 +80,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.location_on_outlined),
+            title: const Text('Location'),
+            subtitle: Text(_getLocationLabel(
+              ref.watch(settingsProvider).latitude,
+              ref.watch(settingsProvider).longitude,
+            )),
+            enabled: ref.watch(settingsProvider).showSunTimes,
+            onTap: ref.watch(settingsProvider).showSunTimes
+                ? () => _showLocationDialog()
+                : null,
+          ),
+          ListTile(
             leading: const Icon(Icons.schedule),
             title: const Text('Timezone'),
             subtitle: Text(_getTimezoneLabel(ref.watch(settingsProvider).timezoneOffsetHours)),
@@ -590,6 +602,114 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return 'UTC$sign${offset.toStringAsFixed(offset.truncateToDouble() == offset ? 0 : 1)}';
   }
 
+  String _getLocationLabel(double latitude, double longitude) {
+    // Try to match to a known location preset
+    for (final preset in _locationPresets) {
+      if ((preset.latitude - latitude).abs() < 0.5 &&
+          (preset.longitude - longitude).abs() < 0.5) {
+        return preset.name;
+      }
+    }
+    // Otherwise show coordinates
+    final latDir = latitude >= 0 ? 'N' : 'S';
+    final lonDir = longitude >= 0 ? 'E' : 'W';
+    return '${latitude.abs().toStringAsFixed(1)}°$latDir, ${longitude.abs().toStringAsFixed(1)}°$lonDir';
+  }
+
+  /// Location presets for common cities/regions
+  static const List<_LocationPreset> _locationPresets = [
+    // US West Coast
+    _LocationPreset('Seattle, WA', 47.6, -122.3),
+    _LocationPreset('Portland, OR', 45.5, -122.7),
+    _LocationPreset('San Francisco, CA', 37.8, -122.4),
+    _LocationPreset('Los Angeles, CA', 34.0, -118.2),
+    _LocationPreset('San Diego, CA', 32.7, -117.2),
+    // US Mountain
+    _LocationPreset('Denver, CO', 39.7, -105.0),
+    _LocationPreset('Salt Lake City, UT', 40.8, -111.9),
+    _LocationPreset('Phoenix, AZ', 33.4, -112.1),
+    _LocationPreset('Albuquerque, NM', 35.1, -106.6),
+    _LocationPreset('Las Vegas, NV', 36.2, -115.1),
+    _LocationPreset('Boise, ID', 43.6, -116.2),
+    // US Central
+    _LocationPreset('Chicago, IL', 41.9, -87.6),
+    _LocationPreset('Dallas, TX', 32.8, -96.8),
+    _LocationPreset('Houston, TX', 29.8, -95.4),
+    _LocationPreset('Minneapolis, MN', 44.9, -93.3),
+    _LocationPreset('Kansas City, MO', 39.1, -94.6),
+    // US East Coast
+    _LocationPreset('New York, NY', 40.7, -74.0),
+    _LocationPreset('Boston, MA', 42.4, -71.1),
+    _LocationPreset('Philadelphia, PA', 40.0, -75.2),
+    _LocationPreset('Washington, DC', 38.9, -77.0),
+    _LocationPreset('Miami, FL', 25.8, -80.2),
+    _LocationPreset('Atlanta, GA', 33.7, -84.4),
+    // International
+    _LocationPreset('London, UK', 51.5, -0.1),
+    _LocationPreset('Paris, France', 48.9, 2.3),
+    _LocationPreset('Berlin, Germany', 52.5, 13.4),
+    _LocationPreset('Tokyo, Japan', 35.7, 139.7),
+    _LocationPreset('Sydney, Australia', -33.9, 151.2),
+    _LocationPreset('Toronto, Canada', 43.7, -79.4),
+    _LocationPreset('Vancouver, Canada', 49.3, -123.1),
+  ];
+
+  void _showLocationDialog() {
+    final currentLat = ref.read(settingsProvider).latitude;
+    final currentLon = ref.read(settingsProvider).longitude;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Location'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: ListView.builder(
+            itemCount: _locationPresets.length,
+            itemBuilder: (context, index) {
+              final preset = _locationPresets[index];
+              final isSelected = (preset.latitude - currentLat).abs() < 0.5 &&
+                  (preset.longitude - currentLon).abs() < 0.5;
+              return ListTile(
+                title: Text(preset.name),
+                subtitle: Text(
+                  '${preset.latitude.abs().toStringAsFixed(1)}°${preset.latitude >= 0 ? 'N' : 'S'}, '
+                  '${preset.longitude.abs().toStringAsFixed(1)}°${preset.longitude >= 0 ? 'E' : 'W'}',
+                ),
+                leading: Radio<bool>(
+                  value: true,
+                  groupValue: isSelected,
+                  onChanged: (_) {
+                    ref.read(settingsProvider.notifier).setLocation(
+                      preset.latitude,
+                      preset.longitude,
+                    );
+                    Navigator.pop(context);
+                  },
+                ),
+                selected: isSelected,
+                onTap: () {
+                  ref.read(settingsProvider.notifier).setLocation(
+                    preset.latitude,
+                    preset.longitude,
+                  );
+                  Navigator.pop(context);
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showTimezoneDialog() {
     final currentOffset = ref.read(settingsProvider).timezoneOffsetHours;
 
@@ -941,4 +1061,13 @@ class _SectionHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A location preset with name and coordinates.
+class _LocationPreset {
+  final String name;
+  final double latitude;
+  final double longitude;
+
+  const _LocationPreset(this.name, this.latitude, this.longitude);
 }

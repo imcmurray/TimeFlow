@@ -35,7 +35,7 @@ class Settings {
   final bool use24HourFormat;
 
   /// User's latitude for sunrise/sunset calculations.
-  /// Default is 45°N (mid-latitude, reasonable for most users).
+  /// Default is 40°N (continental US average, good for MST/CST/EST regions).
   final double latitude;
 
   /// User's longitude for sunrise/sunset calculations.
@@ -80,7 +80,7 @@ class Settings {
     this.reminderSoundEnabled = true,
     this.reminderSound = 'chime',
     this.use24HourFormat = false,
-    this.latitude = 45.0,
+    this.latitude = 40.0,
     this.longitude = 0.0,
     this.timezoneOffsetHours,
     this.showSunTimes = true,

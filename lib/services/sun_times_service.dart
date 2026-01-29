@@ -5,8 +5,9 @@ import 'dart:math' as math;
 /// Uses a simplified solar position algorithm that provides reasonably
 /// accurate times for most locations. Accuracy is typically within a few minutes.
 class SunTimesService {
-  /// Default latitude (approximately mid-latitude).
-  static const double defaultLatitude = 45.0;
+  /// Default latitude (approximately 40°N - good for continental US average).
+  /// This is more accurate for MST/CST/EST regions than the previous 45°N.
+  static const double defaultLatitude = 40.0;
 
   /// Default longitude - will be estimated from timezone if not set.
   static const double defaultLongitude = 0.0;

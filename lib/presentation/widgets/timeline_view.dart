@@ -221,11 +221,23 @@ class TimelineViewState extends ConsumerState<TimelineView>
   }
 
   /// Calculate scroll offset to position NOW line at 75% down viewport.
+  /// Uses custom NOW line position if set, otherwise uses current time.
   double _calculateNowScrollOffset() {
     if (!_scrollController.hasClients) return 0;
 
-    final now = DateTime.now();
-    final nowOffset = _getOffsetForDateTime(now);
+    final customMinutes = ref.read(settingsProvider).customNowLineMinutesFromMidnight;
+
+    DateTime targetTime;
+    if (customMinutes != null) {
+      // Use custom position - calculate for today at that time
+      final now = DateTime.now();
+      targetTime = DateTime(now.year, now.month, now.day, customMinutes ~/ 60, customMinutes % 60);
+    } else {
+      // Use current time
+      targetTime = DateTime.now();
+    }
+
+    final nowOffset = _getOffsetForDateTime(targetTime);
     final viewportHeight = _scrollController.position.viewportDimension;
     final targetOffset = nowOffset - (viewportHeight * _nowLinePosition);
 

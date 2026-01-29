@@ -21,6 +21,8 @@ class SettingsNotifier extends Notifier<Settings> {
   static const _keyShowSunTimes = 'timeflow_show_sun_times';
   // Watermark settings keys
   static const _keyWatermarkShowWeekNumber = 'timeflow_watermark_show_week_number';
+  // Custom NOW line position
+  static const _keyCustomNowLineMinutes = 'timeflow_custom_now_line_minutes';
   static const _keyWatermarkShowDayOfYear = 'timeflow_watermark_show_day_of_year';
   static const _keyWatermarkShowHolidays = 'timeflow_watermark_show_holidays';
   static const _keyWatermarkShowMoonPhase = 'timeflow_watermark_show_moon_phase';
@@ -82,6 +84,9 @@ class SettingsNotifier extends Notifier<Settings> {
       watermarkShowMoonPhase: _prefs!.getBool(_keyWatermarkShowMoonPhase) ?? false,
       watermarkShowQuarter: _prefs!.getBool(_keyWatermarkShowQuarter) ?? false,
       watermarkShowDaysRemaining: _prefs!.getBool(_keyWatermarkShowDaysRemaining) ?? false,
+      customNowLineMinutesFromMidnight: _prefs!.containsKey(_keyCustomNowLineMinutes)
+          ? _prefs!.getInt(_keyCustomNowLineMinutes)
+          : null,
     );
   }
 
@@ -222,6 +227,22 @@ class SettingsNotifier extends Notifier<Settings> {
     state = state.copyWith(watermarkShowDaysRemaining: value);
     await _ensurePrefs();
     await _prefs!.setBool(_keyWatermarkShowDaysRemaining, value);
+  }
+
+  // Custom NOW line position methods
+
+  /// Sets a custom NOW line position (minutes from midnight).
+  Future<void> setCustomNowLineMinutes(int minutes) async {
+    state = state.copyWith(customNowLineMinutesFromMidnight: minutes);
+    await _ensurePrefs();
+    await _prefs!.setInt(_keyCustomNowLineMinutes, minutes);
+  }
+
+  /// Clears the custom NOW line position, reverting to real time.
+  Future<void> clearCustomNowLine() async {
+    state = state.copyWith(clearCustomNowLine: true);
+    await _ensurePrefs();
+    await _prefs!.remove(_keyCustomNowLineMinutes);
   }
 }
 

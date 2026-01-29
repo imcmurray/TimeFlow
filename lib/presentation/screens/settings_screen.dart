@@ -65,6 +65,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ref.read(settingsProvider.notifier).setUse24HourFormat(value);
             },
           ),
+          ListTile(
+            leading: Icon(
+              ref.watch(settingsProvider).customNowLineMinutesFromMidnight != null
+                  ? Icons.push_pin
+                  : Icons.push_pin_outlined,
+              color: ref.watch(settingsProvider).customNowLineMinutesFromMidnight != null
+                  ? Colors.amber
+                  : null,
+            ),
+            title: const Text('NOW Line Position'),
+            subtitle: Text(
+              ref.watch(settingsProvider).customNowLineMinutesFromMidnight != null
+                  ? 'Pinned at ${_formatMinutesAsTime(ref.watch(settingsProvider).customNowLineMinutesFromMidnight!, ref.watch(settingsProvider).use24HourFormat)}'
+                  : 'Following current time',
+            ),
+            trailing: ref.watch(settingsProvider).customNowLineMinutesFromMidnight != null
+                ? TextButton(
+                    onPressed: () => _resetNowLinePosition(),
+                    child: const Text('Reset'),
+                  )
+                : null,
+            onTap: ref.watch(settingsProvider).customNowLineMinutesFromMidnight != null
+                ? () => _showNowLineResetDialog()
+                : null,
+          ),
 
           const Divider(),
 
@@ -319,6 +344,53 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             leading: const Icon(Icons.article_outlined),
             title: const Text('Terms of Service'),
             onTap: () => _showTermsOfServiceDialog(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatMinutesAsTime(int minutes, bool use24Hour) {
+    final hour = minutes ~/ 60;
+    final minute = minutes % 60;
+    if (use24Hour) {
+      return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+    }
+    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    final period = hour >= 12 ? 'PM' : 'AM';
+    return '$displayHour:${minute.toString().padLeft(2, '0')} $period';
+  }
+
+  void _resetNowLinePosition() {
+    ref.read(settingsProvider.notifier).clearCustomNowLine();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('NOW line reset to current time'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showNowLineResetDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset NOW Line?'),
+        content: const Text(
+          'This will reset the NOW line to follow the current time instead of staying at a fixed position.\n\n'
+          'Tip: You can long-press and drag the NOW line on the timeline to pin it to a new position.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _resetNowLinePosition();
+            },
+            child: const Text('Reset'),
           ),
         ],
       ),

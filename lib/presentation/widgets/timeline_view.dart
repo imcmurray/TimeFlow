@@ -63,9 +63,6 @@ class TimelineViewState extends ConsumerState<TimelineView>
   /// Height in pixels per hour of timeline.
   static const double _hourHeight = 80.0;
 
-  /// Position of NOW line as fraction from top (0.75 = 75% down).
-  static const double _nowLinePosition = 0.75;
-
   /// Number of days to load in each direction from today.
   int _daysLoadedBefore = 7;
   int _daysLoadedAfter = 7;
@@ -220,26 +217,14 @@ class TimelineViewState extends ConsumerState<TimelineView>
     return _referenceDate.add(Duration(minutes: (hoursFromReference * 60).round()));
   }
 
-  /// Calculate scroll offset to position NOW line at 75% down viewport.
-  /// Uses custom NOW line position if set, otherwise uses current time.
+  /// Calculate scroll offset to position NOW line at the user's chosen viewport position.
   double _calculateNowScrollOffset() {
     if (!_scrollController.hasClients) return 0;
 
-    final customMinutes = ref.read(settingsProvider).customNowLineMinutesFromMidnight;
-
-    DateTime targetTime;
-    if (customMinutes != null) {
-      // Use custom position - calculate for today at that time
-      final now = DateTime.now();
-      targetTime = DateTime(now.year, now.month, now.day, customMinutes ~/ 60, customMinutes % 60);
-    } else {
-      // Use current time
-      targetTime = DateTime.now();
-    }
-
-    final nowOffset = _getOffsetForDateTime(targetTime);
+    final nowLinePosition = ref.read(settingsProvider).nowLineViewportPosition;
+    final nowOffset = _getOffsetForDateTime(DateTime.now());
     final viewportHeight = _scrollController.position.viewportDimension;
-    final targetOffset = nowOffset - (viewportHeight * _nowLinePosition);
+    final targetOffset = nowOffset - (viewportHeight * nowLinePosition);
 
     return targetOffset.clamp(
       _scrollController.position.minScrollExtent,
@@ -515,15 +500,24 @@ class TimelineViewState extends ConsumerState<TimelineView>
                 ),
 
                 // Scrollable NOW line (scrolls with content, draggable)
-                _NowLineScrollable(
-                  currentTime: _currentTime,
-                  nowOffset: nowOffset,
-                  use24HourFormat: use24Hour,
-                  hourHeight: _hourHeight,
-                  referenceDate: _referenceDate,
-                  upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
-                  daysLoadedBefore: _daysLoadedBefore,
-                  daysLoadedAfter: _daysLoadedAfter,
+                Builder(
+                  builder: (context) {
+                    // Get current scroll position for drag calculation
+                    final scrollOffset = _scrollController.hasClients
+                        ? _scrollController.offset
+                        : 0.0;
+                    final viewportHeight = _scrollController.hasClients
+                        ? _scrollController.position.viewportDimension
+                        : MediaQuery.of(context).size.height;
+
+                    return _NowLineScrollable(
+                      currentTime: _currentTime,
+                      nowOffset: nowOffset,
+                      use24HourFormat: use24Hour,
+                      scrollOffset: scrollOffset,
+                      viewportHeight: viewportHeight,
+                    );
+                  },
                 ),
               ],
             ),
@@ -1576,25 +1570,19 @@ class _TaskCardsLayerMultiDayState
 }
 
 /// NOW line that scrolls with the timeline content.
-/// Supports long-press drag to set a custom fixed position.
+/// Long-press and drag to change where on the viewport the NOW line appears.
 class _NowLineScrollable extends ConsumerStatefulWidget {
   final DateTime currentTime;
   final double nowOffset;
   final bool use24HourFormat;
-  final double hourHeight;
-  final DateTime referenceDate;
-  final bool upcomingTasksAboveNow;
-  final int daysLoadedBefore;
-  final int daysLoadedAfter;
+  final double scrollOffset;
+  final double viewportHeight;
 
   const _NowLineScrollable({
     required this.currentTime,
     required this.nowOffset,
-    required this.hourHeight,
-    required this.referenceDate,
-    required this.upcomingTasksAboveNow,
-    required this.daysLoadedBefore,
-    required this.daysLoadedAfter,
+    required this.scrollOffset,
+    required this.viewportHeight,
     this.use24HourFormat = false,
   });
 
@@ -1603,8 +1591,7 @@ class _NowLineScrollable extends ConsumerStatefulWidget {
 }
 
 class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
-  bool _isDragging = false;
-  double? _dragOffset;
+  double? _dragDelta;
 
   String _formatTime(DateTime time) {
     if (widget.use24HourFormat) {
@@ -1622,74 +1609,42 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
     return '$hour:$minute $period';
   }
 
-  /// Convert pixel offset to DateTime.
-  DateTime _getDateTimeAtOffset(double offset) {
-    final referenceOffset = widget.upcomingTasksAboveNow
-        ? widget.daysLoadedAfter * 24 * widget.hourHeight
-        : widget.daysLoadedBefore * 24 * widget.hourHeight;
-
-    double hoursFromReference;
-    if (widget.upcomingTasksAboveNow) {
-      hoursFromReference = (referenceOffset - offset) / widget.hourHeight;
-    } else {
-      hoursFromReference = (offset - referenceOffset) / widget.hourHeight;
-    }
-
-    return widget.referenceDate.add(Duration(minutes: (hoursFromReference * 60).round()));
-  }
-
-  /// Convert DateTime to minutes from midnight (for the day).
-  int _dateTimeToMinutesFromMidnight(DateTime dateTime) {
-    return dateTime.hour * 60 + dateTime.minute;
-  }
-
-  /// Get the display time for the current position (used during dragging).
-  DateTime _getDisplayTime() {
-    if (_isDragging && _dragOffset != null) {
-      return _getDateTimeAtOffset(_dragOffset!);
-    }
-    return widget.currentTime;
-  }
-
   void _onLongPressStart(LongPressStartDetails details) {
     setState(() {
-      _isDragging = true;
-      _dragOffset = widget.nowOffset;
+      _dragDelta = 0;
     });
     HapticFeedback.mediumImpact();
   }
 
   void _onLongPressMoveUpdate(LongPressMoveUpdateDetails details) {
-    if (_isDragging) {
-      setState(() {
-        _dragOffset = (_dragOffset ?? widget.nowOffset) + details.offsetFromOrigin.dy - (details.localOffsetFromOrigin.dy);
-        // Use the local position change for smooth dragging
-        _dragOffset = widget.nowOffset + details.offsetFromOrigin.dy;
-      });
-    }
+    setState(() {
+      _dragDelta = details.offsetFromOrigin.dy;
+    });
   }
 
   void _onLongPressEnd(LongPressEndDetails details) {
-    if (_isDragging && _dragOffset != null) {
-      // Calculate the new time from the drag position
-      final newDateTime = _getDateTimeAtOffset(_dragOffset!);
-      final minutesFromMidnight = _dateTimeToMinutesFromMidnight(newDateTime);
+    if (_dragDelta != null) {
+      // Calculate new viewport position
+      // Current viewport position of NOW line
+      final currentViewportY = widget.nowOffset - widget.scrollOffset;
+      // New viewport position after drag
+      final newViewportY = currentViewportY + _dragDelta!;
+      // Convert to percentage (0.0 to 1.0)
+      final newPosition = newViewportY / widget.viewportHeight;
 
-      // Save the custom position
-      ref.read(settingsProvider.notifier).setCustomNowLineMinutes(minutesFromMidnight);
+      // Save the new viewport position
+      ref.read(settingsProvider.notifier).setNowLineViewportPosition(newPosition);
 
       HapticFeedback.lightImpact();
     }
     setState(() {
-      _isDragging = false;
-      _dragOffset = null;
+      _dragDelta = null;
     });
   }
 
   void _onLongPressCancel() {
     setState(() {
-      _isDragging = false;
-      _dragOffset = null;
+      _dragDelta = null;
     });
   }
 
@@ -1697,35 +1652,10 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lineColor = isDark ? AppColors.nowLineDark : AppColors.nowLineLight;
-    final customMinutes = ref.watch(settingsProvider).customNowLineMinutesFromMidnight;
 
-    // Determine the actual offset to use
-    double effectiveOffset;
-    DateTime displayTime;
-
-    if (_isDragging && _dragOffset != null) {
-      // During drag, use the drag position
-      effectiveOffset = _dragOffset!;
-      displayTime = _getDateTimeAtOffset(_dragOffset!);
-    } else if (customMinutes != null) {
-      // Use custom position - calculate offset for today's custom time
-      final now = DateTime.now();
-      final customTime = DateTime(now.year, now.month, now.day, customMinutes ~/ 60, customMinutes % 60);
-      final hoursFromReference = customTime.difference(widget.referenceDate).inMinutes / 60.0;
-
-      if (widget.upcomingTasksAboveNow) {
-        final referenceOffset = widget.daysLoadedAfter * 24 * widget.hourHeight;
-        effectiveOffset = referenceOffset - (hoursFromReference * widget.hourHeight);
-      } else {
-        final referenceOffset = widget.daysLoadedBefore * 24 * widget.hourHeight;
-        effectiveOffset = referenceOffset + (hoursFromReference * widget.hourHeight);
-      }
-      displayTime = customTime;
-    } else {
-      // Use current time (default behavior)
-      effectiveOffset = widget.nowOffset;
-      displayTime = widget.currentTime;
-    }
+    // NOW line is always at current time's offset
+    // During drag, we show visual feedback of where it will be positioned
+    final effectiveOffset = widget.nowOffset;
 
     return Stack(
       children: [
@@ -1780,7 +1710,7 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
           ),
         ),
 
-        // Time badge
+        // Time badge - always shows current time
         Positioned(
           right: 16,
           top: effectiveOffset - 14,
@@ -1804,7 +1734,7 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
                 ],
               ),
               child: Text(
-                _formatTime(displayTime),
+                _formatTime(widget.currentTime),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,

@@ -69,6 +69,11 @@ class Settings {
   /// Whether to show days remaining in year in day watermark.
   final bool watermarkShowDaysRemaining;
 
+  /// Custom NOW line offset in minutes from midnight.
+  /// When null, the NOW line follows the actual current time.
+  /// When set, the NOW line stays at this fixed position until reset.
+  final int? customNowLineMinutesFromMidnight;
+
   const Settings({
     this.theme = 'auto',
     this.defaultReminderMinutes = 10,
@@ -90,6 +95,7 @@ class Settings {
     this.watermarkShowMoonPhase = false,
     this.watermarkShowQuarter = false,
     this.watermarkShowDaysRemaining = false,
+    this.customNowLineMinutesFromMidnight,
   });
 
   /// Default settings for first-time users.
@@ -118,6 +124,8 @@ class Settings {
     bool? watermarkShowMoonPhase,
     bool? watermarkShowQuarter,
     bool? watermarkShowDaysRemaining,
+    int? customNowLineMinutesFromMidnight,
+    bool clearCustomNowLine = false,
   }) {
     return Settings(
       theme: theme ?? this.theme,
@@ -140,6 +148,7 @@ class Settings {
       watermarkShowMoonPhase: watermarkShowMoonPhase ?? this.watermarkShowMoonPhase,
       watermarkShowQuarter: watermarkShowQuarter ?? this.watermarkShowQuarter,
       watermarkShowDaysRemaining: watermarkShowDaysRemaining ?? this.watermarkShowDaysRemaining,
+      customNowLineMinutesFromMidnight: clearCustomNowLine ? null : (customNowLineMinutesFromMidnight ?? this.customNowLineMinutesFromMidnight),
     );
   }
 
@@ -166,12 +175,13 @@ class Settings {
         other.watermarkShowHolidays == watermarkShowHolidays &&
         other.watermarkShowMoonPhase == watermarkShowMoonPhase &&
         other.watermarkShowQuarter == watermarkShowQuarter &&
-        other.watermarkShowDaysRemaining == watermarkShowDaysRemaining;
+        other.watermarkShowDaysRemaining == watermarkShowDaysRemaining &&
+        other.customNowLineMinutesFromMidnight == customNowLineMinutesFromMidnight;
   }
 
   @override
   int get hashCode {
-    return Object.hash(
+    return Object.hashAll([
       theme,
       defaultReminderMinutes,
       timelineDensity,
@@ -192,7 +202,8 @@ class Settings {
       watermarkShowMoonPhase,
       watermarkShowQuarter,
       watermarkShowDaysRemaining,
-    );
+      customNowLineMinutesFromMidnight,
+    ]);
   }
 
   @override
@@ -209,6 +220,7 @@ class Settings {
         'watermarkShowHolidays: $watermarkShowHolidays, '
         'watermarkShowMoonPhase: $watermarkShowMoonPhase, '
         'watermarkShowQuarter: $watermarkShowQuarter, '
-        'watermarkShowDaysRemaining: $watermarkShowDaysRemaining)';
+        'watermarkShowDaysRemaining: $watermarkShowDaysRemaining, '
+        'customNowLineMinutesFromMidnight: $customNowLineMinutesFromMidnight)';
   }
 }

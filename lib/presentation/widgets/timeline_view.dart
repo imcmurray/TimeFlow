@@ -502,11 +502,16 @@ class TimelineViewState extends ConsumerState<TimelineView>
                   ),
                 ),
 
-                // Scrollable NOW line (scrolls with content)
+                // Scrollable NOW line (scrolls with content, draggable)
                 _NowLineScrollable(
                   currentTime: _currentTime,
                   nowOffset: nowOffset,
                   use24HourFormat: use24Hour,
+                  hourHeight: _hourHeight,
+                  referenceDate: _referenceDate,
+                  upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                  daysLoadedBefore: _daysLoadedBefore,
+                  daysLoadedAfter: _daysLoadedAfter,
                 ),
               ],
             ),
@@ -1559,19 +1564,38 @@ class _TaskCardsLayerMultiDayState
 }
 
 /// NOW line that scrolls with the timeline content.
-class _NowLineScrollable extends StatelessWidget {
+/// Supports long-press drag to set a custom fixed position.
+class _NowLineScrollable extends ConsumerStatefulWidget {
   final DateTime currentTime;
   final double nowOffset;
   final bool use24HourFormat;
+  final double hourHeight;
+  final DateTime referenceDate;
+  final bool upcomingTasksAboveNow;
+  final int daysLoadedBefore;
+  final int daysLoadedAfter;
 
   const _NowLineScrollable({
     required this.currentTime,
     required this.nowOffset,
+    required this.hourHeight,
+    required this.referenceDate,
+    required this.upcomingTasksAboveNow,
+    required this.daysLoadedBefore,
+    required this.daysLoadedAfter,
     this.use24HourFormat = false,
   });
 
+  @override
+  ConsumerState<_NowLineScrollable> createState() => _NowLineScrollableState();
+}
+
+class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
+  bool _isDragging = false;
+  double? _dragOffset;
+
   String _formatTime(DateTime time) {
-    if (use24HourFormat) {
+    if (widget.use24HourFormat) {
       final hour = time.hour.toString().padLeft(2, '0');
       final minute = time.minute.toString().padLeft(2, '0');
       return '$hour:$minute';
@@ -1586,10 +1610,119 @@ class _NowLineScrollable extends StatelessWidget {
     return '$hour:$minute $period';
   }
 
+  /// Convert pixel offset to DateTime.
+  DateTime _getDateTimeAtOffset(double offset) {
+    final referenceOffset = widget.upcomingTasksAboveNow
+        ? widget.daysLoadedAfter * 24 * widget.hourHeight
+        : widget.daysLoadedBefore * 24 * widget.hourHeight;
+
+    double hoursFromReference;
+    if (widget.upcomingTasksAboveNow) {
+      hoursFromReference = (referenceOffset - offset) / widget.hourHeight;
+    } else {
+      hoursFromReference = (offset - referenceOffset) / widget.hourHeight;
+    }
+
+    return widget.referenceDate.add(Duration(minutes: (hoursFromReference * 60).round()));
+  }
+
+  /// Convert DateTime to minutes from midnight (for the day).
+  int _dateTimeToMinutesFromMidnight(DateTime dateTime) {
+    return dateTime.hour * 60 + dateTime.minute;
+  }
+
+  /// Get the display time for the current position (used during dragging).
+  DateTime _getDisplayTime() {
+    if (_isDragging && _dragOffset != null) {
+      return _getDateTimeAtOffset(_dragOffset!);
+    }
+    return widget.currentTime;
+  }
+
+  void _onLongPressStart(LongPressStartDetails details) {
+    setState(() {
+      _isDragging = true;
+      _dragOffset = widget.nowOffset;
+    });
+    HapticFeedback.mediumImpact();
+  }
+
+  void _onLongPressMoveUpdate(LongPressMoveUpdateDetails details) {
+    if (_isDragging) {
+      setState(() {
+        _dragOffset = (_dragOffset ?? widget.nowOffset) + details.offsetFromOrigin.dy - (details.localOffsetFromOrigin.dy);
+        // Use the local position change for smooth dragging
+        _dragOffset = widget.nowOffset + details.offsetFromOrigin.dy;
+      });
+    }
+  }
+
+  void _onLongPressEnd(LongPressEndDetails details) {
+    if (_isDragging && _dragOffset != null) {
+      // Calculate the new time from the drag position
+      final newDateTime = _getDateTimeAtOffset(_dragOffset!);
+      final minutesFromMidnight = _dateTimeToMinutesFromMidnight(newDateTime);
+
+      // Save the custom position
+      ref.read(settingsProvider.notifier).setCustomNowLineMinutes(minutesFromMidnight);
+
+      HapticFeedback.lightImpact();
+    }
+    setState(() {
+      _isDragging = false;
+      _dragOffset = null;
+    });
+  }
+
+  void _onLongPressCancel() {
+    setState(() {
+      _isDragging = false;
+      _dragOffset = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lineColor = isDark ? AppColors.nowLineDark : AppColors.nowLineLight;
+    final customMinutes = ref.watch(settingsProvider).customNowLineMinutesFromMidnight;
+
+    // Determine the actual offset to use
+    double effectiveOffset;
+    DateTime displayTime;
+    bool isCustomPosition = false;
+
+    if (_isDragging && _dragOffset != null) {
+      // During drag, use the drag position
+      effectiveOffset = _dragOffset!;
+      displayTime = _getDateTimeAtOffset(_dragOffset!);
+      isCustomPosition = true;
+    } else if (customMinutes != null) {
+      // Use custom position - calculate offset for today's custom time
+      final now = DateTime.now();
+      final customTime = DateTime(now.year, now.month, now.day, customMinutes ~/ 60, customMinutes % 60);
+      final hoursFromReference = customTime.difference(widget.referenceDate).inMinutes / 60.0;
+
+      if (widget.upcomingTasksAboveNow) {
+        final referenceOffset = widget.daysLoadedAfter * 24 * widget.hourHeight;
+        effectiveOffset = referenceOffset - (hoursFromReference * widget.hourHeight);
+      } else {
+        final referenceOffset = widget.daysLoadedBefore * 24 * widget.hourHeight;
+        effectiveOffset = referenceOffset + (hoursFromReference * widget.hourHeight);
+      }
+      displayTime = customTime;
+      isCustomPosition = true;
+    } else {
+      // Use current time (default behavior)
+      effectiveOffset = widget.nowOffset;
+      displayTime = widget.currentTime;
+    }
+
+    // Drag indicator color when in custom mode
+    final dragColor = _isDragging
+        ? Colors.orange
+        : (isCustomPosition ? Colors.amber : lineColor);
+    final effectiveLineColor = _isDragging || isCustomPosition ? dragColor : lineColor;
 
     return Stack(
       children: [
@@ -1597,7 +1730,7 @@ class _NowLineScrollable extends StatelessWidget {
         Positioned(
           left: 0,
           right: 0,
-          top: nowOffset - 20,
+          top: effectiveOffset - 20,
           height: 40,
           child: Container(
             decoration: BoxDecoration(
@@ -1605,31 +1738,41 @@ class _NowLineScrollable extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  lineColor.withValues(alpha: 0),
-                  lineColor.withValues(alpha: 0.4),
-                  lineColor.withValues(alpha: 0),
+                  effectiveLineColor.withValues(alpha: 0),
+                  effectiveLineColor.withValues(alpha: _isDragging ? 0.6 : 0.4),
+                  effectiveLineColor.withValues(alpha: 0),
                 ],
               ),
             ),
           ),
         ),
 
-        // Main NOW line
+        // Main NOW line with drag gesture
         Positioned(
           left: 0,
           right: 0,
-          top: nowOffset - 1,
-          height: 2,
-          child: Container(
-            decoration: BoxDecoration(
-              color: lineColor,
-              boxShadow: [
-                BoxShadow(
-                  color: lineColor.withValues(alpha: 0.5),
-                  blurRadius: 4,
-                  spreadRadius: 1,
+          top: effectiveOffset - 20,
+          height: 40,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onLongPressStart: _onLongPressStart,
+            onLongPressMoveUpdate: _onLongPressMoveUpdate,
+            onLongPressEnd: _onLongPressEnd,
+            onLongPressCancel: _onLongPressCancel,
+            child: Center(
+              child: Container(
+                height: 2,
+                decoration: BoxDecoration(
+                  color: effectiveLineColor,
+                  boxShadow: [
+                    BoxShadow(
+                      color: effectiveLineColor.withValues(alpha: 0.5),
+                      blurRadius: _isDragging ? 8 : 4,
+                      spreadRadius: _isDragging ? 2 : 1,
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -1637,52 +1780,101 @@ class _NowLineScrollable extends StatelessWidget {
         // Time badge
         Positioned(
           right: 16,
-          top: nowOffset - 14,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: lineColor,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: lineColor.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Text(
-              _formatTime(currentTime),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
+          top: effectiveOffset - 14,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onLongPressStart: _onLongPressStart,
+            onLongPressMoveUpdate: _onLongPressMoveUpdate,
+            onLongPressEnd: _onLongPressEnd,
+            onLongPressCancel: _onLongPressCancel,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: effectiveLineColor,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: effectiveLineColor.withValues(alpha: 0.3),
+                    blurRadius: _isDragging ? 12 : 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _formatTime(displayTime),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (isCustomPosition && !_isDragging) ...[
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.push_pin,
+                      color: Colors.white,
+                      size: 12,
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
         ),
 
-        // NOW label
+        // NOW/PINNED label
         Positioned(
           left: 12,
-          top: nowOffset - 12,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: lineColor,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Text(
-              'NOW',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
+          top: effectiveOffset - 12,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onLongPressStart: _onLongPressStart,
+            onLongPressMoveUpdate: _onLongPressMoveUpdate,
+            onLongPressEnd: _onLongPressEnd,
+            onLongPressCancel: _onLongPressCancel,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: effectiveLineColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _isDragging ? 'DRAG' : (isCustomPosition ? 'PINNED' : 'NOW'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
               ),
             ),
           ),
         ),
+
+        // Drag handle indicators (shown during drag)
+        if (_isDragging) ...[
+          Positioned(
+            left: MediaQuery.of(context).size.width / 2 - 20,
+            top: effectiveOffset - 30,
+            child: Icon(
+              Icons.keyboard_arrow_up,
+              color: Colors.white.withValues(alpha: 0.8),
+              size: 20,
+            ),
+          ),
+          Positioned(
+            left: MediaQuery.of(context).size.width / 2 - 20,
+            top: effectiveOffset + 10,
+            child: Icon(
+              Icons.keyboard_arrow_down,
+              color: Colors.white.withValues(alpha: 0.8),
+              size: 20,
+            ),
+          ),
+        ],
       ],
     );
   }

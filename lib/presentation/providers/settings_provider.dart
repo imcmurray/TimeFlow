@@ -23,6 +23,7 @@ class SettingsNotifier extends Notifier<Settings> {
   static const _keyWatermarkShowWeekNumber = 'timeflow_watermark_show_week_number';
   // Custom NOW line position
   static const _keyCustomNowLineMinutes = 'timeflow_custom_now_line_minutes';
+  static const _keyNowLineViewportPosition = 'timeflow_now_line_viewport_position';
   static const _keyWatermarkShowDayOfYear = 'timeflow_watermark_show_day_of_year';
   static const _keyWatermarkShowHolidays = 'timeflow_watermark_show_holidays';
   static const _keyWatermarkShowMoonPhase = 'timeflow_watermark_show_moon_phase';
@@ -87,6 +88,7 @@ class SettingsNotifier extends Notifier<Settings> {
       customNowLineMinutesFromMidnight: _prefs!.containsKey(_keyCustomNowLineMinutes)
           ? _prefs!.getInt(_keyCustomNowLineMinutes)
           : null,
+      nowLineViewportPosition: _prefs!.getDouble(_keyNowLineViewportPosition) ?? 0.75,
     );
   }
 
@@ -243,6 +245,15 @@ class SettingsNotifier extends Notifier<Settings> {
     state = state.copyWith(clearCustomNowLine: true);
     await _ensurePrefs();
     await _prefs!.remove(_keyCustomNowLineMinutes);
+  }
+
+  /// Sets the NOW line viewport position (0.0 to 1.0, where 0.75 is 75% down).
+  Future<void> setNowLineViewportPosition(double position) async {
+    // Clamp to valid range
+    final clampedPosition = position.clamp(0.1, 0.9);
+    state = state.copyWith(nowLineViewportPosition: clampedPosition);
+    await _ensurePrefs();
+    await _prefs!.setDouble(_keyNowLineViewportPosition, clampedPosition);
   }
 }
 

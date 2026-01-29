@@ -74,6 +74,10 @@ class Settings {
   /// When set, the NOW line stays at this fixed position until reset.
   final int? customNowLineMinutesFromMidnight;
 
+  /// NOW line viewport position as fraction from top (0.0 to 1.0).
+  /// Default is 0.75 (75% down the viewport).
+  final double nowLineViewportPosition;
+
   const Settings({
     this.theme = 'auto',
     this.defaultReminderMinutes = 10,
@@ -96,6 +100,7 @@ class Settings {
     this.watermarkShowQuarter = false,
     this.watermarkShowDaysRemaining = false,
     this.customNowLineMinutesFromMidnight,
+    this.nowLineViewportPosition = 0.75,
   });
 
   /// Default settings for first-time users.
@@ -126,6 +131,7 @@ class Settings {
     bool? watermarkShowDaysRemaining,
     int? customNowLineMinutesFromMidnight,
     bool clearCustomNowLine = false,
+    double? nowLineViewportPosition,
   }) {
     return Settings(
       theme: theme ?? this.theme,
@@ -149,6 +155,7 @@ class Settings {
       watermarkShowQuarter: watermarkShowQuarter ?? this.watermarkShowQuarter,
       watermarkShowDaysRemaining: watermarkShowDaysRemaining ?? this.watermarkShowDaysRemaining,
       customNowLineMinutesFromMidnight: clearCustomNowLine ? null : (customNowLineMinutesFromMidnight ?? this.customNowLineMinutesFromMidnight),
+      nowLineViewportPosition: nowLineViewportPosition ?? this.nowLineViewportPosition,
     );
   }
 
@@ -176,7 +183,8 @@ class Settings {
         other.watermarkShowMoonPhase == watermarkShowMoonPhase &&
         other.watermarkShowQuarter == watermarkShowQuarter &&
         other.watermarkShowDaysRemaining == watermarkShowDaysRemaining &&
-        other.customNowLineMinutesFromMidnight == customNowLineMinutesFromMidnight;
+        other.customNowLineMinutesFromMidnight == customNowLineMinutesFromMidnight &&
+        other.nowLineViewportPosition == nowLineViewportPosition;
   }
 
   @override
@@ -203,6 +211,7 @@ class Settings {
       watermarkShowQuarter,
       watermarkShowDaysRemaining,
       customNowLineMinutesFromMidnight,
+      nowLineViewportPosition,
     ]);
   }
 
@@ -221,6 +230,7 @@ class Settings {
         'watermarkShowMoonPhase: $watermarkShowMoonPhase, '
         'watermarkShowQuarter: $watermarkShowQuarter, '
         'watermarkShowDaysRemaining: $watermarkShowDaysRemaining, '
-        'customNowLineMinutesFromMidnight: $customNowLineMinutesFromMidnight)';
+        'customNowLineMinutesFromMidnight: $customNowLineMinutesFromMidnight, '
+        'nowLineViewportPosition: $nowLineViewportPosition)';
   }
 }

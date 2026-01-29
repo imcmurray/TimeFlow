@@ -46,12 +46,12 @@ class SettingsNotifier extends Notifier<Settings> {
     double longitude;
 
     if (hasCustomLocation) {
-      latitude = _prefs!.getDouble(_keyLatitude) ?? 45.0;
+      latitude = _prefs!.getDouble(_keyLatitude) ?? 40.0;
       longitude = _prefs!.getDouble(_keyLongitude) ?? 0.0;
     } else {
       // Estimate location from device timezone
-      // Use mid-latitude (45) as default, estimate longitude from timezone
-      latitude = 45.0;
+      // Use 40°N as default (continental US average), estimate longitude from timezone
+      latitude = 40.0;
       longitude = SunTimesService.estimateLongitudeFromTimezone();
     }
 

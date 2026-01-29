@@ -1690,13 +1690,11 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
     // Determine the actual offset to use
     double effectiveOffset;
     DateTime displayTime;
-    bool isCustomPosition = false;
 
     if (_isDragging && _dragOffset != null) {
       // During drag, use the drag position
       effectiveOffset = _dragOffset!;
       displayTime = _getDateTimeAtOffset(_dragOffset!);
-      isCustomPosition = true;
     } else if (customMinutes != null) {
       // Use custom position - calculate offset for today's custom time
       final now = DateTime.now();
@@ -1711,18 +1709,11 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
         effectiveOffset = referenceOffset + (hoursFromReference * widget.hourHeight);
       }
       displayTime = customTime;
-      isCustomPosition = true;
     } else {
       // Use current time (default behavior)
       effectiveOffset = widget.nowOffset;
       displayTime = widget.currentTime;
     }
-
-    // Drag indicator color when in custom mode
-    final dragColor = _isDragging
-        ? Colors.orange
-        : (isCustomPosition ? Colors.amber : lineColor);
-    final effectiveLineColor = _isDragging || isCustomPosition ? dragColor : lineColor;
 
     return Stack(
       children: [
@@ -1738,9 +1729,9 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  effectiveLineColor.withValues(alpha: 0),
-                  effectiveLineColor.withValues(alpha: _isDragging ? 0.6 : 0.4),
-                  effectiveLineColor.withValues(alpha: 0),
+                  lineColor.withValues(alpha: 0),
+                  lineColor.withValues(alpha: 0.4),
+                  lineColor.withValues(alpha: 0),
                 ],
               ),
             ),
@@ -1763,12 +1754,12 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
               child: Container(
                 height: 2,
                 decoration: BoxDecoration(
-                  color: effectiveLineColor,
+                  color: lineColor,
                   boxShadow: [
                     BoxShadow(
-                      color: effectiveLineColor.withValues(alpha: 0.5),
-                      blurRadius: _isDragging ? 8 : 4,
-                      spreadRadius: _isDragging ? 2 : 1,
+                      color: lineColor.withValues(alpha: 0.5),
+                      blurRadius: 4,
+                      spreadRadius: 1,
                     ),
                   ],
                 ),
@@ -1790,42 +1781,29 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: effectiveLineColor,
+                color: lineColor,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: effectiveLineColor.withValues(alpha: 0.3),
-                    blurRadius: _isDragging ? 12 : 8,
+                    color: lineColor.withValues(alpha: 0.3),
+                    blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _formatTime(displayTime),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (isCustomPosition && !_isDragging) ...[
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.push_pin,
-                      color: Colors.white,
-                      size: 12,
-                    ),
-                  ],
-                ],
+              child: Text(
+                _formatTime(displayTime),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
         ),
 
-        // NOW/PINNED label
+        // NOW label
         Positioned(
           left: 12,
           top: effectiveOffset - 12,
@@ -1838,12 +1816,12 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: effectiveLineColor,
+                color: lineColor,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(
-                _isDragging ? 'DRAG' : (isCustomPosition ? 'PINNED' : 'NOW'),
-                style: const TextStyle(
+              child: const Text(
+                'NOW',
+                style: TextStyle(
                   color: Colors.white,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
@@ -1853,28 +1831,6 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
             ),
           ),
         ),
-
-        // Drag handle indicators (shown during drag)
-        if (_isDragging) ...[
-          Positioned(
-            left: MediaQuery.of(context).size.width / 2 - 20,
-            top: effectiveOffset - 30,
-            child: Icon(
-              Icons.keyboard_arrow_up,
-              color: Colors.white.withValues(alpha: 0.8),
-              size: 20,
-            ),
-          ),
-          Positioned(
-            left: MediaQuery.of(context).size.width / 2 - 20,
-            top: effectiveOffset + 10,
-            child: Icon(
-              Icons.keyboard_arrow_down,
-              color: Colors.white.withValues(alpha: 0.8),
-              size: 20,
-            ),
-          ),
-        ],
       ],
     );
   }

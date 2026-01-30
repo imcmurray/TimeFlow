@@ -19,10 +19,18 @@ class TaskDetailScreen extends ConsumerStatefulWidget {
   /// The initial date for new tasks.
   final DateTime? initialDate;
 
+  /// Explicit start time for new tasks (overrides initialDate time calculation).
+  final DateTime? initialStartTime;
+
+  /// Explicit end time for new tasks (used with initialStartTime).
+  final DateTime? initialEndTime;
+
   const TaskDetailScreen({
     super.key,
     this.task,
     this.initialDate,
+    this.initialStartTime,
+    this.initialEndTime,
   });
 
   @override
@@ -61,6 +69,10 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       _reminderMinutes = task.reminderMinutes;
       _recurringPattern = task.recurringPattern;
       _category = task.category;
+    } else if (widget.initialStartTime != null && widget.initialEndTime != null) {
+      // Use explicit start/end times (from long-press creation)
+      _startTime = widget.initialStartTime!;
+      _endTime = widget.initialEndTime!;
     } else {
       final taskDate = DateTime(initialDate.year, initialDate.month, initialDate.day);
       final nextHour = (now.hour + 1).clamp(0, 23);

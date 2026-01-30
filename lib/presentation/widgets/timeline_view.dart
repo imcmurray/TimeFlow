@@ -1000,13 +1000,16 @@ class _TaskCardsLayerMultiDayState
   double _dragOffsetY = 0.0;
   double _dragStartTop = 0.0;
 
-  // State for long-press task creation
+  // State for long-press task creation (using manual timer for web compatibility)
   bool _isCreatingTask = false;
+  bool _isWaitingForLongPress = false;  // True while waiting for timer
+  Timer? _longPressTimer;
   double? _createTaskStartY;      // Initial tap Y position (in timeline coordinates)
   double? _createTaskCurrentY;    // Current drag Y position
   double? _createTaskStartX;      // Track X for cancel gesture
   DateTime? _createTaskStartTime; // Snapped start time
   int _lastSnappedMinutes = -1;   // Track for haptic feedback on snap
+  static const _longPressDuration = Duration(milliseconds: 500);
 
   @override
   void initState() {
@@ -1017,6 +1020,7 @@ class _TaskCardsLayerMultiDayState
   @override
   void dispose() {
     _reminderCheckTimer?.cancel();
+    _longPressTimer?.cancel();
     super.dispose();
   }
 
@@ -1204,6 +1208,8 @@ class _TaskCardsLayerMultiDayState
   }
 
   // ============ Long-press task creation methods ============
+  // Using Listener + Timer for web compatibility (GestureDetector long-press
+  // doesn't work well on web due to scroll view gesture conflicts)
 
   /// Snap a DateTime to 15-minute intervals
   DateTime _snapTo15Minutes(DateTime time) {
@@ -1217,85 +1223,150 @@ class _TaskCardsLayerMultiDayState
     return DateTime(time.year, time.month, time.day, hour, minute);
   }
 
-  void _onCreateTaskLongPressStart(LongPressStartDetails details, double localY) {
-    // Calculate the time at the tap position
-    final rawDateTime = _getDateTimeAtOffset(localY);
-    final snappedStart = _snapTo15Minutes(rawDateTime);
+  /// Called when pointer goes down - starts the long-press timer
+  void _onPointerDown(PointerDownEvent event, double localY, double maxWidth) {
+    _longPressTimer?.cancel();
+
+    // Store initial position for later
+    final startX = event.localPosition.dx;
+    final startY = localY;
 
     setState(() {
-      _isCreatingTask = true;
-      _createTaskStartY = localY;
-      _createTaskCurrentY = localY;
-      _createTaskStartX = details.localPosition.dx;
-      _createTaskStartTime = snappedStart;
-      _lastSnappedMinutes = snappedStart.hour * 60 + snappedStart.minute;
+      _isWaitingForLongPress = true;
+      _createTaskStartX = startX;
+      _createTaskStartY = startY;
+      _createTaskCurrentY = startY;
     });
 
-    HapticFeedback.mediumImpact();
+    // Start timer - if it completes without being cancelled, trigger long-press
+    _longPressTimer = Timer(_longPressDuration, () {
+      if (!_isWaitingForLongPress) return;
+
+      // Long press triggered!
+      final rawDateTime = _getDateTimeAtOffset(startY);
+      final snappedStart = _snapTo15Minutes(rawDateTime);
+
+      setState(() {
+        _isWaitingForLongPress = false;
+        _isCreatingTask = true;
+        _createTaskStartTime = snappedStart;
+        _lastSnappedMinutes = snappedStart.hour * 60 + snappedStart.minute;
+      });
+
+      HapticFeedback.mediumImpact();
+    });
   }
 
-  void _onCreateTaskLongPressMoveUpdate(LongPressMoveUpdateDetails details, double localY, double maxWidth) {
-    if (!_isCreatingTask || _createTaskStartY == null) return;
+  /// Called when pointer moves - update drag position or cancel if moved too much before long-press
+  void _onPointerMove(PointerMoveEvent event, double localY, double maxWidth) {
+    // If still waiting for long-press, check if we moved too much (cancel threshold)
+    if (_isWaitingForLongPress) {
+      final dx = event.localPosition.dx - (_createTaskStartX ?? 0);
+      final dy = localY - (_createTaskStartY ?? 0);
+      final distance = (dx * dx + dy * dy);
 
-    // Check for cancel gesture (dragged too far left or right)
-    final currentX = details.localPosition.dx;
-    if (currentX < -50 || currentX > maxWidth + 50) {
-      _onCreateTaskCancel();
-      return;
+      // If moved more than 20 pixels, cancel the long-press wait
+      if (distance > 400) {  // 20^2 = 400
+        _cancelLongPressWait();
+        return;
+      }
     }
 
-    setState(() {
-      _createTaskCurrentY = localY;
-    });
+    // If already creating task, update the drag position
+    if (_isCreatingTask && _createTaskStartY != null) {
+      // Check for cancel gesture (dragged too far left or right)
+      final currentX = event.localPosition.dx;
+      if (currentX < -50 || currentX > maxWidth + 50) {
+        _onCreateTaskCancel();
+        return;
+      }
 
-    // Check if we've snapped to a new 15-minute interval and provide haptic feedback
-    final endTime = _getCreateTaskEndTime();
-    if (endTime != null) {
-      final endMinutes = endTime.hour * 60 + endTime.minute;
-      if (endMinutes != _lastSnappedMinutes) {
-        _lastSnappedMinutes = endMinutes;
-        HapticFeedback.selectionClick();
+      setState(() {
+        _createTaskCurrentY = localY;
+      });
+
+      // Check if we've snapped to a new 15-minute interval and provide haptic feedback
+      final endTime = _getCreateTaskEndTime();
+      if (endTime != null) {
+        final endMinutes = endTime.hour * 60 + endTime.minute;
+        if (endMinutes != _lastSnappedMinutes) {
+          _lastSnappedMinutes = endMinutes;
+          HapticFeedback.selectionClick();
+        }
       }
     }
   }
 
-  void _onCreateTaskLongPressEnd(LongPressEndDetails details) {
-    if (!_isCreatingTask || _createTaskStartTime == null) return;
+  /// Called when pointer is released
+  void _onPointerUp(PointerUpEvent event) {
+    // If still waiting for long-press, just cancel
+    if (_isWaitingForLongPress) {
+      _cancelLongPressWait();
+      return;
+    }
 
-    final startTime = _createTaskStartTime!;
-    final endTime = _getCreateTaskEndTime() ?? startTime.add(const Duration(hours: 1));
+    // If creating task, finalize it
+    if (_isCreatingTask && _createTaskStartTime != null) {
+      final startTime = _createTaskStartTime!;
+      final endTime = _getCreateTaskEndTime() ?? startTime.add(const Duration(hours: 1));
 
-    // Ensure minimum duration of 15 minutes
-    final duration = endTime.difference(startTime);
-    final finalEndTime = duration.inMinutes < 15
-        ? startTime.add(const Duration(minutes: 15))
-        : endTime;
+      // Ensure minimum duration of 15 minutes
+      final duration = endTime.difference(startTime);
+      final finalEndTime = duration.inMinutes < 15
+          ? startTime.add(const Duration(minutes: 15))
+          : endTime;
 
-    // Reset state before navigation
-    setState(() {
-      _isCreatingTask = false;
-      _createTaskStartY = null;
-      _createTaskCurrentY = null;
-      _createTaskStartX = null;
-      _createTaskStartTime = null;
-      _lastSnappedMinutes = -1;
-    });
+      // Reset state before navigation
+      setState(() {
+        _isCreatingTask = false;
+        _createTaskStartY = null;
+        _createTaskCurrentY = null;
+        _createTaskStartX = null;
+        _createTaskStartTime = null;
+        _lastSnappedMinutes = -1;
+      });
 
-    HapticFeedback.lightImpact();
+      HapticFeedback.lightImpact();
 
-    // Navigate to task detail screen with pre-filled times
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => TaskDetailScreen(
-          initialStartTime: startTime,
-          initialEndTime: finalEndTime,
+      // Navigate to task detail screen with pre-filled times
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => TaskDetailScreen(
+            initialStartTime: startTime,
+            initialEndTime: finalEndTime,
+          ),
         ),
-      ),
-    );
+      );
+    }
+  }
+
+  /// Called when pointer is cancelled (e.g., scroll took over)
+  void _onPointerCancel(PointerCancelEvent event) {
+    _cancelLongPressWait();
+    if (_isCreatingTask) {
+      _onCreateTaskCancel();
+    }
+  }
+
+  /// Cancel the long-press wait (timer)
+  void _cancelLongPressWait() {
+    _longPressTimer?.cancel();
+    _longPressTimer = null;
+    if (_isWaitingForLongPress) {
+      setState(() {
+        _isWaitingForLongPress = false;
+        _createTaskStartX = null;
+        _createTaskStartY = null;
+        _createTaskCurrentY = null;
+      });
+    }
   }
 
   void _onCreateTaskCancel() {
+    _longPressTimer?.cancel();
+    _longPressTimer = null;
     setState(() {
+      _isWaitingForLongPress = false;
       _isCreatingTask = false;
       _createTaskStartY = null;
       _createTaskCurrentY = null;
@@ -1520,21 +1591,21 @@ class _TaskCardsLayerMultiDayState
 
         return Stack(
           children: [
-            // Background gesture detector for long-press task creation
-            // Task cards rendered later (on top) will capture their own long-press events
+            // Background listener for long-press task creation
+            // Uses Listener + Timer instead of GestureDetector for web compatibility
             Positioned.fill(
-              child: GestureDetector(
+              child: Listener(
                 behavior: HitTestBehavior.translucent,
-                onLongPressStart: (details) {
-                  final localY = details.localPosition.dy;
-                  _onCreateTaskLongPressStart(details, localY);
+                onPointerDown: (event) {
+                  final localY = event.localPosition.dy;
+                  _onPointerDown(event, localY, availableWidth);
                 },
-                onLongPressMoveUpdate: (details) {
-                  final localY = details.localPosition.dy;
-                  _onCreateTaskLongPressMoveUpdate(details, localY, availableWidth);
+                onPointerMove: (event) {
+                  final localY = event.localPosition.dy;
+                  _onPointerMove(event, localY, availableWidth);
                 },
-                onLongPressEnd: _onCreateTaskLongPressEnd,
-                onLongPressCancel: _onCreateTaskCancel,
+                onPointerUp: _onPointerUp,
+                onPointerCancel: _onPointerCancel,
                 child: const SizedBox.expand(),
               ),
             ),

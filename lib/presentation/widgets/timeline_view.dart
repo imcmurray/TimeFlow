@@ -1654,8 +1654,9 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
     final lineColor = isDark ? AppColors.nowLineDark : AppColors.nowLineLight;
 
     // NOW line is always at current time's offset
-    // During drag, we show visual feedback of where it will be positioned
-    final effectiveOffset = widget.nowOffset;
+    // During drag, add the drag delta so the line visually follows the finger
+    final isDragging = _dragDelta != null;
+    final effectiveOffset = widget.nowOffset + (_dragDelta ?? 0);
 
     return Stack(
       children: [
@@ -1672,7 +1673,7 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
                 end: Alignment.bottomCenter,
                 colors: [
                   lineColor.withValues(alpha: 0),
-                  lineColor.withValues(alpha: 0.4),
+                  lineColor.withValues(alpha: isDragging ? 0.6 : 0.4),
                   lineColor.withValues(alpha: 0),
                 ],
               ),
@@ -1700,8 +1701,8 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
                   boxShadow: [
                     BoxShadow(
                       color: lineColor.withValues(alpha: 0.5),
-                      blurRadius: 4,
-                      spreadRadius: 1,
+                      blurRadius: isDragging ? 8 : 4,
+                      spreadRadius: isDragging ? 2 : 1,
                     ),
                   ],
                 ),
@@ -1728,7 +1729,7 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
                 boxShadow: [
                   BoxShadow(
                     color: lineColor.withValues(alpha: 0.3),
-                    blurRadius: 8,
+                    blurRadius: isDragging ? 12 : 8,
                     offset: const Offset(0, 2),
                   ),
                 ],

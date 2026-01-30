@@ -499,6 +499,17 @@ class TimelineViewState extends ConsumerState<TimelineView>
                   ),
                 ),
 
+                // Day divider overlay (shows through tasks spanning midnight)
+                IgnorePointer(
+                  child: _DayDividerOverlay(
+                    hourHeight: _hourHeight,
+                    upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                    referenceDate: _referenceDate,
+                    daysLoadedBefore: _daysLoadedBefore,
+                    daysLoadedAfter: _daysLoadedAfter,
+                  ),
+                ),
+
                 // Scrollable NOW line (scrolls with content, draggable)
                 Builder(
                   builder: (context) {
@@ -772,6 +783,108 @@ class _DayDividers extends StatelessWidget {
     }
 
     return Stack(children: dividers);
+  }
+}
+
+/// Overlay that renders day divider lines on top of task cards.
+/// This allows users to see midnight boundaries through tasks that span days.
+class _DayDividerOverlay extends StatelessWidget {
+  final double hourHeight;
+  final bool upcomingTasksAboveNow;
+  final DateTime referenceDate;
+  final int daysLoadedBefore;
+  final int daysLoadedAfter;
+
+  const _DayDividerOverlay({
+    required this.hourHeight,
+    required this.upcomingTasksAboveNow,
+    required this.referenceDate,
+    required this.daysLoadedBefore,
+    required this.daysLoadedAfter,
+  });
+
+  double _getOffsetForDayStart(int dayOffset) {
+    final hoursFromReference = dayOffset * 24;
+    final referenceOffset = upcomingTasksAboveNow
+        ? daysLoadedAfter * 24 * hourHeight
+        : daysLoadedBefore * 24 * hourHeight;
+
+    if (upcomingTasksAboveNow) {
+      return referenceOffset - (hoursFromReference * hourHeight);
+    } else {
+      return referenceOffset + (hoursFromReference * hourHeight);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lineColor = isDark
+        ? Colors.white.withValues(alpha: 0.3)
+        : Colors.black.withValues(alpha: 0.2);
+
+    final lines = <Widget>[];
+
+    for (int dayOffset = -daysLoadedBefore; dayOffset <= daysLoadedAfter; dayOffset++) {
+      final offset = _getOffsetForDayStart(dayOffset);
+
+      lines.add(
+        Positioned(
+          top: offset,
+          left: 70,
+          right: 16,
+          child: CustomPaint(
+            size: const Size(double.infinity, 2),
+            painter: _DashedLinePainter(color: lineColor),
+          ),
+        ),
+      );
+    }
+
+    return Stack(children: lines);
+  }
+}
+
+/// Paints a dashed horizontal line.
+class _DashedLinePainter extends CustomPainter {
+  final Color color;
+  final double dashWidth;
+  final double dashSpace;
+  final double strokeWidth;
+
+  _DashedLinePainter({
+    required this.color,
+    this.dashWidth = 6,
+    this.dashSpace = 4,
+    this.strokeWidth = 1.5,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    double startX = 0;
+    final y = size.height / 2;
+
+    while (startX < size.width) {
+      canvas.drawLine(
+        Offset(startX, y),
+        Offset(startX + dashWidth, y),
+        paint,
+      );
+      startX += dashWidth + dashSpace;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedLinePainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.dashWidth != dashWidth ||
+        oldDelegate.dashSpace != dashSpace ||
+        oldDelegate.strokeWidth != strokeWidth;
   }
 }
 

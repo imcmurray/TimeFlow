@@ -21,6 +21,7 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  pull-requests: write
 
 jobs:
   # Web build and deploy - runs on PRs (for preview/iteration)

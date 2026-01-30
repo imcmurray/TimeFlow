@@ -1479,7 +1479,8 @@ class _TaskCardsLayerMultiDayState
         final overlappingGroups = _groupOverlappingTasks(tasks);
         final positionedCards = <Widget>[];
 
-        final use24Hour = ref.watch(settingsProvider).use24HourFormat;
+        final settings = ref.watch(settingsProvider);
+        final use24Hour = settings.use24HourFormat;
 
         // Minimum width for a readable task card title
         const minReadableWidth = 120.0;

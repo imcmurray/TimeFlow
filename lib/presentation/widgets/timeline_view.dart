@@ -1000,6 +1000,14 @@ class _TaskCardsLayerMultiDayState
   double _dragOffsetY = 0.0;
   double _dragStartTop = 0.0;
 
+  // State for long-press task creation
+  bool _isCreatingTask = false;
+  double? _createTaskStartY;      // Initial tap Y position (in timeline coordinates)
+  double? _createTaskCurrentY;    // Current drag Y position
+  double? _createTaskStartX;      // Track X for cancel gesture
+  DateTime? _createTaskStartTime; // Snapped start time
+  int _lastSnappedMinutes = -1;   // Track for haptic feedback on snap
+
   @override
   void initState() {
     super.initState();
@@ -1195,20 +1203,170 @@ class _TaskCardsLayerMultiDayState
     );
   }
 
+  // ============ Long-press task creation methods ============
+
+  /// Snap a DateTime to 15-minute intervals
+  DateTime _snapTo15Minutes(DateTime time) {
+    final snappedMinutes = (time.minute / 15).round() * 15;
+    int hour = time.hour;
+    int minute = snappedMinutes;
+    if (minute >= 60) {
+      hour += 1;
+      minute = 0;
+    }
+    return DateTime(time.year, time.month, time.day, hour, minute);
+  }
+
+  void _onCreateTaskLongPressStart(LongPressStartDetails details, double localY) {
+    // Calculate the time at the tap position
+    final rawDateTime = _getDateTimeAtOffset(localY);
+    final snappedStart = _snapTo15Minutes(rawDateTime);
+
+    setState(() {
+      _isCreatingTask = true;
+      _createTaskStartY = localY;
+      _createTaskCurrentY = localY;
+      _createTaskStartX = details.localPosition.dx;
+      _createTaskStartTime = snappedStart;
+      _lastSnappedMinutes = snappedStart.hour * 60 + snappedStart.minute;
+    });
+
+    HapticFeedback.mediumImpact();
+  }
+
+  void _onCreateTaskLongPressMoveUpdate(LongPressMoveUpdateDetails details, double localY, double maxWidth) {
+    if (!_isCreatingTask || _createTaskStartY == null) return;
+
+    // Check for cancel gesture (dragged too far left or right)
+    final currentX = details.localPosition.dx;
+    if (currentX < -50 || currentX > maxWidth + 50) {
+      _onCreateTaskCancel();
+      return;
+    }
+
+    setState(() {
+      _createTaskCurrentY = localY;
+    });
+
+    // Check if we've snapped to a new 15-minute interval and provide haptic feedback
+    final endTime = _getCreateTaskEndTime();
+    if (endTime != null) {
+      final endMinutes = endTime.hour * 60 + endTime.minute;
+      if (endMinutes != _lastSnappedMinutes) {
+        _lastSnappedMinutes = endMinutes;
+        HapticFeedback.selectionClick();
+      }
+    }
+  }
+
+  void _onCreateTaskLongPressEnd(LongPressEndDetails details) {
+    if (!_isCreatingTask || _createTaskStartTime == null) return;
+
+    final startTime = _createTaskStartTime!;
+    final endTime = _getCreateTaskEndTime() ?? startTime.add(const Duration(hours: 1));
+
+    // Ensure minimum duration of 15 minutes
+    final duration = endTime.difference(startTime);
+    final finalEndTime = duration.inMinutes < 15
+        ? startTime.add(const Duration(minutes: 15))
+        : endTime;
+
+    // Reset state before navigation
+    setState(() {
+      _isCreatingTask = false;
+      _createTaskStartY = null;
+      _createTaskCurrentY = null;
+      _createTaskStartX = null;
+      _createTaskStartTime = null;
+      _lastSnappedMinutes = -1;
+    });
+
+    HapticFeedback.lightImpact();
+
+    // Navigate to task detail screen with pre-filled times
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => TaskDetailScreen(
+          initialStartTime: startTime,
+          initialEndTime: finalEndTime,
+        ),
+      ),
+    );
+  }
+
+  void _onCreateTaskCancel() {
+    setState(() {
+      _isCreatingTask = false;
+      _createTaskStartY = null;
+      _createTaskCurrentY = null;
+      _createTaskStartX = null;
+      _createTaskStartTime = null;
+      _lastSnappedMinutes = -1;
+    });
+  }
+
+  /// Get the end time based on drag position, snapped to 15 minutes
+  DateTime? _getCreateTaskEndTime() {
+    if (_createTaskStartTime == null || _createTaskStartY == null || _createTaskCurrentY == null) {
+      return null;
+    }
+
+    // Calculate duration based on drag distance
+    final dragDelta = _createTaskCurrentY! - _createTaskStartY!;
+
+    // Convert pixel delta to duration (accounting for timeline direction)
+    double hoursDelta;
+    if (widget.upcomingTasksAboveNow) {
+      // Dragging down (positive delta) = extending into the past = negative time
+      // Dragging up (negative delta) = extending into the future = positive time
+      // But for task creation, we want drag DOWN to extend the END time (make it later)
+      hoursDelta = -dragDelta / widget.hourHeight;
+    } else {
+      // Normal orientation: drag down = later time
+      hoursDelta = dragDelta / widget.hourHeight;
+    }
+
+    // Default 1 hour + any drag extension
+    final totalHours = 1.0 + hoursDelta;
+    final durationMinutes = (totalHours * 60).round();
+
+    // Ensure minimum 15 minutes
+    final clampedMinutes = durationMinutes < 15 ? 15 : durationMinutes;
+
+    final rawEndTime = _createTaskStartTime!.add(Duration(minutes: clampedMinutes));
+    return _snapTo15Minutes(rawEndTime);
+  }
+
+  /// Calculate the visual bounds for the task creation preview
+  ({double top, double height, Duration duration}) _getCreateTaskPreviewBounds() {
+    if (_createTaskStartTime == null) {
+      return (top: 0, height: 0, duration: Duration.zero);
+    }
+
+    final endTime = _getCreateTaskEndTime() ?? _createTaskStartTime!.add(const Duration(hours: 1));
+    final duration = endTime.difference(_createTaskStartTime!);
+
+    // Calculate positions
+    final startOffset = _getOffsetForDateTime(_createTaskStartTime!);
+    final endOffset = _getOffsetForDateTime(endTime);
+
+    // Handle timeline direction
+    final top = widget.upcomingTasksAboveNow
+        ? endOffset  // When future is above, end is visually higher (smaller Y)
+        : startOffset;
+    final height = (startOffset - endOffset).abs();
+
+    return (top: top, height: height, duration: duration);
+  }
+
   @override
   Widget build(BuildContext context) {
     final tasksAsync = ref.watch(tasksForRangeProvider(widget.loadedRange));
 
     return tasksAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Error loading tasks: $error')),
-      data: (tasks) {
-        if (tasks.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return _buildTasksLayout(context, tasks);
-      },
+      loading: () => _buildTasksLayout(context, []),
+      error: (error, stack) => _buildTasksLayout(context, []),
+      data: (tasks) => _buildTasksLayout(context, tasks),
     );
   }
 
@@ -1362,8 +1520,50 @@ class _TaskCardsLayerMultiDayState
 
         return Stack(
           children: [
+            // Background gesture detector for long-press task creation
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onLongPressStart: (details) {
+                  // Calculate the Y position in timeline coordinates
+                  final box = context.findRenderObject() as RenderBox?;
+                  if (box != null) {
+                    final localY = details.localPosition.dy;
+                    _onCreateTaskLongPressStart(details, localY);
+                  }
+                },
+                onLongPressMoveUpdate: (details) {
+                  final localY = details.localPosition.dy;
+                  _onCreateTaskLongPressMoveUpdate(details, localY, availableWidth);
+                },
+                onLongPressEnd: _onCreateTaskLongPressEnd,
+                onLongPressCancel: _onCreateTaskCancel,
+                child: Container(color: Colors.transparent),
+              ),
+            ),
             ...reminderDots,
             ...positionedCards,
+            // Task creation preview box
+            if (_isCreatingTask && _createTaskStartTime != null)
+              Builder(
+                builder: (context) {
+                  final bounds = _getCreateTaskPreviewBounds();
+                  final endTime = _getCreateTaskEndTime() ?? _createTaskStartTime!.add(const Duration(hours: 1));
+
+                  return Positioned(
+                    top: bounds.top,
+                    left: 0,
+                    right: 4,
+                    height: bounds.height.clamp(40.0, double.infinity),
+                    child: _TaskCreationPreview(
+                      startTime: _createTaskStartTime!,
+                      endTime: endTime,
+                      duration: bounds.duration,
+                      use24HourFormat: use24Hour,
+                    ),
+                  );
+                },
+              ),
           ],
         );
       },
@@ -1917,6 +2117,124 @@ class _FixedNowLine extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Preview widget shown during long-press task creation.
+/// Displays a semi-transparent box with the task duration.
+class _TaskCreationPreview extends StatelessWidget {
+  final DateTime startTime;
+  final DateTime endTime;
+  final Duration duration;
+  final bool use24HourFormat;
+
+  const _TaskCreationPreview({
+    required this.startTime,
+    required this.endTime,
+    required this.duration,
+    required this.use24HourFormat,
+  });
+
+  String _formatTime(DateTime time) {
+    if (use24HourFormat) {
+      final hour = time.hour.toString().padLeft(2, '0');
+      final minute = time.minute.toString().padLeft(2, '0');
+      return '$hour:$minute';
+    }
+    final hour = time.hour == 0
+        ? 12
+        : time.hour > 12
+            ? time.hour - 12
+            : time.hour;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  }
+
+  String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+
+    if (hours > 0 && minutes > 0) {
+      return '${hours}h ${minutes}m';
+    } else if (hours > 0) {
+      return '${hours}h';
+    } else {
+      return '${minutes}m';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    return IgnorePointer(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 50),
+        decoration: BoxDecoration(
+          color: primaryColor.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: primaryColor.withValues(alpha: 0.6),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: primaryColor.withValues(alpha: 0.2),
+              blurRadius: 8,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // "New Task" label
+              Text(
+                'New Task',
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black87,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              // Time range
+              Text(
+                '${_formatTime(startTime)} - ${_formatTime(endTime)}',
+                style: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black54,
+                  fontSize: 12,
+                ),
+              ),
+              const Spacer(),
+              // Duration badge at bottom
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withValues(alpha: 0.8),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _formatDuration(duration),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

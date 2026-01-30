@@ -103444,10 +103444,10 @@ b=c.rx
 c=A.aPH("Branch: 13/merge",A.cz(a2,a2,b==null?c.k3:b,a2,a2,a2,a2,a2,a3,a2,a2,12,a2,a2,a2,a2,a2,!0,a2,a2,a2,a2,a2,a2,a2,a2))
 b=A.E(b6).ax
 a=b.rx
-b=A.aPH("Commit: 563b6cd",A.cz(a2,a2,a==null?b.k3:a,a2,a2,a2,a2,a2,a3,a2,a2,12,a2,a2,a2,a2,a2,!0,a2,a2,a2,a2,a2,a2,a2,a2))
+b=A.aPH("Commit: 32a3111",A.cz(a2,a2,a==null?b.k3:a,a2,a2,a2,a2,a2,a3,a2,a2,12,a2,a2,a2,a2,a2,!0,a2,a2,a2,a2,a2,a2,a2,a2))
 a=A.E(b6).ax
 a0=a.rx
-return A.tY(a4,a2,A.aP6(A.b([new A.ok("Appearance",a2),a8,a9,b0,b1,B.cR,new A.ok("Location & Time",a2),b2,b3,b5,B.cR,new A.ok("Day Watermark",a2),s,b4,r,q,p,o,B.cR,new A.ok("Notifications",a2),m,n,l,k,j,B.cR,new A.ok("Data",a2),a5,i,a6,B.cR,new A.ok("About",a2),a7,A.ce(a2,A.bV(A.b([d,B.jC,c,B.e5,b,B.e5,A.aPH("Built: 2026-01-30T01:30:09Z",A.cz(a2,a2,a0==null?a.k3:a0,a2,a2,a2,a2,a2,a3,a2,a2,12,a2,a2,a2,a2,a2,!0,a2,a2,a2,a2,a2,a2,a2,a2))],e),B.a8,B.m,B.r,0,B.D),B.n,a2,a2,new A.bY(h,a2,f,g,a2,a2,B.T),a2,a2,B.q1,B.Ke,a2,a2,a2),A.fo(!1,a2,a2,a2,!0,a2,a2,!0,a2,B.M8,a2,new A.aGP(a1),!1,a2,a2,a2,B.a3f,a2,B.Dc,a2,a2,a2),A.fo(!1,a2,a2,a2,!0,a2,a2,!0,a2,B.Mx,a2,new A.aGQ(a1),!1,a2,a2,a2,a2,a2,B.Df,a2,a2,a2),A.fo(!1,a2,a2,a2,!0,a2,a2,!0,a2,B.M3,a2,new A.aGR(a1),!1,a2,a2,a2,a2,a2,B.De,a2,a2,a2)],e),a2,a2,!1),a2,a2)},
+return A.tY(a4,a2,A.aP6(A.b([new A.ok("Appearance",a2),a8,a9,b0,b1,B.cR,new A.ok("Location & Time",a2),b2,b3,b5,B.cR,new A.ok("Day Watermark",a2),s,b4,r,q,p,o,B.cR,new A.ok("Notifications",a2),m,n,l,k,j,B.cR,new A.ok("Data",a2),a5,i,a6,B.cR,new A.ok("About",a2),a7,A.ce(a2,A.bV(A.b([d,B.jC,c,B.e5,b,B.e5,A.aPH("Built: 2026-01-30T01:34:48Z",A.cz(a2,a2,a0==null?a.k3:a0,a2,a2,a2,a2,a2,a3,a2,a2,12,a2,a2,a2,a2,a2,!0,a2,a2,a2,a2,a2,a2,a2,a2))],e),B.a8,B.m,B.r,0,B.D),B.n,a2,a2,new A.bY(h,a2,f,g,a2,a2,B.T),a2,a2,B.q1,B.Ke,a2,a2,a2),A.fo(!1,a2,a2,a2,!0,a2,a2,!0,a2,B.M8,a2,new A.aGP(a1),!1,a2,a2,a2,B.a3f,a2,B.Dc,a2,a2,a2),A.fo(!1,a2,a2,a2,!0,a2,a2,!0,a2,B.Mx,a2,new A.aGQ(a1),!1,a2,a2,a2,a2,a2,B.Df,a2,a2,a2),A.fo(!1,a2,a2,a2,!0,a2,a2,!0,a2,B.M3,a2,new A.aGR(a1),!1,a2,a2,a2,a2,a2,B.De,a2,a2,a2)],e),a2,a2,!1),a2,a2)},
 atN(a){switch(a){case"light":return"Light"
 case"dark":return"Dark"
 case"auto":default:return"System default"}},
@@ -103832,7 +103832,7 @@ $0(){A.bB(this.a,!1).cz(null)
 return null},
 $S:0}
 A.aGl.prototype={
-$1(a){var s=null,r=t.p,q=A.bV(A.b([A.aj("Version: "+this.a.c,s,s,s,s,s,s,s),A.aj("Build: #1 (563b6cd)",s,s,s,s,s,s,s),B.bB,B.a4B,B.jC,A.ht(!1,s,!0,A.aj("View or create issues on GitHub",s,s,s,A.cz(s,s,A.E(a).ax.b,s,B.hv,s,s,s,s,s,s,s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s,s),s,!0,s,s,s,s,s,s,s,s,s,s,s,new A.aGj(),s,s,s,s)],r),B.a8,B.m,B.a0,0,B.D)
+$1(a){var s=null,r=t.p,q=A.bV(A.b([A.aj("Version: "+this.a.c,s,s,s,s,s,s,s),A.aj("Build: #1 (32a3111)",s,s,s,s,s,s,s),B.bB,B.a4B,B.jC,A.ht(!1,s,!0,A.aj("View or create issues on GitHub",s,s,s,A.cz(s,s,A.E(a).ax.b,s,B.hv,s,s,s,s,s,s,s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s,s),s,!0,s,s,s,s,s,s,s,s,s,s,s,new A.aGj(),s,s,s,s)],r),B.a8,B.m,B.a0,0,B.D)
 return A.hk(A.b([A.dt(B.nl,new A.aGk(a),s)],r),q,!1,B.Dc)},
 $S:19}
 A.aGj.prototype={

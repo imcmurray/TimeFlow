@@ -6,14 +6,83 @@ on:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      deploy_target:
+        description: 'What to deploy'
+        required: true
+        default: 'web'
+        type: choice
+        options:
+          - web
+          - android
+          - both
 
 permissions:
   contents: write
   pages: write
   id-token: write
+  pull-requests: write
 
 jobs:
-  build:
+  # Web build and deploy - runs on PRs (for preview/iteration)
+  build-web:
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && (inputs.deploy_target == 'web' || inputs.deploy_target == 'both'))
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate build info
+        run: |
+          chmod +x ./scripts/generate_build_info.sh
+          ./scripts/generate_build_info.sh
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Generate drift code
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+
+      - name: Enable web
+        run: flutter config --enable-web
+
+      - name: Build web
+        run: flutter build web --release --base-href="/TimeFlow/"
+
+      - name: Upload web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: timeflow-web
+          path: build/web
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
+
+      - name: Comment PR with preview link
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🌐 **Web preview deployed!**\n\nView at: https://${{ github.repository_owner }}.github.io/TimeFlow/\n\n_This preview updates with each push to this PR._'
+            })
+
+  # Android build and release - runs on push to main (after PR merge)
+  build-android:
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && (inputs.deploy_target == 'android' || inputs.deploy_target == 'both'))
     runs-on: ubuntu-latest
 
     steps:
@@ -43,7 +112,6 @@ jobs:
       - name: Generate drift code
         run: flutter pub run build_runner build --delete-conflicting-outputs
 
-      # Android builds
       - name: Build debug APK
         run: flutter build apk --debug
 
@@ -62,29 +130,13 @@ jobs:
           name: timeflow-release
           path: build/app/outputs/flutter-apk/app-release.apk
 
-      # Web build
-      - name: Enable web
-        run: flutter config --enable-web
-
-      - name: Build web
-        run: flutter build web --release --base-href="/TimeFlow/"
-
-      - name: Upload web build
-        uses: actions/upload-artifact@v4
-        with:
-          name: timeflow-web
-          path: build/web
-
-      # Get version info for release
       - name: Get version info
         id: version
         run: |
           echo "commit=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
-      # Create Android release (only on main branch push)
       - name: Create Android Release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: android-${{ steps.version.outputs.date }}-${{ steps.version.outputs.commit }}
@@ -100,11 +152,3 @@ jobs:
             build/app/outputs/flutter-apk/app-debug.apk
             build/app/outputs/flutter-apk/app-release.apk
           prerelease: true
-
-      # Deploy web to GitHub Pages (only on main branch push)
-      - name: Deploy to GitHub Pages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/web

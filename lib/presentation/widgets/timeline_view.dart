@@ -516,6 +516,7 @@ class TimelineViewState extends ConsumerState<TimelineView>
                       use24HourFormat: use24Hour,
                       scrollOffset: scrollOffset,
                       viewportHeight: viewportHeight,
+                      onPositionChanged: () => _scrollToNow(animated: true),
                     );
                   },
                 ),
@@ -1577,6 +1578,7 @@ class _NowLineScrollable extends ConsumerStatefulWidget {
   final bool use24HourFormat;
   final double scrollOffset;
   final double viewportHeight;
+  final VoidCallback? onPositionChanged;
 
   const _NowLineScrollable({
     required this.currentTime,
@@ -1584,6 +1586,7 @@ class _NowLineScrollable extends ConsumerStatefulWidget {
     required this.scrollOffset,
     required this.viewportHeight,
     this.use24HourFormat = false,
+    this.onPositionChanged,
   });
 
   @override
@@ -1635,6 +1638,11 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
       // Save the new viewport position
       ref.read(settingsProvider.notifier).setNowLineViewportPosition(newPosition);
 
+      // Trigger scroll to new position after a brief delay to let state update
+      Future.delayed(const Duration(milliseconds: 50), () {
+        widget.onPositionChanged?.call();
+      });
+
       HapticFeedback.lightImpact();
     }
     setState(() {
@@ -1654,8 +1662,9 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
     final lineColor = isDark ? AppColors.nowLineDark : AppColors.nowLineLight;
 
     // NOW line is always at current time's offset
-    // During drag, we show visual feedback of where it will be positioned
-    final effectiveOffset = widget.nowOffset;
+    // During drag, add the drag delta so the line visually follows the finger
+    final isDragging = _dragDelta != null;
+    final effectiveOffset = widget.nowOffset + (_dragDelta ?? 0);
 
     return Stack(
       children: [
@@ -1672,7 +1681,7 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
                 end: Alignment.bottomCenter,
                 colors: [
                   lineColor.withValues(alpha: 0),
-                  lineColor.withValues(alpha: 0.4),
+                  lineColor.withValues(alpha: isDragging ? 0.6 : 0.4),
                   lineColor.withValues(alpha: 0),
                 ],
               ),
@@ -1700,8 +1709,8 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
                   boxShadow: [
                     BoxShadow(
                       color: lineColor.withValues(alpha: 0.5),
-                      blurRadius: 4,
-                      spreadRadius: 1,
+                      blurRadius: isDragging ? 8 : 4,
+                      spreadRadius: isDragging ? 2 : 1,
                     ),
                   ],
                 ),
@@ -1728,7 +1737,7 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
                 boxShadow: [
                   BoxShadow(
                     color: lineColor.withValues(alpha: 0.3),
-                    blurRadius: 8,
+                    blurRadius: isDragging ? 12 : 8,
                     offset: const Offset(0, 2),
                   ),
                 ],

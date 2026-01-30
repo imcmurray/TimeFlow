@@ -1521,16 +1521,13 @@ class _TaskCardsLayerMultiDayState
         return Stack(
           children: [
             // Background gesture detector for long-press task creation
+            // Task cards rendered later (on top) will capture their own long-press events
             Positioned.fill(
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onLongPressStart: (details) {
-                  // Calculate the Y position in timeline coordinates
-                  final box = context.findRenderObject() as RenderBox?;
-                  if (box != null) {
-                    final localY = details.localPosition.dy;
-                    _onCreateTaskLongPressStart(details, localY);
-                  }
+                  final localY = details.localPosition.dy;
+                  _onCreateTaskLongPressStart(details, localY);
                 },
                 onLongPressMoveUpdate: (details) {
                   final localY = details.localPosition.dy;
@@ -1538,7 +1535,7 @@ class _TaskCardsLayerMultiDayState
                 },
                 onLongPressEnd: _onCreateTaskLongPressEnd,
                 onLongPressCancel: _onCreateTaskCancel,
-                child: Container(color: Colors.transparent),
+                child: const SizedBox.expand(),
               ),
             ),
             ...reminderDots,

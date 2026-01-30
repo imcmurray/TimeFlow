@@ -29,6 +29,10 @@ class SettingsNotifier extends Notifier<Settings> {
   static const _keyWatermarkShowMoonPhase = 'timeflow_watermark_show_moon_phase';
   static const _keyWatermarkShowQuarter = 'timeflow_watermark_show_quarter';
   static const _keyWatermarkShowDaysRemaining = 'timeflow_watermark_show_days_remaining';
+  // Long-press task creation settings
+  static const _keyLongPressDefaultDuration = 'timeflow_longpress_default_duration';
+  static const _keyLongPressSnapInterval = 'timeflow_longpress_snap_interval';
+  static const _keyHasSeenLongPressHint = 'timeflow_has_seen_longpress_hint';
 
   SharedPreferences? _prefs;
 
@@ -89,6 +93,9 @@ class SettingsNotifier extends Notifier<Settings> {
           ? _prefs!.getInt(_keyCustomNowLineMinutes)
           : null,
       nowLineViewportPosition: _prefs!.getDouble(_keyNowLineViewportPosition) ?? 0.75,
+      longPressDefaultDurationMinutes: _prefs!.getInt(_keyLongPressDefaultDuration) ?? 60,
+      longPressSnapIntervalMinutes: _prefs!.getInt(_keyLongPressSnapInterval) ?? 15,
+      hasSeenLongPressHint: _prefs!.getBool(_keyHasSeenLongPressHint) ?? false,
     );
   }
 
@@ -254,6 +261,32 @@ class SettingsNotifier extends Notifier<Settings> {
     state = state.copyWith(nowLineViewportPosition: clampedPosition);
     await _ensurePrefs();
     await _prefs!.setDouble(_keyNowLineViewportPosition, clampedPosition);
+  }
+
+  // Long-press task creation settings
+
+  /// Sets the default duration for long-press task creation (in minutes).
+  Future<void> setLongPressDefaultDuration(int minutes) async {
+    state = state.copyWith(longPressDefaultDurationMinutes: minutes);
+    await _ensurePrefs();
+    await _prefs!.setInt(_keyLongPressDefaultDuration, minutes);
+  }
+
+  /// Sets the snap interval for long-press task creation (in minutes).
+  /// Valid values: 5, 15, or 30 minutes.
+  Future<void> setLongPressSnapInterval(int minutes) async {
+    // Clamp to valid options
+    final validMinutes = [5, 15, 30].contains(minutes) ? minutes : 15;
+    state = state.copyWith(longPressSnapIntervalMinutes: validMinutes);
+    await _ensurePrefs();
+    await _prefs!.setInt(_keyLongPressSnapInterval, validMinutes);
+  }
+
+  /// Marks the long-press hint as seen by the user.
+  Future<void> setHasSeenLongPressHint(bool value) async {
+    state = state.copyWith(hasSeenLongPressHint: value);
+    await _ensurePrefs();
+    await _prefs!.setBool(_keyHasSeenLongPressHint, value);
   }
 }
 

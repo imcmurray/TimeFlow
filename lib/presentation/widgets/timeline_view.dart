@@ -1004,6 +1004,7 @@ class _TaskCardsLayerMultiDayState
   bool _isCreatingTask = false;
   bool _isWaitingForLongPress = false;  // True while waiting for timer
   Timer? _longPressTimer;
+  bool _tooltipDismissed = false;  // Local dismissal state for tooltip animation
   double? _createTaskStartY;      // Initial tap Y position (in timeline coordinates)
   double? _createTaskCurrentY;    // Current drag Y position
   double? _createTaskStartX;      // Track X for cancel gesture
@@ -1211,9 +1212,9 @@ class _TaskCardsLayerMultiDayState
   // Using Listener + Timer for web compatibility (GestureDetector long-press
   // doesn't work well on web due to scroll view gesture conflicts)
 
-  /// Snap a DateTime to 15-minute intervals
-  DateTime _snapTo15Minutes(DateTime time) {
-    final snappedMinutes = (time.minute / 15).round() * 15;
+  /// Snap a DateTime to configurable minute intervals
+  DateTime _snapToInterval(DateTime time, int intervalMinutes) {
+    final snappedMinutes = (time.minute / intervalMinutes).round() * intervalMinutes;
     int hour = time.hour;
     int minute = snappedMinutes;
     if (minute >= 60) {
@@ -1243,8 +1244,10 @@ class _TaskCardsLayerMultiDayState
       if (!_isWaitingForLongPress) return;
 
       // Long press triggered!
+      final settings = ref.read(settingsProvider);
+      final snapInterval = settings.longPressSnapIntervalMinutes;
       final rawDateTime = _getDateTimeAtOffset(startY);
-      final snappedStart = _snapTo15Minutes(rawDateTime);
+      final snappedStart = _snapToInterval(rawDateTime, snapInterval);
 
       setState(() {
         _isWaitingForLongPress = false;
@@ -1307,13 +1310,17 @@ class _TaskCardsLayerMultiDayState
 
     // If creating task, finalize it
     if (_isCreatingTask && _createTaskStartTime != null) {
-      final startTime = _createTaskStartTime!;
-      final endTime = _getCreateTaskEndTime() ?? startTime.add(const Duration(hours: 1));
+      final settings = ref.read(settingsProvider);
+      final defaultDuration = settings.longPressDefaultDurationMinutes;
+      final snapInterval = settings.longPressSnapIntervalMinutes;
 
-      // Ensure minimum duration of 15 minutes
+      final startTime = _createTaskStartTime!;
+      final endTime = _getCreateTaskEndTime() ?? startTime.add(Duration(minutes: defaultDuration));
+
+      // Ensure minimum duration equals snap interval
       final duration = endTime.difference(startTime);
-      final finalEndTime = duration.inMinutes < 15
-          ? startTime.add(const Duration(minutes: 15))
+      final finalEndTime = duration.inMinutes < snapInterval
+          ? startTime.add(Duration(minutes: snapInterval))
           : endTime;
 
       // Reset state before navigation
@@ -1376,11 +1383,23 @@ class _TaskCardsLayerMultiDayState
     });
   }
 
-  /// Get the end time based on drag position, snapped to 15 minutes
+  /// Dismisses the long-press hint tooltip and persists the setting.
+  void _dismissLongPressHint() {
+    setState(() {
+      _tooltipDismissed = true;
+    });
+    ref.read(settingsProvider.notifier).setHasSeenLongPressHint(true);
+  }
+
+  /// Get the end time based on drag position, snapped to configurable interval
   DateTime? _getCreateTaskEndTime() {
     if (_createTaskStartTime == null || _createTaskStartY == null || _createTaskCurrentY == null) {
       return null;
     }
+
+    final settings = ref.read(settingsProvider);
+    final defaultDuration = settings.longPressDefaultDurationMinutes;
+    final snapInterval = settings.longPressSnapIntervalMinutes;
 
     // Calculate duration based on drag distance
     final dragDelta = _createTaskCurrentY! - _createTaskStartY!;
@@ -1397,15 +1416,14 @@ class _TaskCardsLayerMultiDayState
       hoursDelta = dragDelta / widget.hourHeight;
     }
 
-    // Default 1 hour + any drag extension
-    final totalHours = 1.0 + hoursDelta;
-    final durationMinutes = (totalHours * 60).round();
+    // Default duration (from settings) + any drag extension
+    final totalMinutes = defaultDuration + (hoursDelta * 60).round();
 
-    // Ensure minimum 15 minutes
-    final clampedMinutes = durationMinutes < 15 ? 15 : durationMinutes;
+    // Ensure minimum equals snap interval
+    final clampedMinutes = totalMinutes < snapInterval ? snapInterval : totalMinutes;
 
     final rawEndTime = _createTaskStartTime!.add(Duration(minutes: clampedMinutes));
-    return _snapTo15Minutes(rawEndTime);
+    return _snapToInterval(rawEndTime, snapInterval);
   }
 
   /// Calculate the visual bounds for the task creation preview
@@ -1414,7 +1432,9 @@ class _TaskCardsLayerMultiDayState
       return (top: 0, height: 0, duration: Duration.zero);
     }
 
-    final endTime = _getCreateTaskEndTime() ?? _createTaskStartTime!.add(const Duration(hours: 1));
+    final settings = ref.read(settingsProvider);
+    final defaultDuration = settings.longPressDefaultDurationMinutes;
+    final endTime = _getCreateTaskEndTime() ?? _createTaskStartTime!.add(Duration(minutes: defaultDuration));
     final duration = endTime.difference(_createTaskStartTime!);
 
     // Calculate positions
@@ -1428,6 +1448,17 @@ class _TaskCardsLayerMultiDayState
     final height = (startOffset - endOffset).abs();
 
     return (top: top, height: height, duration: duration);
+  }
+
+  /// Check if the new task time range overlaps with any existing tasks
+  bool _checkForConflicts(DateTime startTime, DateTime endTime, List<Task> existingTasks) {
+    for (final task in existingTasks) {
+      // Two time ranges overlap if one starts before the other ends
+      if (startTime.isBefore(task.endTime) && endTime.isAfter(task.startTime)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @override
@@ -1617,6 +1648,7 @@ class _TaskCardsLayerMultiDayState
                 builder: (context) {
                   final bounds = _getCreateTaskPreviewBounds();
                   final endTime = _getCreateTaskEndTime() ?? _createTaskStartTime!.add(const Duration(hours: 1));
+                  final hasConflict = _checkForConflicts(_createTaskStartTime!, endTime, tasks);
 
                   return Positioned(
                     top: bounds.top,
@@ -1628,9 +1660,15 @@ class _TaskCardsLayerMultiDayState
                       endTime: endTime,
                       duration: bounds.duration,
                       use24HourFormat: use24Hour,
+                      hasConflict: hasConflict,
                     ),
                   );
                 },
+              ),
+            // Onboarding tooltip for long-press task creation
+            if (!_tooltipDismissed && !settings.hasSeenLongPressHint && !_isCreatingTask)
+              _LongPressHintTooltip(
+                onDismiss: () => _dismissLongPressHint(),
               ),
           ],
         );
@@ -2197,12 +2235,14 @@ class _TaskCreationPreview extends StatelessWidget {
   final DateTime endTime;
   final Duration duration;
   final bool use24HourFormat;
+  final bool hasConflict;
 
   const _TaskCreationPreview({
     required this.startTime,
     required this.endTime,
     required this.duration,
     required this.use24HourFormat,
+    this.hasConflict = false,
   });
 
   String _formatTime(DateTime time) {
@@ -2234,24 +2274,42 @@ class _TaskCreationPreview extends StatelessWidget {
     }
   }
 
+  /// Check if task crosses midnight (spans multiple days)
+  bool get _crossesMidnight {
+    final startDay = DateTime(startTime.year, startTime.month, startTime.day);
+    final endDay = DateTime(endTime.year, endTime.month, endTime.day);
+    return endDay.isAfter(startDay);
+  }
+
+  /// Get the number of days the task spans
+  int get _daySpan {
+    final startDay = DateTime(startTime.year, startTime.month, startTime.day);
+    final endDay = DateTime(endTime.year, endTime.month, endTime.day);
+    return endDay.difference(startDay).inDays;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = Theme.of(context).colorScheme.primary;
 
+    // Use orange/red color when there's a conflict
+    final conflictColor = Colors.orange;
+    final baseColor = hasConflict ? conflictColor : primaryColor;
+
     return IgnorePointer(
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 50),
+        duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
-          color: primaryColor.withValues(alpha: 0.3),
+          color: baseColor.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: primaryColor.withValues(alpha: 0.6),
+            color: baseColor.withValues(alpha: 0.6),
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: primaryColor.withValues(alpha: 0.2),
+              color: baseColor.withValues(alpha: 0.2),
               blurRadius: 8,
               spreadRadius: 2,
             ),
@@ -2262,23 +2320,61 @@ class _TaskCreationPreview extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // "New Task" label
-              Text(
-                'New Task',
-                style: TextStyle(
-                  color: isDark ? Colors.white : Colors.black87,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+              // "New Task" label with conflict warning
+              Row(
+                children: [
+                  if (hasConflict) ...[
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      size: 16,
+                      color: conflictColor,
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                  Expanded(
+                    child: Text(
+                      hasConflict ? 'Overlapping Task' : 'New Task',
+                      style: TextStyle(
+                        color: hasConflict
+                            ? conflictColor
+                            : (isDark ? Colors.white : Colors.black87),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 4),
-              // Time range
-              Text(
-                '${_formatTime(startTime)} - ${_formatTime(endTime)}',
-                style: TextStyle(
-                  color: isDark ? Colors.white70 : Colors.black54,
-                  fontSize: 12,
-                ),
+              // Time range with midnight crossing indicator
+              Row(
+                children: [
+                  Text(
+                    '${_formatTime(startTime)} - ${_formatTime(endTime)}',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black54,
+                      fontSize: 12,
+                    ),
+                  ),
+                  if (_crossesMidnight) ...[
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: (isDark ? Colors.white24 : Colors.black12),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '+${_daySpan}d',
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : Colors.black54,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
               const Spacer(),
               // Duration badge at bottom
@@ -2287,7 +2383,7 @@ class _TaskCreationPreview extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: primaryColor.withValues(alpha: 0.8),
+                    color: baseColor.withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -2301,6 +2397,152 @@ class _TaskCreationPreview extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Onboarding tooltip that hints about long-press task creation.
+/// Positioned at the top of the timeline area and dismissable by tap.
+class _LongPressHintTooltip extends StatefulWidget {
+  final VoidCallback onDismiss;
+
+  const _LongPressHintTooltip({
+    required this.onDismiss,
+  });
+
+  @override
+  State<_LongPressHintTooltip> createState() => _LongPressHintTooltipState();
+}
+
+class _LongPressHintTooltipState extends State<_LongPressHintTooltip>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOut,
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, -0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    ));
+
+    // Start animation after a short delay
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _controller.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _dismiss() {
+    _controller.reverse().then((_) {
+      widget.onDismiss();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Positioned(
+      top: 80,
+      left: 8,
+      right: 8,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: GestureDetector(
+            onTap: _dismiss,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF2D3748)
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.touch_app_rounded,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Quick Task Creation',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Long-press anywhere on the timeline to create a new task',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? Colors.white70 : Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.close,
+                    size: 18,
+                    color: isDark ? Colors.white38 : Colors.black38,
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

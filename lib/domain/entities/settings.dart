@@ -78,6 +78,17 @@ class Settings {
   /// Default is 0.75 (75% down the viewport).
   final double nowLineViewportPosition;
 
+  /// Default duration in minutes for long-press task creation.
+  /// Default is 60 minutes (1 hour).
+  final int longPressDefaultDurationMinutes;
+
+  /// Snap interval in minutes for long-press task creation.
+  /// Options: 5, 15, or 30 minutes. Default is 15.
+  final int longPressSnapIntervalMinutes;
+
+  /// Whether the user has seen the long-press task creation hint.
+  final bool hasSeenLongPressHint;
+
   const Settings({
     this.theme = 'auto',
     this.defaultReminderMinutes = 10,
@@ -101,6 +112,9 @@ class Settings {
     this.watermarkShowDaysRemaining = false,
     this.customNowLineMinutesFromMidnight,
     this.nowLineViewportPosition = 0.75,
+    this.longPressDefaultDurationMinutes = 60,
+    this.longPressSnapIntervalMinutes = 15,
+    this.hasSeenLongPressHint = false,
   });
 
   /// Default settings for first-time users.
@@ -132,6 +146,9 @@ class Settings {
     int? customNowLineMinutesFromMidnight,
     bool clearCustomNowLine = false,
     double? nowLineViewportPosition,
+    int? longPressDefaultDurationMinutes,
+    int? longPressSnapIntervalMinutes,
+    bool? hasSeenLongPressHint,
   }) {
     return Settings(
       theme: theme ?? this.theme,
@@ -156,6 +173,9 @@ class Settings {
       watermarkShowDaysRemaining: watermarkShowDaysRemaining ?? this.watermarkShowDaysRemaining,
       customNowLineMinutesFromMidnight: clearCustomNowLine ? null : (customNowLineMinutesFromMidnight ?? this.customNowLineMinutesFromMidnight),
       nowLineViewportPosition: nowLineViewportPosition ?? this.nowLineViewportPosition,
+      longPressDefaultDurationMinutes: longPressDefaultDurationMinutes ?? this.longPressDefaultDurationMinutes,
+      longPressSnapIntervalMinutes: longPressSnapIntervalMinutes ?? this.longPressSnapIntervalMinutes,
+      hasSeenLongPressHint: hasSeenLongPressHint ?? this.hasSeenLongPressHint,
     );
   }
 
@@ -184,7 +204,10 @@ class Settings {
         other.watermarkShowQuarter == watermarkShowQuarter &&
         other.watermarkShowDaysRemaining == watermarkShowDaysRemaining &&
         other.customNowLineMinutesFromMidnight == customNowLineMinutesFromMidnight &&
-        other.nowLineViewportPosition == nowLineViewportPosition;
+        other.nowLineViewportPosition == nowLineViewportPosition &&
+        other.longPressDefaultDurationMinutes == longPressDefaultDurationMinutes &&
+        other.longPressSnapIntervalMinutes == longPressSnapIntervalMinutes &&
+        other.hasSeenLongPressHint == hasSeenLongPressHint;
   }
 
   @override
@@ -212,6 +235,9 @@ class Settings {
       watermarkShowDaysRemaining,
       customNowLineMinutesFromMidnight,
       nowLineViewportPosition,
+      longPressDefaultDurationMinutes,
+      longPressSnapIntervalMinutes,
+      hasSeenLongPressHint,
     ]);
   }
 
@@ -231,6 +257,9 @@ class Settings {
         'watermarkShowQuarter: $watermarkShowQuarter, '
         'watermarkShowDaysRemaining: $watermarkShowDaysRemaining, '
         'customNowLineMinutesFromMidnight: $customNowLineMinutesFromMidnight, '
-        'nowLineViewportPosition: $nowLineViewportPosition)';
+        'nowLineViewportPosition: $nowLineViewportPosition, '
+        'longPressDefaultDurationMinutes: $longPressDefaultDurationMinutes, '
+        'longPressSnapIntervalMinutes: $longPressSnapIntervalMinutes, '
+        'hasSeenLongPressHint: $hasSeenLongPressHint)';
   }
 }

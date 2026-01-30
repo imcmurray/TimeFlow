@@ -516,6 +516,7 @@ class TimelineViewState extends ConsumerState<TimelineView>
                       use24HourFormat: use24Hour,
                       scrollOffset: scrollOffset,
                       viewportHeight: viewportHeight,
+                      onPositionChanged: () => _scrollToNow(animated: true),
                     );
                   },
                 ),
@@ -1577,6 +1578,7 @@ class _NowLineScrollable extends ConsumerStatefulWidget {
   final bool use24HourFormat;
   final double scrollOffset;
   final double viewportHeight;
+  final VoidCallback? onPositionChanged;
 
   const _NowLineScrollable({
     required this.currentTime,
@@ -1584,6 +1586,7 @@ class _NowLineScrollable extends ConsumerStatefulWidget {
     required this.scrollOffset,
     required this.viewportHeight,
     this.use24HourFormat = false,
+    this.onPositionChanged,
   });
 
   @override
@@ -1634,6 +1637,11 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
 
       // Save the new viewport position
       ref.read(settingsProvider.notifier).setNowLineViewportPosition(newPosition);
+
+      // Trigger scroll to new position after a brief delay to let state update
+      Future.delayed(const Duration(milliseconds: 50), () {
+        widget.onPositionChanged?.call();
+      });
 
       HapticFeedback.lightImpact();
     }

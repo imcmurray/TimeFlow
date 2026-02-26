@@ -3,8 +3,9 @@ import 'package:cron_timeflow/core/plugins/plugin_interface.dart';
 
 /// Shows a bottom sheet with full details for a plugin timeline event.
 void showEventDetailPopup(BuildContext context, TimelineEvent event) {
-  final colorScheme = Theme.of(context).colorScheme;
   final meta = event.metadata;
+  final mergedEvents = meta['_mergedEvents'];
+  final isMerged = mergedEvents is List && mergedEvents.length > 1;
 
   showModalBottomSheet(
     context: context,
@@ -13,9 +14,9 @@ void showEventDetailPopup(BuildContext context, TimelineEvent event) {
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
     builder: (context) => DraggableScrollableSheet(
-      initialChildSize: 0.4,
+      initialChildSize: isMerged ? 0.5 : 0.4,
       minChildSize: 0.2,
-      maxChildSize: 0.6,
+      maxChildSize: isMerged ? 0.8 : 0.6,
       expand: false,
       builder: (context, scrollController) => ListView(
         controller: scrollController,
@@ -27,7 +28,7 @@ void showEventDetailPopup(BuildContext context, TimelineEvent event) {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: colorScheme.outlineVariant,
+                color: Theme.of(context).colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -46,7 +47,7 @@ void showEventDetailPopup(BuildContext context, TimelineEvent event) {
             Text(
               event.subtitle!,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
           ],
@@ -54,30 +55,38 @@ void showEventDetailPopup(BuildContext context, TimelineEvent event) {
           const Divider(),
           const SizedBox(height: 8),
 
-          // Time info
-          _DetailRow(
-            icon: Icons.access_time,
-            label: 'Start',
-            value: _formatDateTime(event.startTime),
-          ),
-          if (event.endTime != null)
+          if (isMerged) ...[
+            // Merged events list
+            ...mergedEvents.cast<TimelineEvent>().map(
+                  (e) => _MergedEventTile(event: e),
+                ),
+          ] else ...[
+            // Single event detail rows
             _DetailRow(
-              icon: Icons.access_time_filled,
-              label: 'End',
-              value: _formatDateTime(event.endTime!),
+              icon: Icons.access_time,
+              label: 'Start',
+              value: _formatDateTime(event.startTime),
             ),
+            if (event.endTime != null)
+              _DetailRow(
+                icon: Icons.access_time_filled,
+                label: 'End',
+                value: _formatDateTime(event.endTime!),
+              ),
 
-          // Dynamic metadata rows
-          ...meta.entries
-              .where((e) =>
-                  e.key != 'id' &&
-                  e.value != null &&
-                  e.value.toString().isNotEmpty)
-              .map((e) => _DetailRow(
-                    icon: _iconForKey(e.key),
-                    label: _formatKey(e.key),
-                    value: e.value.toString(),
-                  )),
+            // Dynamic metadata rows — filter internal _-prefixed keys
+            ...meta.entries
+                .where((e) =>
+                    !e.key.startsWith('_') &&
+                    e.key != 'id' &&
+                    e.value != null &&
+                    e.value.toString().isNotEmpty)
+                .map((e) => _DetailRow(
+                      icon: _iconForKey(e.key),
+                      label: _formatKey(e.key),
+                      value: e.value.toString(),
+                    )),
+          ],
         ],
       ),
     ),
@@ -151,6 +160,45 @@ class _DetailRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MergedEventTile extends StatelessWidget {
+  final TimelineEvent event;
+
+  const _MergedEventTile({required this.event});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = event.color ?? Theme.of(context).colorScheme.primary;
+    final host = event.metadata['host']?.toString() ?? event.groupKey ?? '';
+    final command = event.metadata['command']?.toString() ?? event.title;
+    final user = event.metadata['user']?.toString() ?? '';
+    final time = _formatDateTime(event.startTime);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 6),
+      child: ListTile(
+        dense: true,
+        leading: CircleAvatar(
+          radius: 14,
+          backgroundColor: color,
+          child: const Icon(Icons.terminal, size: 14, color: Colors.white),
+        ),
+        title: Text(
+          command,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 13),
+        ),
+        subtitle: Text(
+          '$host  |  $user  |  $time',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 11),
+        ),
       ),
     );
   }

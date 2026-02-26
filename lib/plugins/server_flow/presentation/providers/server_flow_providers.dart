@@ -5,8 +5,10 @@ import 'package:cron_timeflow/plugins/server_flow/data/cron_job_repository.dart'
 import 'package:cron_timeflow/plugins/server_flow/data/csv_parser.dart';
 import 'package:cron_timeflow/plugins/server_flow/domain/cron_expansion_service.dart';
 import 'package:cron_timeflow/plugins/server_flow/presentation/providers/filter_provider.dart';
+import 'package:cron_timeflow/plugins/server_flow/presentation/providers/display_mode_provider.dart';
 import 'package:cron_timeflow/plugins/server_flow/presentation/providers/grouping_provider.dart';
 import 'package:cron_timeflow/plugins/server_flow/presentation/utils/color_palette.dart';
+import 'package:cron_timeflow/plugins/server_flow/domain/display_mode_transform.dart';
 import 'package:cron_timeflow/presentation/providers/task_provider.dart';
 
 /// Repository for cron jobs.
@@ -96,7 +98,15 @@ final serverFlowEventsForRangeProvider =
     }).toList();
   }
 
-  return colored;
+  // Apply display mode transform (stage 4)
+  final displayState = ref.watch(displayModeProvider);
+  final transformed = DisplayModeTransform.apply(
+    events: colored,
+    mode: displayState.mode,
+    clusterWindow: displayState.clusterWindow,
+  );
+
+  return transformed;
 });
 
 /// State for CSV import process.

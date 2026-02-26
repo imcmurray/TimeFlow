@@ -25,7 +25,7 @@ class _CsvUploadScreenState extends ConsumerState<CsvUploadScreen> {
       appBar: AppBar(
         title: const Text('Import CSV'),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -49,14 +49,9 @@ class _CsvUploadScreenState extends ConsumerState<CsvUploadScreen> {
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 8),
-              Expanded(
-                flex: 2,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: SingleChildScrollView(
-                    child: _buildPreviewTable(),
-                  ),
-                ),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: _buildPreviewTable(),
               ),
               const SizedBox(height: 16),
             ],
@@ -129,21 +124,13 @@ class _CsvUploadScreenState extends ConsumerState<CsvUploadScreen> {
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 8),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: importState.result!.errors.length,
-                  itemBuilder: (context, index) {
-                    final error = importState.result!.errors[index];
-                    return ListTile(
-                      dense: true,
-                      leading: Icon(Icons.warning_amber,
-                          color: colorScheme.error, size: 20),
-                      title: Text('Row ${error.row}'),
-                      subtitle: Text(error.message),
-                    );
-                  },
-                ),
-              ),
+              ...importState.result!.errors.map((error) => ListTile(
+                    dense: true,
+                    leading: Icon(Icons.warning_amber,
+                        color: colorScheme.error, size: 20),
+                    title: Text('Row ${error.row}'),
+                    subtitle: Text(error.message),
+                  )),
             ],
           ],
         ),

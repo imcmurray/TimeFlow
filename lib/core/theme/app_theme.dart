@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:timeflow/core/theme/app_colors.dart';
+import 'package:cron_timeflow/core/theme/app_colors.dart';
 
 /// App theme configuration following the TimeFlow design system.
 ///

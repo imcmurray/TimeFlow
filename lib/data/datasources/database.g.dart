@@ -90,6 +90,14 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
   late final GeneratedColumn<String> color = GeneratedColumn<String>(
       'color', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _categoryMeta =
+      const VerificationMeta('category');
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+      'category', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('none'));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -117,6 +125,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
         notes,
         attachmentPath,
         color,
+        category,
         createdAt,
         updatedAt
       ];
@@ -203,6 +212,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
       context.handle(
           _colorMeta, color.isAcceptableOrUnknown(data['color']!, _colorMeta));
     }
+    if (data.containsKey('category')) {
+      context.handle(_categoryMeta,
+          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -250,6 +263,8 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, Task> {
           .read(DriftSqlType.string, data['${effectivePrefix}attachment_path']),
       color: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}color']),
+      category: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -277,6 +292,7 @@ class Task extends DataClass implements Insertable<Task> {
   final String? notes;
   final String? attachmentPath;
   final String? color;
+  final String category;
   final DateTime createdAt;
   final DateTime updatedAt;
   const Task(
@@ -293,6 +309,7 @@ class Task extends DataClass implements Insertable<Task> {
       this.notes,
       this.attachmentPath,
       this.color,
+      required this.category,
       required this.createdAt,
       required this.updatedAt});
   @override
@@ -325,6 +342,7 @@ class Task extends DataClass implements Insertable<Task> {
     if (!nullToAbsent || color != null) {
       map['color'] = Variable<String>(color);
     }
+    map['category'] = Variable<String>(category);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -357,6 +375,7 @@ class Task extends DataClass implements Insertable<Task> {
           : Value(attachmentPath),
       color:
           color == null && nullToAbsent ? const Value.absent() : Value(color),
+      category: Value(category),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -380,6 +399,7 @@ class Task extends DataClass implements Insertable<Task> {
       notes: serializer.fromJson<String?>(json['notes']),
       attachmentPath: serializer.fromJson<String?>(json['attachmentPath']),
       color: serializer.fromJson<String?>(json['color']),
+      category: serializer.fromJson<String>(json['category']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -401,6 +421,7 @@ class Task extends DataClass implements Insertable<Task> {
       'notes': serializer.toJson<String?>(notes),
       'attachmentPath': serializer.toJson<String?>(attachmentPath),
       'color': serializer.toJson<String?>(color),
+      'category': serializer.toJson<String>(category),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -420,6 +441,7 @@ class Task extends DataClass implements Insertable<Task> {
           Value<String?> notes = const Value.absent(),
           Value<String?> attachmentPath = const Value.absent(),
           Value<String?> color = const Value.absent(),
+          String? category,
           DateTime? createdAt,
           DateTime? updatedAt}) =>
       Task(
@@ -443,6 +465,7 @@ class Task extends DataClass implements Insertable<Task> {
         attachmentPath:
             attachmentPath.present ? attachmentPath.value : this.attachmentPath,
         color: color.present ? color.value : this.color,
+        category: category ?? this.category,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -472,6 +495,7 @@ class Task extends DataClass implements Insertable<Task> {
           ? data.attachmentPath.value
           : this.attachmentPath,
       color: data.color.present ? data.color.value : this.color,
+      category: data.category.present ? data.category.value : this.category,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -493,6 +517,7 @@ class Task extends DataClass implements Insertable<Task> {
           ..write('notes: $notes, ')
           ..write('attachmentPath: $attachmentPath, ')
           ..write('color: $color, ')
+          ..write('category: $category, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -514,6 +539,7 @@ class Task extends DataClass implements Insertable<Task> {
       notes,
       attachmentPath,
       color,
+      category,
       createdAt,
       updatedAt);
   @override
@@ -533,6 +559,7 @@ class Task extends DataClass implements Insertable<Task> {
           other.notes == this.notes &&
           other.attachmentPath == this.attachmentPath &&
           other.color == this.color &&
+          other.category == this.category &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -551,6 +578,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
   final Value<String?> notes;
   final Value<String?> attachmentPath;
   final Value<String?> color;
+  final Value<String> category;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -568,6 +596,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.notes = const Value.absent(),
     this.attachmentPath = const Value.absent(),
     this.color = const Value.absent(),
+    this.category = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -586,6 +615,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     this.notes = const Value.absent(),
     this.attachmentPath = const Value.absent(),
     this.color = const Value.absent(),
+    this.category = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -609,6 +639,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
     Expression<String>? notes,
     Expression<String>? attachmentPath,
     Expression<String>? color,
+    Expression<String>? category,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -628,6 +659,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       if (notes != null) 'notes': notes,
       if (attachmentPath != null) 'attachment_path': attachmentPath,
       if (color != null) 'color': color,
+      if (category != null) 'category': category,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -648,6 +680,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       Value<String?>? notes,
       Value<String?>? attachmentPath,
       Value<String?>? color,
+      Value<String>? category,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<int>? rowid}) {
@@ -665,6 +698,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
       notes: notes ?? this.notes,
       attachmentPath: attachmentPath ?? this.attachmentPath,
       color: color ?? this.color,
+      category: category ?? this.category,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -714,6 +748,9 @@ class TasksCompanion extends UpdateCompanion<Task> {
     if (color.present) {
       map['color'] = Variable<String>(color.value);
     }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -742,6 +779,7 @@ class TasksCompanion extends UpdateCompanion<Task> {
           ..write('notes: $notes, ')
           ..write('attachmentPath: $attachmentPath, ')
           ..write('color: $color, ')
+          ..write('category: $category, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -775,6 +813,7 @@ typedef $$TasksTableCreateCompanionBuilder = TasksCompanion Function({
   Value<String?> notes,
   Value<String?> attachmentPath,
   Value<String?> color,
+  Value<String> category,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<int> rowid,
@@ -793,6 +832,7 @@ typedef $$TasksTableUpdateCompanionBuilder = TasksCompanion Function({
   Value<String?> notes,
   Value<String?> attachmentPath,
   Value<String?> color,
+  Value<String> category,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<int> rowid,
@@ -848,6 +888,9 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<String> get color => $composableBuilder(
       column: $table.color, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -908,6 +951,9 @@ class $$TasksTableOrderingComposer
   ColumnOrderings<String> get color => $composableBuilder(
       column: $table.color, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -963,6 +1009,9 @@ class $$TasksTableAnnotationComposer
   GeneratedColumn<String> get color =>
       $composableBuilder(column: $table.color, builder: (column) => column);
 
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -1006,6 +1055,7 @@ class $$TasksTableTableManager extends RootTableManager<
             Value<String?> notes = const Value.absent(),
             Value<String?> attachmentPath = const Value.absent(),
             Value<String?> color = const Value.absent(),
+            Value<String> category = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -1024,6 +1074,7 @@ class $$TasksTableTableManager extends RootTableManager<
             notes: notes,
             attachmentPath: attachmentPath,
             color: color,
+            category: category,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,
@@ -1042,6 +1093,7 @@ class $$TasksTableTableManager extends RootTableManager<
             Value<String?> notes = const Value.absent(),
             Value<String?> attachmentPath = const Value.absent(),
             Value<String?> color = const Value.absent(),
+            Value<String> category = const Value.absent(),
             required DateTime createdAt,
             required DateTime updatedAt,
             Value<int> rowid = const Value.absent(),
@@ -1060,6 +1112,7 @@ class $$TasksTableTableManager extends RootTableManager<
             notes: notes,
             attachmentPath: attachmentPath,
             color: color,
+            category: category,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,

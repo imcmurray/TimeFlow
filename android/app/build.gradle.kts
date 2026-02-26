@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.rinserepeatlabs.timeflow"
+    namespace = "com.rinserepeatlabs.cron_timeflow"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -22,7 +22,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.rinserepeatlabs.timeflow"
+        applicationId = "com.rinserepeatlabs.cron_timeflow"
         minSdk = 21
         targetSdk = 34
         versionCode = flutter.versionCode

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:timeflow/domain/entities/settings.dart';
-import 'package:timeflow/services/sun_times_service.dart';
+import 'package:cron_timeflow/domain/entities/settings.dart';
+import 'package:cron_timeflow/services/sun_times_service.dart';
 
 /// Notifier for managing app settings state with persistence.
 class SettingsNotifier extends Notifier<Settings> {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:timeflow/services/holidays_service.dart';
+import 'package:cron_timeflow/services/holidays_service.dart';
 
 /// Visual marker indicating day boundaries with sunrise/sunset theming.
 ///

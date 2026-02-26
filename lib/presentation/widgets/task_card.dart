@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:timeflow/core/theme/app_colors.dart';
-import 'package:timeflow/domain/entities/task.dart';
-import 'package:timeflow/domain/entities/task_category.dart';
-import 'package:timeflow/presentation/widgets/reminder_line.dart';
+import 'package:cron_timeflow/core/theme/app_colors.dart';
+import 'package:cron_timeflow/domain/entities/task.dart';
+import 'package:cron_timeflow/domain/entities/task_category.dart';
+import 'package:cron_timeflow/presentation/widgets/reminder_line.dart';
 
 /// A card widget representing a single task on the timeline.
 ///

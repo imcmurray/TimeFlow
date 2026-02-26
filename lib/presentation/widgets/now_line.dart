@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:timeflow/core/theme/app_colors.dart';
+import 'package:cron_timeflow/core/theme/app_colors.dart';
 
 /// The fixed NOW line that displays across the timeline.
 ///

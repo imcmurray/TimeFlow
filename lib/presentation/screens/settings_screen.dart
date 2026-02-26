@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:timeflow/build_info.dart';
-import 'package:timeflow/presentation/helpers/file_export.dart';
-import 'package:timeflow/presentation/providers/settings_provider.dart';
-import 'package:timeflow/presentation/providers/task_provider.dart';
-import 'package:timeflow/services/reminder_sound_service.dart';
+import 'package:cron_timeflow/build_info.dart';
+import 'package:cron_timeflow/core/plugins/plugin_state_provider.dart';
+import 'package:cron_timeflow/presentation/helpers/file_export.dart';
+import 'package:cron_timeflow/presentation/providers/settings_provider.dart';
+import 'package:cron_timeflow/presentation/providers/task_provider.dart';
+import 'package:cron_timeflow/presentation/screens/plugin_marketplace_screen.dart';
+import 'package:cron_timeflow/services/reminder_sound_service.dart';
 
 /// Settings screen for app preferences and customization.
 ///
@@ -53,7 +55,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: const Text('Future tasks flow down toward the NOW line'),
             value: ref.watch(settingsProvider).upcomingTasksAboveNow,
             onChanged: (value) {
-              ref.read(settingsProvider.notifier).setUpcomingTasksAboveNow(value);
+              ref
+                  .read(settingsProvider.notifier)
+                  .setUpcomingTasksAboveNow(value);
             },
           ),
           SwitchListTile(
@@ -94,7 +98,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ListTile(
             leading: const Icon(Icons.schedule),
             title: const Text('Timezone'),
-            subtitle: Text(_getTimezoneLabel(ref.watch(settingsProvider).timezoneOffsetHours)),
+            subtitle: Text(_getTimezoneLabel(
+                ref.watch(settingsProvider).timezoneOffsetHours)),
             enabled: ref.watch(settingsProvider).showSunTimes,
             onTap: ref.watch(settingsProvider).showSunTimes
                 ? () => _showTimezoneDialog()
@@ -111,7 +116,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: const Text('Show W1, W2, etc.'),
             value: ref.watch(settingsProvider).watermarkShowWeekNumber,
             onChanged: (value) {
-              ref.read(settingsProvider.notifier).setWatermarkShowWeekNumber(value);
+              ref
+                  .read(settingsProvider.notifier)
+                  .setWatermarkShowWeekNumber(value);
             },
           ),
           SwitchListTile(
@@ -120,7 +127,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: const Text('Show US federal holidays'),
             value: ref.watch(settingsProvider).watermarkShowHolidays,
             onChanged: (value) {
-              ref.read(settingsProvider.notifier).setWatermarkShowHolidays(value);
+              ref
+                  .read(settingsProvider.notifier)
+                  .setWatermarkShowHolidays(value);
             },
           ),
           SwitchListTile(
@@ -129,7 +138,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: const Text('Show current moon phase'),
             value: ref.watch(settingsProvider).watermarkShowMoonPhase,
             onChanged: (value) {
-              ref.read(settingsProvider.notifier).setWatermarkShowMoonPhase(value);
+              ref
+                  .read(settingsProvider.notifier)
+                  .setWatermarkShowMoonPhase(value);
             },
           ),
           SwitchListTile(
@@ -138,7 +149,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: const Text('Show Q1, Q2, Q3, Q4'),
             value: ref.watch(settingsProvider).watermarkShowQuarter,
             onChanged: (value) {
-              ref.read(settingsProvider.notifier).setWatermarkShowQuarter(value);
+              ref
+                  .read(settingsProvider.notifier)
+                  .setWatermarkShowQuarter(value);
             },
           ),
           SwitchListTile(
@@ -147,7 +160,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: const Text('Show Day 1 through Day 365'),
             value: ref.watch(settingsProvider).watermarkShowDayOfYear,
             onChanged: (value) {
-              ref.read(settingsProvider.notifier).setWatermarkShowDayOfYear(value);
+              ref
+                  .read(settingsProvider.notifier)
+                  .setWatermarkShowDayOfYear(value);
             },
           ),
           SwitchListTile(
@@ -156,7 +171,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: const Text('Show days left in the year'),
             value: ref.watch(settingsProvider).watermarkShowDaysRemaining,
             onChanged: (value) {
-              ref.read(settingsProvider.notifier).setWatermarkShowDaysRemaining(value);
+              ref
+                  .read(settingsProvider.notifier)
+                  .setWatermarkShowDaysRemaining(value);
             },
           ),
 
@@ -206,7 +223,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: const Text('Raise app window when reminder triggers'),
             value: ref.watch(settingsProvider).bringWindowToFrontOnReminder,
             onChanged: (value) {
-              ref.read(settingsProvider.notifier).setBringWindowToFrontOnReminder(value);
+              ref
+                  .read(settingsProvider.notifier)
+                  .setBringWindowToFrontOnReminder(value);
             },
           ),
           SwitchListTile(
@@ -215,7 +234,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: const Text('Play sound when reminder triggers'),
             value: ref.watch(settingsProvider).reminderSoundEnabled,
             onChanged: (value) {
-              ref.read(settingsProvider.notifier).setReminderSoundEnabled(value);
+              ref
+                  .read(settingsProvider.notifier)
+                  .setReminderSoundEnabled(value);
             },
           ),
           ListTile(
@@ -250,6 +271,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: const Text('Delete All Tasks'),
             subtitle: const Text('Permanently remove all tasks'),
             onTap: () => _showDeleteAllTasksDialog(),
+          ),
+
+          const Divider(),
+
+          // Plugins Section
+          _SectionHeader(title: 'Plugins'),
+          ListTile(
+            leading: const Icon(Icons.extension_outlined),
+            title: const Text('Plugin Marketplace'),
+            subtitle: Text(
+              '${ref.watch(enabledPluginsProvider).length} active',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const PluginMarketplaceScreen(),
+                ),
+              );
+            },
           ),
 
           const Divider(),
@@ -627,7 +668,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showDefaultDurationDialog() {
-    final currentDuration = ref.read(settingsProvider).longPressDefaultDurationMinutes;
+    final currentDuration =
+        ref.read(settingsProvider).longPressDefaultDurationMinutes;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -648,7 +690,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 value: minutes,
                 groupValue: currentDuration,
                 onChanged: (value) {
-                  ref.read(settingsProvider.notifier).setLongPressDefaultDuration(value!);
+                  ref
+                      .read(settingsProvider.notifier)
+                      .setLongPressDefaultDuration(value!);
                   Navigator.pop(context);
                 },
               ),
@@ -665,7 +709,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showSnapIntervalDialog() {
-    final currentInterval = ref.read(settingsProvider).longPressSnapIntervalMinutes;
+    final currentInterval =
+        ref.read(settingsProvider).longPressSnapIntervalMinutes;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -687,7 +732,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 value: minutes,
                 groupValue: currentInterval,
                 onChanged: (value) {
-                  ref.read(settingsProvider.notifier).setLongPressSnapInterval(value!);
+                  ref
+                      .read(settingsProvider.notifier)
+                      .setLongPressSnapInterval(value!);
                   Navigator.pop(context);
                 },
               ),
@@ -794,18 +841,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   groupValue: isSelected,
                   onChanged: (_) {
                     ref.read(settingsProvider.notifier).setLocation(
-                      preset.latitude,
-                      preset.longitude,
-                    );
+                          preset.latitude,
+                          preset.longitude,
+                        );
                     Navigator.pop(context);
                   },
                 ),
                 selected: isSelected,
                 onTap: () {
                   ref.read(settingsProvider.notifier).setLocation(
-                    preset.latitude,
-                    preset.longitude,
-                  );
+                        preset.latitude,
+                        preset.longitude,
+                      );
                   Navigator.pop(context);
                 },
               );
@@ -877,13 +924,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   value: tz.value,
                   groupValue: currentOffset,
                   onChanged: (value) {
-                    ref.read(settingsProvider.notifier).setTimezoneOffsetHours(value);
+                    ref
+                        .read(settingsProvider.notifier)
+                        .setTimezoneOffsetHours(value);
                     Navigator.pop(context);
                   },
                 ),
                 selected: isSelected,
                 onTap: () {
-                  ref.read(settingsProvider.notifier).setTimezoneOffsetHours(tz.value);
+                  ref
+                      .read(settingsProvider.notifier)
+                      .setTimezoneOffsetHours(tz.value);
                   Navigator.pop(context);
                 },
               );

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:timeflow/core/theme/app_colors.dart';
-import 'package:timeflow/domain/entities/task.dart';
-import 'package:timeflow/presentation/widgets/reminder_line.dart';
-import 'package:timeflow/presentation/widgets/task_card.dart';
-import 'package:timeflow/presentation/widgets/water_ripple_painter.dart';
+import 'package:cron_timeflow/core/theme/app_colors.dart';
+import 'package:cron_timeflow/domain/entities/task.dart';
+import 'package:cron_timeflow/presentation/widgets/reminder_line.dart';
+import 'package:cron_timeflow/presentation/widgets/task_card.dart';
+import 'package:cron_timeflow/presentation/widgets/water_ripple_painter.dart';
 
 /// A modal that shows expanded view of merged/overlapping tasks.
 ///

@@ -7,8 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:timeflow/domain/entities/task.dart';
-import 'package:timeflow/presentation/providers/task_provider.dart';
+import 'package:cron_timeflow/domain/entities/task.dart';
+import 'package:cron_timeflow/presentation/providers/task_provider.dart';
 
 /// Screen for sharing the day's schedule as text or image.
 class ShareScreen extends ConsumerStatefulWidget {

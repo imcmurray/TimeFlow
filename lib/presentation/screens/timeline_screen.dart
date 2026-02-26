@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timeflow/presentation/providers/settings_provider.dart';
-import 'package:timeflow/presentation/widgets/timeline_view.dart';
-import 'package:timeflow/presentation/widgets/calendar_overview.dart';
-import 'package:timeflow/presentation/screens/task_detail_screen.dart';
-import 'package:timeflow/presentation/screens/settings_screen.dart';
-import 'package:timeflow/presentation/screens/share_screen.dart';
+import 'package:cron_timeflow/core/plugins/plugin_interface.dart';
+import 'package:cron_timeflow/core/plugins/plugin_state_provider.dart';
+import 'package:cron_timeflow/presentation/providers/settings_provider.dart';
+import 'package:cron_timeflow/presentation/screens/plugin_marketplace_screen.dart';
+import 'package:cron_timeflow/presentation/widgets/timeline_view.dart';
+import 'package:cron_timeflow/presentation/widgets/calendar_overview.dart';
+import 'package:cron_timeflow/presentation/screens/task_detail_screen.dart';
+import 'package:cron_timeflow/presentation/screens/settings_screen.dart';
+import 'package:cron_timeflow/presentation/screens/share_screen.dart';
 
 /// View mode for the timeline screen.
 enum TimelineViewMode { day, calendar }
@@ -77,11 +80,17 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
 
     _pinchScale = details.scale;
 
-    if (_viewMode == TimelineViewMode.day && _pinchScale < 0.7) {
-      setState(() {
-        _viewMode = TimelineViewMode.calendar;
-        _isPinching = false;
-      });
+    if (_viewMode == TimelineViewMode.day) {
+      // In day view: pinch zooms the timeline
+      _timelineKey.currentState?.setZoomLevel(_pinchScale);
+
+      // Very aggressive pinch-in escapes to calendar
+      if (_pinchScale < 0.5) {
+        setState(() {
+          _viewMode = TimelineViewMode.calendar;
+          _isPinching = false;
+        });
+      }
     } else if (_viewMode == TimelineViewMode.calendar && _pinchScale > 1.3) {
       setState(() {
         _viewMode = TimelineViewMode.day;
@@ -126,8 +135,18 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
     } else {
       const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
       ];
       return '${weekdays[date.weekday - 1]}, ${months[date.month - 1]} ${date.day}';
     }
@@ -209,6 +228,24 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
             ),
           ),
           actions: [
+            // Dynamic plugin AppBar actions
+            ...ref.watch(enabledPluginsProvider).expand((plugin) => plugin
+                .uiExtensions
+                .where((ext) =>
+                    ext.extensionPoint == UIExtensionPoint.appBarAction)
+                .map((ext) => ext.builder(context, ref))),
+            // Plugin marketplace
+            IconButton(
+              icon: const Icon(Icons.extension_outlined),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const PluginMarketplaceScreen(),
+                  ),
+                );
+              },
+              tooltip: 'Plugins',
+            ),
             IconButton(
               icon: const Icon(Icons.share_outlined),
               onPressed: () {
@@ -243,7 +280,8 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                 return FadeTransition(
                   opacity: animation,
                   child: ScaleTransition(
-                    scale: Tween<double>(begin: 0.95, end: 1.0).animate(animation),
+                    scale:
+                        Tween<double>(begin: 0.95, end: 1.0).animate(animation),
                     child: child,
                   ),
                 );
@@ -271,20 +309,20 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                     ),
             ),
 
-              // Jump to NOW button (bottom left, only in day view when NOW line not visible)
-              if (_viewMode == TimelineViewMode.day && !_isNowLineVisible)
-                Positioned(
-                  left: 16,
-                  bottom: 16,
-                  child: FloatingActionButton.small(
-                    heroTag: 'jumpToNow',
-                    onPressed: _jumpToNow,
-                    tooltip: 'Jump to now',
-                    backgroundColor: colorScheme.secondaryContainer,
-                    foregroundColor: colorScheme.onSecondaryContainer,
-                    child: const Icon(Icons.my_location),
-                  ),
+            // Jump to NOW button (bottom left, only in day view when NOW line not visible)
+            if (_viewMode == TimelineViewMode.day && !_isNowLineVisible)
+              Positioned(
+                left: 16,
+                bottom: 16,
+                child: FloatingActionButton.small(
+                  heroTag: 'jumpToNow',
+                  onPressed: _jumpToNow,
+                  tooltip: 'Jump to now',
+                  backgroundColor: colorScheme.secondaryContainer,
+                  foregroundColor: colorScheme.onSecondaryContainer,
+                  child: const Icon(Icons.my_location),
                 ),
+              ),
           ],
         ),
         floatingActionButton: _viewMode == TimelineViewMode.day

@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = TimeFlow
+PRODUCT_NAME = CronTimeflow
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = io.timeflow.app
+PRODUCT_BUNDLE_IDENTIFIER = com.rinserepeatlabs.cron-timeflow
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 TimeFlow. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 CronTimeflow. All rights reserved.

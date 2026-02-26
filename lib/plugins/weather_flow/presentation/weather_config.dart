@@ -37,28 +37,14 @@ class WeatherConfigWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final useCelsius = ref.watch(weatherUnitProvider);
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Temperature Unit',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          const SizedBox(height: 12),
-          SwitchListTile(
-            title: Text(useCelsius ? 'Celsius' : 'Fahrenheit'),
-            subtitle: Text(useCelsius ? 'Showing °C' : 'Showing °F'),
-            value: useCelsius,
-            onChanged: (value) {
-              ref.read(weatherUnitProvider.notifier).setUseCelsius(value);
-            },
-          ),
-        ],
-      ),
+    return SwitchListTile(
+      title: Text(useCelsius ? 'Celsius' : 'Fahrenheit'),
+      subtitle: Text(useCelsius ? 'Showing °C' : 'Showing °F'),
+      value: useCelsius,
+      contentPadding: EdgeInsets.zero,
+      onChanged: (value) {
+        ref.read(weatherUnitProvider.notifier).setUseCelsius(value);
+      },
     );
   }
 }

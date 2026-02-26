@@ -35,7 +35,7 @@ class WeatherFlowPlugin implements TimeFlowPlugin {
         icon: Icons.wb_sunny,
         accentColor: Colors.amber,
         tags: ['weather', 'environment'],
-        configScreenBuilder: (context, ref) => const WeatherConfigWidget(),
+        configSectionBuilder: (context, ref) => const WeatherConfigWidget(),
       );
 
   @override

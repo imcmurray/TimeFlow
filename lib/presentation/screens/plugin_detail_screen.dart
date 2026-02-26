@@ -120,27 +120,25 @@ class PluginDetailScreen extends ConsumerWidget {
             const SizedBox(height: 12),
           ],
 
-          // Configure button
-          if (meta.configScreenBuilder != null)
-            FilledButton.icon(
-              onPressed: isEnabled
-                  ? () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (ctx) => Scaffold(
-                            appBar:
-                                AppBar(title: Text('${plugin.name} Settings')),
-                            body: meta.configScreenBuilder!(ctx, ref),
-                          ),
-                        ),
-                      );
-                    }
-                  : null,
-              icon: const Icon(Icons.settings),
-              label: const Text('Configure'),
+          // Inline configuration section
+          if (meta.configSectionBuilder != null) ...[
+            Text(
+              'Configuration',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
-
-          const SizedBox(height: 16),
+            const SizedBox(height: 8),
+            AnimatedOpacity(
+              opacity: isEnabled ? 1.0 : 0.5,
+              duration: const Duration(milliseconds: 200),
+              child: IgnorePointer(
+                ignoring: !isEnabled,
+                child: meta.configSectionBuilder!(context, ref),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
 
           // Tags
           if (meta.tags.isNotEmpty) ...[

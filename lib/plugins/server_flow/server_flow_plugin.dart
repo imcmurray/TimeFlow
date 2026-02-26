@@ -4,7 +4,7 @@ import 'package:cron_timeflow/core/plugins/plugin_interface.dart';
 import 'package:cron_timeflow/core/plugins/widgets/event_detail_popup.dart';
 import 'package:cron_timeflow/plugins/server_flow/presentation/providers/filter_provider.dart';
 import 'package:cron_timeflow/plugins/server_flow/presentation/providers/server_flow_providers.dart';
-import 'package:cron_timeflow/plugins/server_flow/presentation/csv_upload_screen.dart';
+import 'package:cron_timeflow/plugins/server_flow/presentation/server_flow_config_section.dart';
 import 'package:cron_timeflow/plugins/server_flow/presentation/widgets/filter_modal.dart';
 import 'package:cron_timeflow/presentation/providers/task_provider.dart'
     show DateRange;
@@ -21,7 +21,7 @@ class ServerFlowPlugin implements TimeFlowPlugin {
   String get name => 'ServerFlow';
 
   @override
-  PluginMetadata get metadata => const PluginMetadata(
+  PluginMetadata get metadata => PluginMetadata(
         shortDescription:
             'Visualize cron jobs and scheduled tasks from CSV uploads',
         fullDescription:
@@ -33,6 +33,8 @@ class ServerFlowPlugin implements TimeFlowPlugin {
         icon: Icons.dns_outlined,
         accentColor: Colors.blue,
         tags: ['servers', 'cron', 'csv', 'devops'],
+        configSectionBuilder: (context, ref) =>
+            const ServerFlowConfigSection(),
       );
 
   @override
@@ -60,23 +62,6 @@ class ServerFlowPlugin implements TimeFlowPlugin {
               ),
               onPressed: () => showFilterModal(context),
               tooltip: 'Filter events',
-            );
-          },
-        ),
-        UIExtensionDescriptor(
-          id: 'server_flow_csv_upload',
-          extensionPoint: UIExtensionPoint.appBarAction,
-          builder: (context, ref) {
-            return IconButton(
-              icon: const Icon(Icons.upload_file),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const CsvUploadScreen(),
-                  ),
-                );
-              },
-              tooltip: 'Import CSV',
             );
           },
         ),

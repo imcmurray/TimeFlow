@@ -16,7 +16,7 @@ class PluginMetadata {
   final IconData icon;
   final Color? accentColor;
   final List<String> tags;
-  final Widget Function(BuildContext, WidgetRef)? configScreenBuilder;
+  final Widget Function(BuildContext, WidgetRef)? configSectionBuilder;
 
   const PluginMetadata({
     required this.shortDescription,
@@ -26,7 +26,7 @@ class PluginMetadata {
     required this.icon,
     this.accentColor,
     this.tags = const [],
-    this.configScreenBuilder,
+    this.configSectionBuilder,
   });
 }
 

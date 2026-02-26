@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cron_timeflow/plugins/server_flow/presentation/helpers/csv_file_picker.dart';
 import 'package:cron_timeflow/plugins/server_flow/presentation/providers/server_flow_providers.dart';
+import 'package:cron_timeflow/plugins/server_flow/presentation/widgets/csv_format_help.dart';
 
 /// Screen for importing cron jobs from CSV files.
 class CsvUploadScreen extends ConsumerStatefulWidget {
@@ -37,6 +38,10 @@ class _CsvUploadScreenState extends ConsumerState<CsvUploadScreen> {
             ),
             const SizedBox(height: 16),
 
+            // CSV format help
+            const CsvFormatHelp(),
+            const SizedBox(height: 16),
+
             // Preview table
             if (_previewRows != null && _previewRows!.isNotEmpty) ...[
               Text(
@@ -57,7 +62,8 @@ class _CsvUploadScreenState extends ConsumerState<CsvUploadScreen> {
             ],
 
             // Import button
-            if (_previewText != null && importState.status != CsvImportStatus.done)
+            if (_previewText != null &&
+                importState.status != CsvImportStatus.done)
               FilledButton.icon(
                 onPressed: importState.isActive ? null : _importCsv,
                 icon: importState.isActive

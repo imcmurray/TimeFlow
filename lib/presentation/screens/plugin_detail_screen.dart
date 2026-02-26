@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cron_timeflow/core/plugins/plugin_interface.dart';
 import 'package:cron_timeflow/core/plugins/plugin_providers.dart';
 import 'package:cron_timeflow/core/plugins/plugin_state_provider.dart';
+import 'package:cron_timeflow/presentation/screens/timeline_share_screen.dart';
 
 /// Detail screen for a single plugin showing metadata and configuration.
 class PluginDetailScreen extends ConsumerWidget {
@@ -26,9 +28,32 @@ class PluginDetailScreen extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final accentColor = meta.accentColor ?? colorScheme.primary;
 
+    // Check if this plugin can produce timeline events (use today as a probe).
+    final now = DateTime.now();
+    final todayRange = DateRange(
+      DateTime(now.year, now.month, now.day),
+      DateTime(now.year, now.month, now.day, 23, 59, 59),
+    );
+    final hasEvents = plugin.eventsProviderFor(todayRange) != null;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(plugin.name),
+        actions: [
+          if (hasEvents)
+            IconButton(
+              icon: const Icon(Icons.share_outlined),
+              tooltip: 'Share timeline',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        TimelineShareScreen(initialPluginId: plugin.id),
+                  ),
+                );
+              },
+            ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),

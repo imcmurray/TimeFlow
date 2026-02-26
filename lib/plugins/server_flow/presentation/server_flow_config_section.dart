@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cron_timeflow/plugins/server_flow/presentation/providers/server_flow_providers.dart';
 import 'package:cron_timeflow/plugins/server_flow/presentation/providers/display_mode_provider.dart';
 import 'package:cron_timeflow/plugins/server_flow/presentation/csv_upload_screen.dart';
+import 'package:cron_timeflow/plugins/server_flow/presentation/widgets/display_mode_card.dart';
 
 /// Inline configuration section for ServerFlow shown on the plugin detail page.
 class ServerFlowConfigSection extends ConsumerWidget {
@@ -43,35 +44,15 @@ class ServerFlowConfigSection extends ConsumerWidget {
             style: Theme.of(context).textTheme.titleSmall,
           ),
         ),
-        Wrap(
-          spacing: 8,
-          children: [
-            ChoiceChip(
-              avatar: const Icon(Icons.scatter_plot, size: 18),
-              label: const Text('Individual'),
-              selected: displayState.mode == DisplayMode.individualDots,
-              onSelected: (_) => ref
-                  .read(displayModeProvider.notifier)
-                  .setMode(DisplayMode.individualDots),
-            ),
-            ChoiceChip(
-              avatar: const Icon(Icons.dns_outlined, size: 18),
-              label: const Text('By Host'),
-              selected: displayState.mode == DisplayMode.hostSummary,
-              onSelected: (_) => ref
-                  .read(displayModeProvider.notifier)
-                  .setMode(DisplayMode.hostSummary),
-            ),
-            ChoiceChip(
-              avatar: const Icon(Icons.bubble_chart, size: 18),
-              label: const Text('Clustered'),
-              selected: displayState.mode == DisplayMode.timeClusters,
-              onSelected: (_) => ref
-                  .read(displayModeProvider.notifier)
-                  .setMode(DisplayMode.timeClusters),
-            ),
-          ],
-        ),
+        ...DisplayMode.values.map((mode) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: DisplayModeCard(
+                mode: mode,
+                isSelected: displayState.mode == mode,
+                onTap: () =>
+                    ref.read(displayModeProvider.notifier).setMode(mode),
+              ),
+            )),
 
         // Cluster window selector (only when timeClusters is active)
         if (displayState.mode == DisplayMode.timeClusters) ...[

@@ -10,6 +10,7 @@ import 'package:cron_timeflow/presentation/widgets/calendar_overview.dart';
 import 'package:cron_timeflow/presentation/screens/task_detail_screen.dart';
 import 'package:cron_timeflow/presentation/screens/settings_screen.dart';
 import 'package:cron_timeflow/presentation/screens/share_screen.dart';
+import 'package:cron_timeflow/presentation/screens/timeline_share_screen.dart';
 
 /// View mode for the timeline screen.
 enum TimelineViewMode { day, calendar }
@@ -246,16 +247,45 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
               },
               tooltip: 'Plugins',
             ),
-            IconButton(
+            PopupMenuButton<String>(
               icon: const Icon(Icons.share_outlined),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => ShareScreen(date: _visibleDate),
-                  ),
-                );
+              tooltip: 'Share',
+              onSelected: (value) {
+                switch (value) {
+                  case 'tasks':
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => ShareScreen(date: _visibleDate),
+                      ),
+                    );
+                  case 'timeline':
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const TimelineShareScreen(),
+                      ),
+                    );
+                }
               },
-              tooltip: 'Share schedule',
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'tasks',
+                  child: ListTile(
+                    leading: Icon(Icons.task_outlined),
+                    title: Text('Share Tasks'),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'timeline',
+                  child: ListTile(
+                    leading: Icon(Icons.timeline),
+                    title: Text('Share Timeline'),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
             ),
             IconButton(
               icon: const Icon(Icons.settings_outlined),

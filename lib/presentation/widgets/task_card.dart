@@ -6,6 +6,7 @@ import 'package:cron_timeflow/domain/entities/task.dart';
 import 'package:cron_timeflow/domain/entities/task_category.dart';
 import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
 import 'package:cron_timeflow/presentation/widgets/reminder_line.dart';
+import 'package:cron_timeflow/presentation/widgets/priority_column_card.dart';
 import 'package:cron_timeflow/presentation/widgets/reminder_shake_mixin.dart';
 
 /// A card widget representing a single task on the timeline.
@@ -236,140 +237,124 @@ class _TaskCardState extends State<TaskCard>
       BuildContext context, BoxConstraints constraints, Color cardColor) {
     final availableHeight = constraints.maxHeight;
     final padding = availableHeight < 40 ? 4.0 : 8.0;
-    final contentHeight = availableHeight - (padding * 2);
-    final showTime = contentHeight >= 45;
-    final showDescription = contentHeight >= 85 &&
-        widget.task.description != null &&
-        widget.task.description!.isNotEmpty;
-    final showIndicators = contentHeight >= 55;
 
-    return ClipRect(
-      child: Padding(
-        padding: EdgeInsets.all(padding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+    return PriorityColumnCard(
+      padding: EdgeInsets.all(padding),
+      children: [
+        // Title row (highest priority)
+        Row(
           children: [
-            // Title row
-            Row(
-              children: [
-                // Show category icon in title row for small cards (when indicators won't show)
-                if (!showIndicators &&
-                    widget.task.category != TaskCategory.none)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Icon(
-                      widget.task.category.icon,
-                      size: 14,
-                      color: widget.task.category.color,
-                    ),
-                  ),
-                if (widget.task.isImportant)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Icon(
-                      Icons.star,
-                      size: 16,
-                      color: AppColors.accentCoral,
-                    ),
-                  ),
-                Expanded(
-                  child: Text(
-                    widget.task.title,
-                    style: TextStyle(
-                      fontSize: availableHeight < 40 ? 12 : 16,
-                      fontWeight: FontWeight.w600,
-                      decoration: widget.task.isCompleted
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                      color: widget.task.isCompleted
-                          ? Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.5)
-                          : Theme.of(context).colorScheme.onSurface,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                // Reminder badge or completion check
-                if (widget.task.isCompleted)
-                  const Icon(
-                    Icons.check_circle,
-                    size: 18,
-                    color: AppColors.taskCompleted,
-                  )
-                else if (widget.reminderState != null &&
-                    widget.task.reminderMinutes != null)
-                  _buildReminderBadge(),
-              ],
-            ),
-
-            // Time row
-            if (showTime) ...[
-              const SizedBox(height: 4),
-              Text(
-                '${_formatTime(widget.task.startTime)} - ${_formatTime(widget.task.endTime)}',
-                style: TextStyle(
-                  fontSize: 12,
-                  decoration: TextDecoration.none,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.6),
+            if (widget.task.category != TaskCategory.none)
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Icon(
+                  widget.task.category.icon,
+                  size: 14,
+                  color: widget.task.category.color,
                 ),
               ),
-            ],
-
-            // Description preview
-            if (showDescription) ...[
-              const SizedBox(height: 4),
-              Text(
-                widget.task.description!,
-                style: TextStyle(
-                  fontSize: 12,
-                  decoration: TextDecoration.none,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.5),
+            if (widget.task.isImportant)
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Icon(
+                  Icons.star,
+                  size: 16,
+                  color: AppColors.accentCoral,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
-            ],
-
-            // Category badge and recurring indicator
-            if (showIndicators) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  // Category badge
-                  if (widget.task.category != TaskCategory.none)
-                    CategoryBadge(
-                      category: widget.task.category,
-                      compact: true,
-                    ),
-                  // Recurring indicator
-                  if (widget.task.recurringPattern != null) ...[
-                    if (widget.task.category != TaskCategory.none)
-                      const SizedBox(width: 6),
-                    Icon(
-                      Icons.repeat,
-                      size: 14,
-                      color: Theme.of(context)
+            Expanded(
+              child: Text(
+                widget.task.title,
+                style: TextStyle(
+                  fontSize: availableHeight < 40 ? 12 : 16,
+                  fontWeight: FontWeight.w600,
+                  decoration: widget.task.isCompleted
+                      ? TextDecoration.lineThrough
+                      : TextDecoration.none,
+                  color: widget.task.isCompleted
+                      ? Theme.of(context)
                           .colorScheme
                           .onSurface
-                          .withValues(alpha: 0.4),
-                    ),
-                  ],
-                ],
+                          .withValues(alpha: 0.5)
+                      : Theme.of(context).colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ],
+            ),
+            // Reminder badge or completion check
+            if (widget.task.isCompleted)
+              const Icon(
+                Icons.check_circle,
+                size: 18,
+                color: AppColors.taskCompleted,
+              )
+            else if (widget.reminderState != null &&
+                widget.task.reminderMinutes != null)
+              _buildReminderBadge(),
           ],
         ),
-      ),
+
+        // Time row
+        const SizedBox(height: 4),
+        Text(
+          '${_formatTime(widget.task.startTime)} - ${_formatTime(widget.task.endTime)}',
+          style: TextStyle(
+            fontSize: 12,
+            decoration: TextDecoration.none,
+            color: Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withValues(alpha: 0.6),
+          ),
+        ),
+
+        // Category badge and recurring indicator
+        if (widget.task.category != TaskCategory.none ||
+            widget.task.recurringPattern != null) ...[
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              if (widget.task.category != TaskCategory.none)
+                CategoryBadge(
+                  category: widget.task.category,
+                  compact: true,
+                ),
+              if (widget.task.recurringPattern != null) ...[
+                if (widget.task.category != TaskCategory.none)
+                  const SizedBox(width: 6),
+                Icon(
+                  Icons.repeat,
+                  size: 14,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.4),
+                ),
+              ],
+            ],
+          ),
+        ],
+
+        // Description preview (lowest priority)
+        if (widget.task.description != null &&
+            widget.task.description!.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            widget.task.description!,
+            style: TextStyle(
+              fontSize: 12,
+              decoration: TextDecoration.none,
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.5),
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ],
     );
   }
 

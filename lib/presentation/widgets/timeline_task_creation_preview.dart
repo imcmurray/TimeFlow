@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
+import 'package:cron_timeflow/presentation/widgets/priority_column_card.dart';
 
 /// Preview widget shown during long-press task creation.
 /// Displays a semi-transparent box with the task duration.
@@ -76,108 +77,90 @@ class TaskCreationPreview extends StatelessWidget {
             ),
           ],
         ),
-        child: ClipRect(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final showTimeRange = constraints.maxHeight > 50;
-                final showDuration = constraints.maxHeight > 80;
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // "New Task" label with conflict warning
-                    Row(
-                      children: [
-                        if (hasConflict) ...[
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            size: 16,
-                            color: conflictColor,
-                          ),
-                          const SizedBox(width: 4),
-                        ],
-                        Expanded(
-                          child: Text(
-                            hasConflict ? 'Overlapping Task' : 'New Task',
-                            style: TextStyle(
-                              color: hasConflict
-                                  ? conflictColor
-                                  : (isDark ? Colors.white : Colors.black87),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+        child: PriorityColumnCard(
+          padding: const EdgeInsets.all(12),
+          children: [
+            // "New Task" label with conflict warning (highest priority)
+            Row(
+              children: [
+                if (hasConflict) ...[
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 16,
+                    color: conflictColor,
+                  ),
+                  const SizedBox(width: 4),
+                ],
+                Expanded(
+                  child: Text(
+                    hasConflict ? 'Overlapping Task' : 'New Task',
+                    style: TextStyle(
+                      color: hasConflict
+                          ? conflictColor
+                          : (isDark ? Colors.white : Colors.black87),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
-                    // Time range with midnight crossing indicator
-                    if (showTimeRange) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Text(
-                            '${_formatTime(startTime)} - ${_formatTime(endTime)}',
-                            style: TextStyle(
-                              color: isDark ? Colors.white70 : Colors.black54,
-                              fontSize: 12,
-                            ),
-                          ),
-                          if (_crossesMidnight) ...[
-                            const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 4, vertical: 1),
-                              decoration: BoxDecoration(
-                                color:
-                                    (isDark ? Colors.white24 : Colors.black12),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                '+${_daySpan}d',
-                                style: TextStyle(
-                                  color:
-                                      isDark ? Colors.white70 : Colors.black54,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ],
-                    // Duration badge at bottom
-                    if (showDuration) ...[
-                      const Spacer(),
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: baseColor.withValues(alpha: 0.8),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            _formatDuration(duration),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                );
-              },
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-          ),
+            // Time range with midnight crossing indicator
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Text(
+                  '${_formatTime(startTime)} - ${_formatTime(endTime)}',
+                  style: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.black54,
+                    fontSize: 12,
+                  ),
+                ),
+                if (_crossesMidnight) ...[
+                  const SizedBox(width: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: (isDark ? Colors.white24 : Colors.black12),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '+${_daySpan}d',
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : Colors.black54,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            // Duration badge
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: baseColor.withValues(alpha: 0.8),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _formatDuration(duration),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

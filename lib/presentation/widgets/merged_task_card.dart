@@ -5,6 +5,7 @@ import 'package:cron_timeflow/core/theme/app_colors.dart';
 import 'package:cron_timeflow/domain/entities/task.dart';
 import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
 import 'package:cron_timeflow/presentation/widgets/reminder_line.dart';
+import 'package:cron_timeflow/presentation/widgets/priority_column_card.dart';
 import 'package:cron_timeflow/presentation/widgets/reminder_shake_mixin.dart';
 import 'package:cron_timeflow/presentation/widgets/water_ripple_painter.dart';
 
@@ -199,58 +200,33 @@ class _MergedTaskCardState extends State<MergedTaskCard>
       builder: (context, constraints) {
         final availableHeight = constraints.maxHeight;
         final padding = availableHeight < 60 ? 8.0 : 16.0;
-        final contentHeight = availableHeight - (padding * 2);
 
-        // Progressive disclosure based on available space
-        final showTimeRange = contentHeight >= 60;
-        final showColorDots = contentHeight >= 100;
-
-        // Calculate available height for titles (subtract space for other elements)
-        var titleHeight = contentHeight;
-        if (showTimeRange) titleHeight -= 24; // time range + spacing
-        if (showColorDots) titleHeight -= 20; // color dots + spacing
-
-        return ClipRect(
-          child: SizedBox(
-            height: availableHeight,
-            child: Padding(
-              padding: EdgeInsets.all(padding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Title list with reminder badge (always shown)
-                  Flexible(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: _buildTitleList(context, titleHeight)),
-                        _buildReminderSummary(),
-                      ],
-                    ),
-                  ),
-
-                  // Time range (if space)
-                  if (showTimeRange) ...[
-                    const SizedBox(height: 4),
-                    _buildTimeRange(context),
-                  ],
-
-                  // Color dots (if more space)
-                  if (showColorDots) ...[
-                    const SizedBox(height: 4),
-                    _buildColorDots(),
-                  ],
-                ],
-              ),
+        return PriorityColumnCard(
+          padding: EdgeInsets.all(padding),
+          children: [
+            // Title list with reminder badge (highest priority)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _buildTitleList(context)),
+                _buildReminderSummary(),
+              ],
             ),
-          ),
+
+            // Time range
+            const SizedBox(height: 4),
+            _buildTimeRange(context),
+
+            // Color dots (lowest priority)
+            const SizedBox(height: 4),
+            _buildColorDots(),
+          ],
         );
       },
     );
   }
 
-  Widget _buildTitleList(BuildContext context, double availableHeight) {
+  Widget _buildTitleList(BuildContext context) {
     final sortedTasks = List<Task>.from(widget.tasks)
       ..sort((a, b) {
         if (a.isImportant && !b.isImportant) return -1;
@@ -271,7 +247,7 @@ class _MergedTaskCardState extends State<MergedTaskCard>
             child: Padding(
               padding: EdgeInsets.only(
                   right: index < displayTasks.length - 1 ? 8 : 0),
-              child: _buildTitlePill(task, availableHeight),
+              child: _buildTitlePill(task),
             ),
           );
         }),
@@ -291,16 +267,15 @@ class _MergedTaskCardState extends State<MergedTaskCard>
     );
   }
 
-  Widget _buildTitlePill(Task task, double availableHeight) {
+  Widget _buildTitlePill(Task task) {
     final color = _getTaskColor(task);
-    final isSmall = availableHeight < 50;
 
     return GestureDetector(
       onTap: widget.onTapTask != null ? () => widget.onTapTask!(task) : null,
       child: Container(
-        padding: EdgeInsets.symmetric(
+        padding: const EdgeInsets.symmetric(
           horizontal: 8,
-          vertical: isSmall ? 2 : 4,
+          vertical: 2,
         ),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.9),
@@ -322,7 +297,7 @@ class _MergedTaskCardState extends State<MergedTaskCard>
               child: Text(
                 task.title,
                 style: TextStyle(
-                  fontSize: isSmall ? 11 : 12,
+                  fontSize: 11,
                   fontWeight:
                       task.isImportant ? FontWeight.bold : FontWeight.w500,
                   color: color,

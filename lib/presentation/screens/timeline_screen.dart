@@ -1,3 +1,5 @@
+import 'dart:math' show exp;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -40,17 +42,28 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
   double _currentHourHeight = TimelineViewState.defaultHourHeight;
   double _baseHourHeight = TimelineViewState.defaultHourHeight;
   final FocusNode _focusNode = FocusNode();
+  bool _isCtrlPressed = false;
 
   @override
   void initState() {
     super.initState();
     _focusNode.requestFocus();
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
   }
 
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     _focusNode.dispose();
     super.dispose();
+  }
+
+  bool _handleKeyEvent(KeyEvent event) {
+    final isCtrl = HardwareKeyboard.instance.isControlPressed;
+    if (isCtrl != _isCtrlPressed) {
+      setState(() => _isCtrlPressed = isCtrl);
+    }
+    return false; // don't consume - let other keyboard handlers fire
   }
 
   void _toggleViewMode() {
@@ -135,8 +148,8 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
     if (event is PointerScrollEvent &&
         HardwareKeyboard.instance.isControlPressed) {
       GestureBinding.instance.pointerSignalResolver.register(event, (_) {
-        final zoomDelta = -event.scrollDelta.dy * 0.5;
-        final newHeight = _currentHourHeight + zoomDelta;
+        final newHeight =
+            _currentHourHeight * exp(-event.scrollDelta.dy * 0.001);
         _timelineKey.currentState?.setHourHeightAbsolute(newHeight);
       });
     }
@@ -355,22 +368,26 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
               child: _viewMode == TimelineViewMode.day
                   ? Listener(
                       onPointerSignal: _onPointerSignal,
-                      child: GestureDetector(
-                        key: const ValueKey('timeline'),
-                        behavior: HitTestBehavior.translucent,
-                        onScaleStart: _onScaleStart,
-                        onScaleUpdate: _onScaleUpdate,
-                        onScaleEnd: _onScaleEnd,
-                        child: TimelineView(
-                          key: _timelineKey,
-                          upcomingTasksAboveNow:
-                              ref.watch(settingsProvider).upcomingTasksAboveNow,
-                          initialDate: _selectedDateFromCalendar,
-                          initialHourHeight: _currentHourHeight,
-                          onVisibleDateChanged: _onVisibleDateChanged,
-                          onNowLineVisibilityChanged:
-                              _onNowLineVisibilityChanged,
-                          onZoomChanged: _onZoomChanged,
+                      child: AbsorbPointer(
+                        absorbing: _isCtrlPressed,
+                        child: GestureDetector(
+                          key: const ValueKey('timeline'),
+                          behavior: HitTestBehavior.translucent,
+                          onScaleStart: _onScaleStart,
+                          onScaleUpdate: _onScaleUpdate,
+                          onScaleEnd: _onScaleEnd,
+                          child: TimelineView(
+                            key: _timelineKey,
+                            upcomingTasksAboveNow: ref
+                                .watch(settingsProvider)
+                                .upcomingTasksAboveNow,
+                            initialDate: _selectedDateFromCalendar,
+                            initialHourHeight: _currentHourHeight,
+                            onVisibleDateChanged: _onVisibleDateChanged,
+                            onNowLineVisibilityChanged:
+                                _onNowLineVisibilityChanged,
+                            onZoomChanged: _onZoomChanged,
+                          ),
                         ),
                       ),
                     )

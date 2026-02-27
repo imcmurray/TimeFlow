@@ -149,15 +149,13 @@ class _TaskCardState extends State<TaskCard>
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
           widget.onComplete?.call();
-          return false;
         } else {
-          return await _showDeleteConfirmation(context);
+          final confirmed = await _showDeleteConfirmation(context);
+          if (confirmed) {
+            widget.onDelete?.call();
+          }
         }
-      },
-      onDismissed: (direction) {
-        if (direction == DismissDirection.endToStart) {
-          widget.onDelete?.call();
-        }
+        return false;
       },
       background: _SwipeBackground(
         alignment: Alignment.centerLeft,

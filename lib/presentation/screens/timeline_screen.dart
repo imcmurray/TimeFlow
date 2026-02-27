@@ -134,8 +134,8 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
   void _onPointerSignal(PointerSignalEvent event) {
     if (event is PointerScrollEvent &&
         HardwareKeyboard.instance.isControlPressed) {
-      GestureBinding.instance.pointerSignalResolver.register(event, (resolved) {
-        final zoomDelta = -resolved.scrollDelta.dy * 0.5;
+      GestureBinding.instance.pointerSignalResolver.register(event, (_) {
+        final zoomDelta = -event.scrollDelta.dy * 0.5;
         final newHeight = _currentHourHeight + zoomDelta;
         _timelineKey.currentState?.setHourHeightAbsolute(newHeight);
       });

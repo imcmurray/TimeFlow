@@ -6,6 +6,7 @@ import 'package:cron_timeflow/domain/entities/task.dart';
 import 'package:cron_timeflow/domain/entities/task_category.dart';
 import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
 import 'package:cron_timeflow/presentation/widgets/reminder_line.dart';
+import 'package:cron_timeflow/presentation/widgets/reminder_shake_mixin.dart';
 
 /// A card widget representing a single task on the timeline.
 ///
@@ -58,23 +59,14 @@ class TaskCard extends StatefulWidget {
 }
 
 class _TaskCardState extends State<TaskCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _shakeController;
-  late Animation<double> _shakeAnimation;
+    with SingleTickerProviderStateMixin, ReminderShakeMixin {
   Timer? _countdownTimer;
 
   @override
   void initState() {
     super.initState();
-    _shakeController = AnimationController(
-      duration: const Duration(milliseconds: 100),
-      vsync: this,
-    );
-    _shakeAnimation = Tween<double>(begin: -2.0, end: 2.0).animate(
-      CurvedAnimation(parent: _shakeController, curve: Curves.easeInOut),
-    );
-
-    _updateAnimation();
+    initShake();
+    setShakeActive(widget.reminderState == ReminderState.triggered);
     _startCountdownTimer();
   }
 
@@ -82,7 +74,7 @@ class _TaskCardState extends State<TaskCard>
   void didUpdateWidget(TaskCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.reminderState != widget.reminderState) {
-      _updateAnimation();
+      setShakeActive(widget.reminderState == ReminderState.triggered);
     }
     if (oldWidget.reminderTime != widget.reminderTime ||
         oldWidget.reminderState != widget.reminderState) {
@@ -120,19 +112,10 @@ class _TaskCardState extends State<TaskCard>
     });
   }
 
-  void _updateAnimation() {
-    if (widget.reminderState == ReminderState.triggered) {
-      _shakeController.repeat(reverse: true);
-    } else {
-      _shakeController.stop();
-      _shakeController.reset();
-    }
-  }
-
   @override
   void dispose() {
     _countdownTimer?.cancel();
-    _shakeController.dispose();
+    disposeShake();
     super.dispose();
   }
 
@@ -200,14 +183,15 @@ class _TaskCardState extends State<TaskCard>
             border: Border.all(
               color: isTriggered
                   ? AppColors.reminderLine
-                  : cardColor.withOpacity(widget.task.isCompleted ? 0.3 : 0.5),
+                  : cardColor.withValues(
+                      alpha: widget.task.isCompleted ? 0.3 : 0.5),
               width: isTriggered ? 2.5 : 2,
             ),
             boxShadow: [
               BoxShadow(
                 color: isTriggered
                     ? AppColors.reminderLine.withValues(alpha: 0.3)
-                    : cardColor.withOpacity(0.1),
+                    : cardColor.withValues(alpha: 0.1),
                 blurRadius: isTriggered ? 12 : 8,
                 offset: const Offset(0, 2),
               ),
@@ -222,8 +206,8 @@ class _TaskCardState extends State<TaskCard>
                   width: 4,
                   color: isTriggered
                       ? AppColors.reminderLine
-                      : cardColor
-                          .withOpacity(widget.task.isCompleted ? 0.5 : 1.0),
+                      : cardColor.withValues(
+                          alpha: widget.task.isCompleted ? 0.5 : 1.0),
                 ),
                 // Content
                 Expanded(
@@ -242,16 +226,7 @@ class _TaskCardState extends State<TaskCard>
 
     // Apply shake animation when triggered
     if (isTriggered) {
-      card = AnimatedBuilder(
-        animation: _shakeAnimation,
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(_shakeAnimation.value, 0),
-            child: child,
-          );
-        },
-        child: card,
-      );
+      card = applyShakeTransform(card);
     }
 
     return card;
@@ -386,7 +361,7 @@ class _TaskCardState extends State<TaskCard>
                       color: Theme.of(context)
                           .colorScheme
                           .onSurface
-                          .withOpacity(0.4),
+                          .withValues(alpha: 0.4),
                     ),
                   ],
                 ],

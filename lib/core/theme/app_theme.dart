@@ -35,7 +35,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: Colors.white,
         elevation: 2,
-        shadowColor: AppColors.primaryBlue.withOpacity(0.1),
+        shadowColor: AppColors.primaryBlue.withValues(alpha: 0.1),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -78,11 +78,11 @@ class AppTheme {
       brightness: Brightness.dark,
       colorScheme: ColorScheme.dark(
         primary: AppColors.primaryBlue,
-        primaryContainer: AppColors.primaryBlue.withOpacity(0.3),
+        primaryContainer: AppColors.primaryBlue.withValues(alpha: 0.3),
         secondary: AppColors.secondaryGreen,
-        secondaryContainer: AppColors.secondaryGreen.withOpacity(0.3),
+        secondaryContainer: AppColors.secondaryGreen.withValues(alpha: 0.3),
         tertiary: AppColors.accentCoral,
-        tertiaryContainer: AppColors.accentCoral.withOpacity(0.3),
+        tertiaryContainer: AppColors.accentCoral.withValues(alpha: 0.3),
         surface: AppColors.backgroundDark,
         onPrimary: Colors.white,
         onSecondary: Colors.white,

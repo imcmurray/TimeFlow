@@ -84,9 +84,9 @@ class _NowLineState extends State<NowLine> with SingleTickerProviderStateMixin {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          lineColor.withOpacity(0),
-                          lineColor.withOpacity(_pulseAnimation.value),
-                          lineColor.withOpacity(0),
+                          lineColor.withValues(alpha: 0),
+                          lineColor.withValues(alpha: _pulseAnimation.value),
+                          lineColor.withValues(alpha: 0),
                         ],
                       ),
                     ),
@@ -106,7 +106,7 @@ class _NowLineState extends State<NowLine> with SingleTickerProviderStateMixin {
                   color: lineColor,
                   boxShadow: [
                     BoxShadow(
-                      color: lineColor.withOpacity(0.5),
+                      color: lineColor.withValues(alpha: 0.5),
                       blurRadius: 4,
                       spreadRadius: 1,
                     ),
@@ -127,7 +127,7 @@ class _NowLineState extends State<NowLine> with SingleTickerProviderStateMixin {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: lineColor.withOpacity(0.3),
+                      color: lineColor.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),

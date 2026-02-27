@@ -47,11 +47,11 @@ class BreathingRoomIndicator extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isDark
-              ? colorScheme.surfaceContainerHighest.withOpacity(0.3)
+              ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
               : colorScheme.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.3),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
             width: 1,
             strokeAlign: BorderSide.strokeAlignInside,
           ),
@@ -62,7 +62,7 @@ class BreathingRoomIndicator extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: _getAccentColor(isDark).withOpacity(0.15),
+                color: _getAccentColor(isDark).withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -102,7 +102,7 @@ class BreathingRoomIndicator extends StatelessWidget {
               Icon(
                 Icons.add_circle_outline,
                 size: 20,
-                color: colorScheme.primary.withOpacity(0.5),
+                color: colorScheme.primary.withValues(alpha: 0.5),
               ),
             ],
           ],
@@ -126,7 +126,7 @@ class BreathingRoomIndicator extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: _getAccentColor(isDark).withOpacity(0.1),
+              color: _getAccentColor(isDark).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -135,7 +135,7 @@ class BreathingRoomIndicator extends StatelessWidget {
                 Icon(
                   icon,
                   size: 14,
-                  color: _getAccentColor(isDark).withOpacity(0.7),
+                  color: _getAccentColor(isDark).withValues(alpha: 0.7),
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -143,7 +143,7 @@ class BreathingRoomIndicator extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: _getAccentColor(isDark).withOpacity(0.8),
+                    color: _getAccentColor(isDark).withValues(alpha: 0.8),
                   ),
                 ),
               ],

@@ -29,6 +29,31 @@ class TimelineOffset {
     }
   }
 
+  /// Calculate the pixel offset for a given [hour] (fractional) on [dayOffset] day.
+  ///
+  /// This is a convenience for widgets that iterate over day/hour grids
+  /// (hour markers, watermarks, day dividers). It avoids constructing a
+  /// full [DateTime] just to compute a pixel position.
+  static double forHour({
+    required int dayOffset,
+    required double hour,
+    required double hourHeight,
+    required int daysLoadedBefore,
+    required int daysLoadedAfter,
+    required bool upcomingTasksAboveNow,
+  }) {
+    final hoursFromReference = (dayOffset * 24) + hour;
+    final referenceOffset = upcomingTasksAboveNow
+        ? daysLoadedAfter * 24 * hourHeight
+        : daysLoadedBefore * 24 * hourHeight;
+
+    if (upcomingTasksAboveNow) {
+      return referenceOffset - (hoursFromReference * hourHeight);
+    } else {
+      return referenceOffset + (hoursFromReference * hourHeight);
+    }
+  }
+
   /// Calculate the [DateTime] at a given pixel [offset] on the timeline (inverse of [forDateTime]).
   static DateTime atOffset({
     required double offset,

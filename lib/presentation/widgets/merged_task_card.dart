@@ -5,6 +5,7 @@ import 'package:cron_timeflow/core/theme/app_colors.dart';
 import 'package:cron_timeflow/domain/entities/task.dart';
 import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
 import 'package:cron_timeflow/presentation/widgets/reminder_line.dart';
+import 'package:cron_timeflow/presentation/widgets/reminder_shake_mixin.dart';
 import 'package:cron_timeflow/presentation/widgets/water_ripple_painter.dart';
 
 /// A merged card representing multiple overlapping tasks.
@@ -46,30 +47,23 @@ class MergedTaskCard extends StatefulWidget {
 }
 
 class _MergedTaskCardState extends State<MergedTaskCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _shakeController;
-  late Animation<double> _shakeAnimation;
+    with SingleTickerProviderStateMixin, ReminderShakeMixin {
   Timer? _countdownTimer;
 
   @override
   void initState() {
     super.initState();
-    _shakeController = AnimationController(
-      duration: const Duration(milliseconds: 100),
-      vsync: this,
-    );
-    _shakeAnimation = Tween<double>(begin: -2.0, end: 2.0).animate(
-      CurvedAnimation(parent: _shakeController, curve: Curves.easeInOut),
-    );
-
-    _updateAnimation();
+    initShake();
+    setShakeActive(widget.reminderStates.values
+        .any((state) => state == ReminderState.triggered));
     _startCountdownTimer();
   }
 
   @override
   void didUpdateWidget(MergedTaskCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _updateAnimation();
+    setShakeActive(widget.reminderStates.values
+        .any((state) => state == ReminderState.triggered));
     _startCountdownTimer();
   }
 
@@ -99,23 +93,10 @@ class _MergedTaskCardState extends State<MergedTaskCard>
     });
   }
 
-  void _updateAnimation() {
-    // Shake if any task has a triggered reminder
-    final hasTriggered = widget.reminderStates.values
-        .any((state) => state == ReminderState.triggered);
-
-    if (hasTriggered) {
-      _shakeController.repeat(reverse: true);
-    } else {
-      _shakeController.stop();
-      _shakeController.reset();
-    }
-  }
-
   @override
   void dispose() {
     _countdownTimer?.cancel();
-    _shakeController.dispose();
+    disposeShake();
     super.dispose();
   }
 
@@ -164,16 +145,7 @@ class _MergedTaskCardState extends State<MergedTaskCard>
 
     // Apply shake animation when any reminder is triggered
     if (hasTriggeredReminder) {
-      card = AnimatedBuilder(
-        animation: _shakeAnimation,
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(_shakeAnimation.value, 0),
-            child: child,
-          );
-        },
-        child: card,
-      );
+      card = applyShakeTransform(card);
     }
 
     return card;

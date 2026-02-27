@@ -160,7 +160,7 @@ class _ParticlePainter extends CustomPainter {
       }
 
       final paint = Paint()
-        ..color = color.withOpacity(particle.opacity)
+        ..color = color.withValues(alpha: particle.opacity)
         ..style = PaintingStyle.fill;
 
       canvas.drawCircle(

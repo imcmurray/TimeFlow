@@ -127,7 +127,7 @@ extension TaskCategoryExtension on TaskCategory {
 
   /// Lighter variant of the category color (for backgrounds).
   Color get lightColor {
-    return color.withOpacity(0.15);
+    return color.withValues(alpha: 0.15);
   }
 
   /// Serialize to string for storage.
@@ -175,7 +175,7 @@ class CategoryBadge extends StatelessWidget {
         color: category.lightColor,
         borderRadius: BorderRadius.circular(compact ? 8 : 12),
         border: Border.all(
-          color: category.color.withOpacity(0.3),
+          color: category.color.withValues(alpha: 0.3),
           width: 1,
         ),
       ),

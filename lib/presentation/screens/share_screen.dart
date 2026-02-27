@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:cron_timeflow/domain/entities/task.dart';
 import 'package:cron_timeflow/presentation/providers/task_provider.dart';
+import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
 
 /// Screen for sharing the day's schedule as text or image.
 class ShareScreen extends ConsumerStatefulWidget {
@@ -37,31 +38,13 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
       ..sort((a, b) => a.startTime.compareTo(b.startTime));
   }
 
-  String _formatDate() {
-    const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    return '${weekdays[widget.date.weekday - 1]}, ${months[widget.date.month - 1]} ${widget.date.day}';
-  }
+  String _formatDate() => TimeFormatter.formatDateFull(widget.date);
 
-  String _formatHour(int hour) {
-    if (hour == 0) return '12:00 AM';
-    if (hour == 12) return '12:00 PM';
-    if (hour < 12) return '$hour:00 AM';
-    return '${hour - 12}:00 PM';
-  }
+  String _formatHour(int hour) =>
+      TimeFormatter.formatHour(hour, showMinutes: true);
 
   String _formatTaskTime(DateTime time) {
-    final hour = time.hour == 0
-        ? 12
-        : time.hour > 12
-            ? time.hour - 12
-            : time.hour;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
+    return TimeFormatter.formatTime(time);
   }
 
   String _generateShareText() {
@@ -76,9 +59,12 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
       buffer.writeln('No tasks scheduled');
     } else {
       for (final task in tasks) {
-        final timeStr = '${_formatTaskTime(task.startTime)} - ${_formatTaskTime(task.endTime)}';
+        final timeStr =
+            '${_formatTaskTime(task.startTime)} - ${_formatTaskTime(task.endTime)}';
         buffer.writeln('$timeStr: ${task.title}');
-        if (!_hideDetails && task.description != null && task.description!.isNotEmpty) {
+        if (!_hideDetails &&
+            task.description != null &&
+            task.description!.isNotEmpty) {
           buffer.writeln('  ${task.description}');
         }
       }
@@ -88,7 +74,8 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
   }
 
   Future<Uint8List?> _capturePreview() async {
-    final boundary = _previewKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    final boundary = _previewKey.currentContext?.findRenderObject()
+        as RenderRepaintBoundary?;
     if (boundary == null) return null;
 
     final image = await boundary.toImage(pixelRatio: 2.0);
@@ -105,7 +92,8 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
     final imageBytes = await _capturePreview();
     if (imageBytes == null) return;
 
-    final fileName = 'schedule_${widget.date.toIso8601String().split('T')[0]}.png';
+    final fileName =
+        'schedule_${widget.date.toIso8601String().split('T')[0]}.png';
 
     if (Platform.isLinux) {
       final homeDir = Platform.environment['HOME'] ?? '/tmp';
@@ -188,7 +176,8 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
                             decoration: const InputDecoration(
                               labelText: 'From',
                               border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
                             ),
                             items: List.generate(24, (i) => i).map((hour) {
                               return DropdownMenuItem(
@@ -218,12 +207,15 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
                             decoration: const InputDecoration(
                               labelText: 'To',
                               border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
                             ),
                             items: List.generate(24, (i) => i + 1).map((hour) {
                               return DropdownMenuItem(
                                 value: hour,
-                                child: Text(hour == 24 ? '12:00 AM' : _formatHour(hour)),
+                                child: Text(hour == 24
+                                    ? '12:00 AM'
+                                    : _formatHour(hour)),
                               );
                             }).toList(),
                             onChanged: (value) {
@@ -290,9 +282,10 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
                         child: Center(
                           child: Text(
                             'No tasks in this time range',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
+                            style:
+                                Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
                           ),
                         ),
                       )
@@ -348,7 +341,8 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
             width: 4,
             height: 40,
             decoration: BoxDecoration(
-              color: task.isImportant ? colorScheme.tertiary : colorScheme.primary,
+              color:
+                  task.isImportant ? colorScheme.tertiary : colorScheme.primary,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -369,7 +363,9 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                 ),
-                if (!_hideDetails && task.description != null && task.description!.isNotEmpty)
+                if (!_hideDetails &&
+                    task.description != null &&
+                    task.description!.isNotEmpty)
                   Text(
                     task.description!,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(

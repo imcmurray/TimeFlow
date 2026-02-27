@@ -85,7 +85,8 @@ Future<ImportResult> pickAndReadJsonFile() async {
 
       reader.onError.listen((event) {
         completer.complete(
-          ImportResult(success: false, error: 'Error reading file: ${reader.error}'),
+          ImportResult(
+              success: false, error: 'Error reading file: ${reader.error}'),
         );
       });
 

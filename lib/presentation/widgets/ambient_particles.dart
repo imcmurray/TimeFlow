@@ -134,7 +134,9 @@ class _ParticlePainter extends CustomPainter {
       final particle = particles[i];
 
       // Calculate position with drift and wobble
-      final wobble = sin(progress * 2 * pi * particle.wobbleSpeed + particle.wobbleOffset) * 0.02;
+      final wobble = sin(progress * 2 * pi * particle.wobbleSpeed +
+              particle.wobbleOffset) *
+          0.02;
       final drift = progress * particle.speed * 0.1;
 
       double y;

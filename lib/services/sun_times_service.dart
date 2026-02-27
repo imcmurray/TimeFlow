@@ -44,9 +44,8 @@ class SunTimesService {
     final tzOffset = timezoneOffsetHours ?? getTimezoneOffsetHours();
 
     // If longitude is 0 (default/unset), estimate from timezone
-    final effectiveLongitude = (longitude == 0.0)
-        ? estimateLongitudeFromTimezone()
-        : longitude;
+    final effectiveLongitude =
+        (longitude == 0.0) ? estimateLongitudeFromTimezone() : longitude;
 
     // Day of year (1-366)
     final dayOfYear = _dayOfYear(date);

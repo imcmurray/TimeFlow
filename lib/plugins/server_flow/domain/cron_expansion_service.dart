@@ -16,8 +16,7 @@ class CronExpansionService {
     DateTime? until,
   }) {
     final effectiveFrom = from ?? job.startTime;
-    final effectiveUntil =
-        until ?? effectiveFrom.add(const Duration(days: 30));
+    final effectiveUntil = until ?? effectiveFrom.add(const Duration(days: 30));
 
     // Single event for null or 'once' schedule
     if (job.schedule == null || job.schedule!.toLowerCase() == 'once') {
@@ -26,7 +25,8 @@ class CronExpansionService {
 
     try {
       final cron = Cron.parse(job.schedule!);
-      final occurrences = cron.toList(effectiveFrom.toUtc(), effectiveUntil.toUtc());
+      final occurrences =
+          cron.toList(effectiveFrom.toUtc(), effectiveUntil.toUtc());
 
       final capped = occurrences.length > maxOccurrences
           ? occurrences.sublist(0, maxOccurrences)
@@ -54,9 +54,7 @@ class CronExpansionService {
         ? job.endTime!.difference(job.startTime)
         : Duration(seconds: job.duration);
 
-    final endTime = duration > Duration.zero
-        ? startTime.add(duration)
-        : null;
+    final endTime = duration > Duration.zero ? startTime.add(duration) : null;
 
     return TimelineEvent(
       id: '${job.id}_$index',

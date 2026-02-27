@@ -49,7 +49,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor:
+          isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
@@ -146,7 +147,8 @@ class _OnboardingNavigation extends StatelessWidget {
                 onPressed: onNext,
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primaryBlue,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 ),
                 child: Text(
                   isLastPage ? 'Get Started' : 'Next',
@@ -190,7 +192,8 @@ class _OnboardingSlide extends StatelessWidget {
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: isDark ? AppColors.textLightPrimary : AppColors.textPrimary,
+              color:
+                  isDark ? AppColors.textLightPrimary : AppColors.textPrimary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -209,7 +212,9 @@ class _OnboardingSlide extends StatelessWidget {
             description,
             style: TextStyle(
               fontSize: 16,
-              color: isDark ? AppColors.textLightSecondary : AppColors.textSecondary,
+              color: isDark
+                  ? AppColors.textLightSecondary
+                  : AppColors.textSecondary,
               height: 1.5,
             ),
             textAlign: TextAlign.center,
@@ -237,7 +242,8 @@ class _WelcomeSlide extends StatelessWidget {
         ),
       ),
       title: 'Welcome to TimeFlow',
-      tagline: 'Experience time as a gentle flowing river, not a pressure cooker.',
+      tagline:
+          'Experience time as a gentle flowing river, not a pressure cooker.',
       description:
           'TimeFlow helps you plan your day in a calm, stress-free way. No harsh alarms or urgent notifications - just a peaceful view of your schedule.',
     );

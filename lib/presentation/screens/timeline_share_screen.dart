@@ -8,6 +8,7 @@ import 'package:cron_timeflow/core/plugins/plugin_interface.dart';
 import 'package:cron_timeflow/core/plugins/plugin_providers.dart';
 import 'package:cron_timeflow/core/plugins/plugin_state_provider.dart';
 import 'package:cron_timeflow/presentation/helpers/image_share.dart';
+import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
 import 'package:cron_timeflow/presentation/providers/timeline_share_provider.dart';
 
 /// Screen for sharing timeline data from all enabled plugins.
@@ -51,39 +52,10 @@ class _TimelineShareScreenState extends ConsumerState<TimelineShareScreen> {
     });
   }
 
-  String _formatDate(DateTime date) {
-    const weekdays = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    return '${weekdays[date.weekday - 1]}, ${months[date.month - 1]} ${date.day}';
-  }
+  String _formatDate(DateTime date) => TimeFormatter.formatDateFull(date);
 
-  String _formatHour(int hour) {
-    if (hour == 0 || hour == 24) return '12:00 AM';
-    if (hour == 12) return '12:00 PM';
-    if (hour < 12) return '$hour:00 AM';
-    return '${hour - 12}:00 PM';
-  }
+  String _formatHour(int hour) =>
+      TimeFormatter.formatHour(hour, showMinutes: true);
 
   String _formatEventTime(DateTime time) {
     return '${time.hour.toString().padLeft(2, '0')}:'

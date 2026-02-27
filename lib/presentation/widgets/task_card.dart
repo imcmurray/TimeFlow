@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:cron_timeflow/core/theme/app_colors.dart';
 import 'package:cron_timeflow/domain/entities/task.dart';
 import 'package:cron_timeflow/domain/entities/task_category.dart';
+import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
 import 'package:cron_timeflow/presentation/widgets/reminder_line.dart';
 
 /// A card widget representing a single task on the timeline.
@@ -56,7 +57,8 @@ class TaskCard extends StatefulWidget {
   State<TaskCard> createState() => _TaskCardState();
 }
 
-class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin {
+class _TaskCardState extends State<TaskCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
   Timer? _countdownTimer;
@@ -142,7 +144,8 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
     // Determine card color - prioritize category color for visual consistency
     Color cardColor;
     if (widget.task.color != null) {
-      cardColor = Color(int.parse(widget.task.color!.replaceFirst('#', '0xFF')));
+      cardColor =
+          Color(int.parse(widget.task.color!.replaceFirst('#', '0xFF')));
     } else if (widget.task.category != TaskCategory.none) {
       // Use category color as the primary indicator
       cardColor = widget.task.category.color;
@@ -219,7 +222,8 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
                   width: 4,
                   color: isTriggered
                       ? AppColors.reminderLine
-                      : cardColor.withOpacity(widget.task.isCompleted ? 0.5 : 1.0),
+                      : cardColor
+                          .withOpacity(widget.task.isCompleted ? 0.5 : 1.0),
                 ),
                 // Content
                 Expanded(
@@ -253,7 +257,8 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
     return card;
   }
 
-  Widget _buildContent(BuildContext context, BoxConstraints constraints, Color cardColor) {
+  Widget _buildContent(
+      BuildContext context, BoxConstraints constraints, Color cardColor) {
     final availableHeight = constraints.maxHeight;
     final padding = availableHeight < 40 ? 4.0 : 8.0;
     final contentHeight = availableHeight - (padding * 2);
@@ -274,7 +279,8 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
             Row(
               children: [
                 // Show category icon in title row for small cards (when indicators won't show)
-                if (!showIndicators && widget.task.category != TaskCategory.none)
+                if (!showIndicators &&
+                    widget.task.category != TaskCategory.none)
                   Padding(
                     padding: const EdgeInsets.only(right: 4),
                     child: Icon(
@@ -319,7 +325,8 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
                     size: 18,
                     color: AppColors.taskCompleted,
                   )
-                else if (widget.reminderState != null && widget.task.reminderMinutes != null)
+                else if (widget.reminderState != null &&
+                    widget.task.reminderMinutes != null)
                   _buildReminderBadge(),
               ],
             ),
@@ -481,21 +488,8 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
     }
   }
 
-  String _formatTime(DateTime time) {
-    if (widget.use24HourFormat) {
-      final hour = time.hour.toString().padLeft(2, '0');
-      final minute = time.minute.toString().padLeft(2, '0');
-      return '$hour:$minute';
-    }
-    final hour = time.hour == 0
-        ? 12
-        : time.hour > 12
-            ? time.hour - 12
-            : time.hour;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
-  }
+  String _formatTime(DateTime time) =>
+      TimeFormatter.formatTime(time, use24HourFormat: widget.use24HourFormat);
 
   Future<bool> _showDeleteConfirmation(BuildContext context) async {
     return await showDialog<bool>(

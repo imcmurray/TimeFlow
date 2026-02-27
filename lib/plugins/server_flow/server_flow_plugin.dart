@@ -33,8 +33,7 @@ class ServerFlowPlugin implements TimeFlowPlugin {
         icon: Icons.dns_outlined,
         accentColor: Colors.blue,
         tags: ['servers', 'cron', 'csv', 'devops'],
-        configSectionBuilder: (context, ref) =>
-            const ServerFlowConfigSection(),
+        configSectionBuilder: (context, ref) => const ServerFlowConfigSection(),
       );
 
   @override

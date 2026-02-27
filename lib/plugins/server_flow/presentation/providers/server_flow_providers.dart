@@ -62,8 +62,8 @@ final serverFlowEventsForRangeProvider =
       GroupingMode.category => event.categoryLabel ?? 'uncategorized',
       GroupingMode.user => event.metadata['user']?.toString() ?? 'unknown',
     };
-    final color = grouping.colorOverrides[label] ??
-        ColorPalette.colorForLabel(label);
+    final color =
+        grouping.colorOverrides[label] ?? ColorPalette.colorForLabel(label);
     return event.copyWith(color: color);
   }).toList();
 
@@ -88,8 +88,7 @@ final serverFlowEventsForRangeProvider =
       // Time range filter
       if (filter.timeRangeStartHour != null ||
           filter.timeRangeEndHour != null) {
-        final eventHour =
-            event.startTime.hour + event.startTime.minute / 60.0;
+        final eventHour = event.startTime.hour + event.startTime.minute / 60.0;
         final startHour = filter.timeRangeStartHour ?? 0.0;
         final endHour = filter.timeRangeEndHour ?? 24.0;
         if (eventHour < startHour || eventHour > endHour) return false;

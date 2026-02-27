@@ -103,9 +103,8 @@ class DayBoundaryMarker extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: isToday ? FontWeight.bold : FontWeight.w600,
-                    color: isToday
-                        ? colorScheme.primary
-                        : colorScheme.onSurface,
+                    color:
+                        isToday ? colorScheme.primary : colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -171,17 +170,20 @@ class SimpleDayDivider extends StatelessWidget {
 
     // Gradient colors for the band
     final bandColor = isToday
-        ? (isDark ? colorScheme.primary.withOpacity(0.15) : colorScheme.primary.withOpacity(0.08))
-        : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03));
+        ? (isDark
+            ? colorScheme.primary.withOpacity(0.15)
+            : colorScheme.primary.withOpacity(0.08))
+        : (isDark
+            ? Colors.white.withOpacity(0.05)
+            : Colors.black.withOpacity(0.03));
 
     final lineColor = isToday
         ? colorScheme.primary.withOpacity(0.6)
         : colorScheme.outlineVariant.withOpacity(0.5);
 
     final icon = Icons.wb_twilight;
-    final iconColor = isDark
-        ? const Color(0xFFFFB74D)
-        : const Color(0xFFFF9800);
+    final iconColor =
+        isDark ? const Color(0xFFFFB74D) : const Color(0xFFFF9800);
 
     return Container(
       height: 32,
@@ -229,11 +231,16 @@ class SimpleDayDivider extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
               color: isDark
-                  ? (isToday ? colorScheme.primary.withOpacity(0.2) : Colors.grey[900]!.withOpacity(0.8))
-                  : (isToday ? colorScheme.primary.withOpacity(0.1) : Colors.white.withOpacity(0.9)),
+                  ? (isToday
+                      ? colorScheme.primary.withOpacity(0.2)
+                      : Colors.grey[900]!.withOpacity(0.8))
+                  : (isToday
+                      ? colorScheme.primary.withOpacity(0.1)
+                      : Colors.white.withOpacity(0.9)),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isToday ? colorScheme.primary.withOpacity(0.5) : lineColor,
+                color:
+                    isToday ? colorScheme.primary.withOpacity(0.5) : lineColor,
                 width: isToday ? 1.5 : 1,
               ),
               boxShadow: [
@@ -258,9 +265,8 @@ class SimpleDayDivider extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: isToday ? FontWeight.bold : FontWeight.w600,
-                    color: isToday
-                        ? colorScheme.primary
-                        : colorScheme.onSurface,
+                    color:
+                        isToday ? colorScheme.primary : colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -321,6 +327,7 @@ class DayWatermark extends StatelessWidget {
   final bool showMoonPhase;
   final bool showQuarter;
   final bool showDaysRemaining;
+
   /// When true, displays watermark at higher opacity (brighter)
   final bool isHighlighted;
 
@@ -351,34 +358,40 @@ class DayWatermark extends StatelessWidget {
     final opacityMultiplier = isHighlighted ? 3.0 : 1.0;
 
     // Color for the watermark - subtle but visible, boosted when highlighted
-    final baseWatermarkOpacity = isToday
-        ? (isDark ? 0.12 : 0.08)
-        : (isDark ? 0.04 : 0.03);
+    final baseWatermarkOpacity =
+        isToday ? (isDark ? 0.12 : 0.08) : (isDark ? 0.04 : 0.03);
     final watermarkColor = isToday
-        ? colorScheme.primary.withOpacity((baseWatermarkOpacity * opacityMultiplier).clamp(0.0, 0.5))
+        ? colorScheme.primary.withOpacity(
+            (baseWatermarkOpacity * opacityMultiplier).clamp(0.0, 0.5))
         : (isDark
-            ? Colors.white.withOpacity((baseWatermarkOpacity * opacityMultiplier).clamp(0.0, 0.3))
-            : Colors.black.withOpacity((baseWatermarkOpacity * opacityMultiplier).clamp(0.0, 0.2)));
+            ? Colors.white.withOpacity(
+                (baseWatermarkOpacity * opacityMultiplier).clamp(0.0, 0.3))
+            : Colors.black.withOpacity(
+                (baseWatermarkOpacity * opacityMultiplier).clamp(0.0, 0.2)));
 
     // Slightly more visible color for secondary info
-    final baseSecondaryOpacity = isToday
-        ? (isDark ? 0.10 : 0.06)
-        : (isDark ? 0.03 : 0.025);
+    final baseSecondaryOpacity =
+        isToday ? (isDark ? 0.10 : 0.06) : (isDark ? 0.03 : 0.025);
     final secondaryColor = isToday
-        ? colorScheme.primary.withOpacity((baseSecondaryOpacity * opacityMultiplier).clamp(0.0, 0.4))
+        ? colorScheme.primary.withOpacity(
+            (baseSecondaryOpacity * opacityMultiplier).clamp(0.0, 0.4))
         : (isDark
-            ? Colors.white.withOpacity((baseSecondaryOpacity * opacityMultiplier).clamp(0.0, 0.25))
-            : Colors.black.withOpacity((baseSecondaryOpacity * opacityMultiplier).clamp(0.0, 0.15)));
+            ? Colors.white.withOpacity(
+                (baseSecondaryOpacity * opacityMultiplier).clamp(0.0, 0.25))
+            : Colors.black.withOpacity(
+                (baseSecondaryOpacity * opacityMultiplier).clamp(0.0, 0.15)));
 
     // Holiday color (more prominent)
-    final baseHolidayOpacity = isToday
-        ? (isDark ? 0.18 : 0.12)
-        : (isDark ? 0.12 : 0.18);
+    final baseHolidayOpacity =
+        isToday ? (isDark ? 0.18 : 0.12) : (isDark ? 0.12 : 0.18);
     final holidayColor = isToday
-        ? colorScheme.primary.withOpacity((baseHolidayOpacity * opacityMultiplier).clamp(0.0, 0.6))
+        ? colorScheme.primary.withOpacity(
+            (baseHolidayOpacity * opacityMultiplier).clamp(0.0, 0.6))
         : (isDark
-            ? Colors.amber.withOpacity((baseHolidayOpacity * opacityMultiplier).clamp(0.0, 0.5))
-            : Colors.amber.withOpacity((baseHolidayOpacity * opacityMultiplier).clamp(0.0, 0.5)));
+            ? Colors.amber.withOpacity(
+                (baseHolidayOpacity * opacityMultiplier).clamp(0.0, 0.5))
+            : Colors.amber.withOpacity(
+                (baseHolidayOpacity * opacityMultiplier).clamp(0.0, 0.5)));
 
     // Build the secondary info line (Week X • Q1 • Day 28)
     final infoParts = <String>[];

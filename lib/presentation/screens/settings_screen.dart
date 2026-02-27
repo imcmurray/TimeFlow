@@ -22,11 +22,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  // TODO: Replace remaining local state with settings provider
-  int _defaultReminderMinutes = 10;
-  double _timelineDensity = 1.0;
-  bool _notificationsEnabled = true;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,7 +41,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ListTile(
             leading: const Icon(Icons.straighten),
             title: const Text('Timeline Density'),
-            subtitle: Text(_densityLabel(_timelineDensity)),
+            subtitle: Text(
+                _densityLabel(ref.watch(settingsProvider).timelineDensity)),
             onTap: () => _showDensityDialog(),
           ),
           SwitchListTile(
@@ -204,18 +200,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             secondary: const Icon(Icons.notifications_outlined),
             title: const Text('Enable Notifications'),
             subtitle: const Text('Get reminders for upcoming tasks'),
-            value: _notificationsEnabled,
+            value: ref.watch(settingsProvider).notificationsEnabled,
             onChanged: (value) {
-              setState(() => _notificationsEnabled = value);
-              // TODO: Save via settings provider
+              ref
+                  .read(settingsProvider.notifier)
+                  .setNotificationsEnabled(value);
             },
           ),
           ListTile(
             leading: const Icon(Icons.timer_outlined),
             title: const Text('Default Reminder Time'),
-            subtitle: Text('$_defaultReminderMinutes minutes before'),
-            enabled: _notificationsEnabled,
-            onTap: _notificationsEnabled ? () => _showReminderDialog() : null,
+            subtitle: Text(
+                '${ref.watch(settingsProvider).defaultReminderMinutes} minutes before'),
+            enabled: ref.watch(settingsProvider).notificationsEnabled,
+            onTap: ref.watch(settingsProvider).notificationsEnabled
+                ? () => _showReminderDialog()
+                : null,
           ),
           SwitchListTile(
             secondary: const Icon(Icons.open_in_new),
@@ -623,6 +623,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showDensityDialog() {
+    final currentDensity = ref.read(settingsProvider).timelineDensity;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -634,32 +635,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: const Text('Compact'),
               subtitle: const Text('More hours visible'),
               value: 0.7,
-              groupValue: _timelineDensity,
+              groupValue: currentDensity,
               onChanged: (value) {
-                setState(() => _timelineDensity = value!);
+                ref.read(settingsProvider.notifier).setTimelineDensity(value!);
                 Navigator.pop(context);
-                // TODO: Save via settings provider
               },
             ),
             RadioListTile<double>(
               title: const Text('Normal'),
               value: 1.0,
-              groupValue: _timelineDensity,
+              groupValue: currentDensity,
               onChanged: (value) {
-                setState(() => _timelineDensity = value!);
+                ref.read(settingsProvider.notifier).setTimelineDensity(value!);
                 Navigator.pop(context);
-                // TODO: Save via settings provider
               },
             ),
             RadioListTile<double>(
               title: const Text('Spacious'),
               subtitle: const Text('Easier to read'),
               value: 1.3,
-              groupValue: _timelineDensity,
+              groupValue: currentDensity,
               onChanged: (value) {
-                setState(() => _timelineDensity = value!);
+                ref.read(settingsProvider.notifier).setTimelineDensity(value!);
                 Navigator.pop(context);
-                // TODO: Save via settings provider
               },
             ),
           ],
@@ -669,6 +667,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showReminderDialog() {
+    final currentMinutes = ref.read(settingsProvider).defaultReminderMinutes;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -682,11 +681,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ? '1 hour before'
                     : '$minutes minutes before'),
                 value: minutes,
-                groupValue: _defaultReminderMinutes,
+                groupValue: currentMinutes,
                 onChanged: (value) {
-                  setState(() => _defaultReminderMinutes = value!);
+                  ref
+                      .read(settingsProvider.notifier)
+                      .setDefaultReminderMinutes(value!);
                   Navigator.pop(context);
-                  // TODO: Save via settings provider
                 },
               ),
           ],

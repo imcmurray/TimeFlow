@@ -14,6 +14,7 @@ import 'package:cron_timeflow/presentation/screens/task_detail_screen.dart';
 import 'package:cron_timeflow/presentation/screens/settings_screen.dart';
 import 'package:cron_timeflow/presentation/screens/share_screen.dart';
 import 'package:cron_timeflow/presentation/screens/timeline_share_screen.dart';
+import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
 
 /// View mode for the timeline screen.
 enum TimelineViewMode { day, calendar }
@@ -155,36 +156,7 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
     }
   }
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final selected = DateTime(date.year, date.month, date.day);
-
-    if (selected == today) {
-      return 'Today';
-    } else if (selected == today.add(const Duration(days: 1))) {
-      return 'Tomorrow';
-    } else if (selected == today.subtract(const Duration(days: 1))) {
-      return 'Yesterday';
-    } else {
-      const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      const months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec'
-      ];
-      return '${weekdays[date.weekday - 1]}, ${months[date.month - 1]} ${date.day}';
-    }
-  }
+  String _formatDate(DateTime date) => TimeFormatter.formatDate(date);
 
   bool get _isViewingToday {
     final now = DateTime.now();

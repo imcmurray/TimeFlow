@@ -50,15 +50,15 @@ class TaskRepositoryImpl implements TaskRepository {
   @override
   Future<List<Task>> getTasksForRange(
       DateTime startDate, DateTime endDate) async {
-    final rangeStart =
-        DateTime(startDate.year, startDate.month, startDate.day);
+    final rangeStart = DateTime(startDate.year, startDate.month, startDate.day);
     final rangeEnd = DateTime(endDate.year, endDate.month, endDate.day)
         .add(const Duration(days: 1));
 
     final tasks = await _loadTasks();
     return tasks.values
         .where((task) =>
-            task.startTime.isBefore(rangeEnd) && task.endTime.isAfter(rangeStart))
+            task.startTime.isBefore(rangeEnd) &&
+            task.endTime.isAfter(rangeStart))
         .toList();
   }
 

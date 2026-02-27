@@ -121,9 +121,7 @@ void main() {
     });
 
     test('setTimeRange sets start and end hours', () {
-      container
-          .read(serverFlowFilterProvider.notifier)
-          .setTimeRange(9.0, 17.0);
+      container.read(serverFlowFilterProvider.notifier).setTimeRange(9.0, 17.0);
       final filter = container.read(serverFlowFilterProvider);
       expect(filter.timeRangeStartHour, 9.0);
       expect(filter.timeRangeEndHour, 17.0);

@@ -32,7 +32,8 @@ void main() {
         CsvValidator.validate(['host']);
         fail('Expected CsvValidationException');
       } on CsvValidationException catch (e) {
-        expect(e.missingColumns, containsAll(['command', 'start_time', 'user']));
+        expect(
+            e.missingColumns, containsAll(['command', 'start_time', 'user']));
       }
     });
 
@@ -46,8 +47,7 @@ void main() {
 
     test('handles case-insensitive headers', () {
       expect(
-        () =>
-            CsvValidator.validate(['HOST', 'Command', 'START_TIME', 'User']),
+        () => CsvValidator.validate(['HOST', 'Command', 'START_TIME', 'User']),
         returnsNormally,
       );
     });

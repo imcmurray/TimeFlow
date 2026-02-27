@@ -94,7 +94,9 @@ class _FilterModalContentState extends ConsumerState<FilterModalContent> {
                   labels: hosts,
                   selected: filter.selectedHosts,
                   onToggle: (host) {
-                    ref.read(serverFlowFilterProvider.notifier).toggleHost(host);
+                    ref
+                        .read(serverFlowFilterProvider.notifier)
+                        .toggleHost(host);
                   },
                 ),
                 loading: () => const _LoadingChips(),
@@ -144,8 +146,8 @@ class _FilterModalContentState extends ConsumerState<FilterModalContent> {
                   final filtered = _userSearchQuery.isEmpty
                       ? users
                       : users
-                          .where((u) =>
-                              u.toLowerCase().contains(_userSearchQuery))
+                          .where(
+                              (u) => u.toLowerCase().contains(_userSearchQuery))
                           .toList();
                   return _ChipGroup(
                     labels: filtered,
@@ -173,9 +175,7 @@ class _FilterModalContentState extends ConsumerState<FilterModalContent> {
                       .setTimeRange(start, end);
                 },
                 onClear: () {
-                  ref
-                      .read(serverFlowFilterProvider.notifier)
-                      .clearTimeRange();
+                  ref.read(serverFlowFilterProvider.notifier).clearTimeRange();
                 },
               ),
               const SizedBox(height: 24),

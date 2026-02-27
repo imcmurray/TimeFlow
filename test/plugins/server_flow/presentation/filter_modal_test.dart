@@ -29,12 +29,11 @@ class _MockCronJobRepository implements CronJobRepository {
   Future<List<String>> getDistinctHosts() async =>
       _jobs.map((j) => j.host).toSet().toList();
   @override
-  Future<List<String>> getDistinctCategories() async =>
-      _jobs
-          .where((j) => j.category != 'uncategorized')
-          .map((j) => j.category)
-          .toSet()
-          .toList();
+  Future<List<String>> getDistinctCategories() async => _jobs
+      .where((j) => j.category != 'uncategorized')
+      .map((j) => j.category)
+      .toSet()
+      .toList();
   @override
   Future<List<String>> getDistinctUsers() async =>
       _jobs.map((j) => j.user).toSet().toList();
@@ -210,8 +209,7 @@ void main() {
       expect(labels, isNot(contains('deploy')));
     });
 
-    testWidgets('shows "No data available" when no jobs exist',
-        (tester) async {
+    testWidgets('shows "No data available" when no jobs exist', (tester) async {
       await tester.pumpWidget(buildTestApp(jobs: []));
       await tester.tap(find.text('Open Filter'));
       await tester.pumpAndSettle();

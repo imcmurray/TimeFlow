@@ -33,7 +33,8 @@ class CsvParser {
   /// Uses auto-delimiter detection (comma, semicolon, tab).
   /// Throws [CsvValidationException] if mandatory columns are missing.
   static CsvParseResult parse(String csvText, {String? importBatchId}) {
-    final batchId = importBatchId ?? DateTime.now().millisecondsSinceEpoch.toString();
+    final batchId =
+        importBatchId ?? DateTime.now().millisecondsSinceEpoch.toString();
     final importedAt = DateTime.now();
 
     final converter = const CsvToListConverter(
@@ -58,9 +59,8 @@ class CsvParser {
     }
 
     // Parse headers (case-insensitive, trimmed)
-    final headers = rows.first
-        .map((h) => h.toString().trim().toLowerCase())
-        .toList();
+    final headers =
+        rows.first.map((h) => h.toString().trim().toLowerCase()).toList();
 
     // Validate mandatory columns
     CsvValidator.validate(headers);
@@ -80,7 +80,8 @@ class CsvParser {
       final rowNum = i + 2; // 1-indexed, skip header
 
       // Skip empty rows
-      if (row.isEmpty || (row.length == 1 && row[0].toString().trim().isEmpty)) {
+      if (row.isEmpty ||
+          (row.length == 1 && row[0].toString().trim().isEmpty)) {
         continue;
       }
 

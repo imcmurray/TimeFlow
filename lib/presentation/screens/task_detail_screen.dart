@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:cron_timeflow/domain/entities/task.dart';
 import 'package:cron_timeflow/domain/entities/task_category.dart';
 import 'package:cron_timeflow/presentation/providers/settings_provider.dart';
+import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
 import 'package:cron_timeflow/presentation/providers/task_provider.dart';
 import 'package:cron_timeflow/services/recurring_task_service.dart';
 import 'package:uuid/uuid.dart';
@@ -59,7 +59,8 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     final initialDate = widget.initialDate ?? now;
 
     _titleController = TextEditingController(text: task?.title ?? '');
-    _descriptionController = TextEditingController(text: task?.description ?? '');
+    _descriptionController =
+        TextEditingController(text: task?.description ?? '');
     _notesController = TextEditingController(text: task?.notes ?? '');
 
     if (task != null) {
@@ -69,14 +70,17 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       _reminderMinutes = task.reminderMinutes;
       _recurringPattern = task.recurringPattern;
       _category = task.category;
-    } else if (widget.initialStartTime != null && widget.initialEndTime != null) {
+    } else if (widget.initialStartTime != null &&
+        widget.initialEndTime != null) {
       // Use explicit start/end times (from long-press creation)
       _startTime = widget.initialStartTime!;
       _endTime = widget.initialEndTime!;
     } else {
-      final taskDate = DateTime(initialDate.year, initialDate.month, initialDate.day);
+      final taskDate =
+          DateTime(initialDate.year, initialDate.month, initialDate.day);
       final nextHour = (now.hour + 1).clamp(0, 23);
-      _startTime = DateTime(taskDate.year, taskDate.month, taskDate.day, nextHour);
+      _startTime =
+          DateTime(taskDate.year, taskDate.month, taskDate.day, nextHour);
       _endTime = _startTime.add(const Duration(hours: 1));
     }
   }
@@ -106,7 +110,8 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
             picked.hour,
             picked.minute,
           );
-          if (_endTime.isBefore(_startTime) || _endTime.isAtSameMomentAs(_startTime)) {
+          if (_endTime.isBefore(_startTime) ||
+              _endTime.isAtSameMomentAs(_startTime)) {
             _endTime = _startTime.add(const Duration(hours: 1));
           }
         } else {
@@ -124,29 +129,21 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
   String _formatTime(DateTime time) {
     final use24Hour = ref.read(settingsProvider).use24HourFormat;
-    if (use24Hour) {
-      return DateFormat('HH:mm').format(time);
-    }
-    final hour = time.hour == 0
-        ? 12
-        : time.hour > 12
-            ? time.hour - 12
-            : time.hour;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
+    return TimeFormatter.formatTime(time, use24HourFormat: use24Hour);
   }
 
   void _adjustDate(int days, {required bool isStart}) {
     setState(() {
       if (isStart) {
         _startTime = _startTime.add(Duration(days: days));
-        if (_endTime.isBefore(_startTime) || _endTime.isAtSameMomentAs(_startTime)) {
+        if (_endTime.isBefore(_startTime) ||
+            _endTime.isAtSameMomentAs(_startTime)) {
           _endTime = _startTime.add(const Duration(hours: 1));
         }
       } else {
         _endTime = _endTime.add(Duration(days: days));
-        if (_endTime.isBefore(_startTime) || _endTime.isAtSameMomentAs(_startTime)) {
+        if (_endTime.isBefore(_startTime) ||
+            _endTime.isAtSameMomentAs(_startTime)) {
           _endTime = _startTime.add(const Duration(hours: 1));
         }
       }
@@ -162,7 +159,8 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
     );
     if (picked != null) {
-      final currentDateOnly = DateTime(currentDate.year, currentDate.month, currentDate.day);
+      final currentDateOnly =
+          DateTime(currentDate.year, currentDate.month, currentDate.day);
       final diff = picked.difference(currentDateOnly).inDays;
       if (diff != 0) {
         _adjustDate(diff, isStart: isStart);
@@ -205,7 +203,8 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       return;
     }
 
-    if (_endTime.isBefore(_startTime) || _endTime.isAtSameMomentAs(_startTime)) {
+    if (_endTime.isBefore(_startTime) ||
+        _endTime.isAtSameMomentAs(_startTime)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('End time must be after start time'),
@@ -478,9 +477,11 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                 DropdownMenuItem(value: 'daily', child: Text('Daily')),
                 DropdownMenuItem(value: 'weekdays', child: Text('Weekdays')),
                 DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
-                DropdownMenuItem(value: 'fortnightly', child: Text('Fortnightly')),
+                DropdownMenuItem(
+                    value: 'fortnightly', child: Text('Fortnightly')),
                 DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
-                DropdownMenuItem(value: 'bimonthly', child: Text('Every 2 Months')),
+                DropdownMenuItem(
+                    value: 'bimonthly', child: Text('Every 2 Months')),
                 DropdownMenuItem(value: 'quarterly', child: Text('Quarterly')),
                 DropdownMenuItem(value: 'yearly', child: Text('Yearly')),
               ],
@@ -540,134 +541,6 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   }
 }
 
-class _TimePickerTile extends StatelessWidget {
-  final String label;
-  final String time;
-  final VoidCallback onTap;
-
-  const _TimePickerTile({
-    required this.label,
-    required this.time,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(color: Theme.of(context).dividerColor),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              time,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DateSelector extends StatelessWidget {
-  final String label;
-  final DateTime date;
-  final void Function(int days) onDateChanged;
-  final VoidCallback onTap;
-
-  const _DateSelector({
-    required this.label,
-    required this.date,
-    required this.onDateChanged,
-    required this.onTap,
-  });
-
-  String _formatDateCompact(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final targetDate = DateTime(date.year, date.month, date.day);
-    final difference = targetDate.difference(today).inDays;
-
-    if (difference == 0) return 'Today';
-    if (difference == 1) return 'Tomorrow';
-    if (difference == -1) return 'Yesterday';
-
-    return DateFormat('EEE, MMM d').format(date);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          border: Border.all(color: Theme.of(context).dividerColor),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatDateCompact(date),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ],
-              ),
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                InkWell(
-                  onTap: () => onDateChanged(-1),
-                  borderRadius: BorderRadius.circular(16),
-                  child: const Padding(
-                    padding: EdgeInsets.all(4),
-                    child: Icon(Icons.chevron_left, size: 20),
-                  ),
-                ),
-                InkWell(
-                  onTap: () => onDateChanged(1),
-                  borderRadius: BorderRadius.circular(16),
-                  child: const Padding(
-                    padding: EdgeInsets.all(4),
-                    child: Icon(Icons.chevron_right, size: 20),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _DateTimeGroup extends StatelessWidget {
   final String label;
   final DateTime date;
@@ -685,18 +558,8 @@ class _DateTimeGroup extends StatelessWidget {
     required this.onTimeTap,
   });
 
-  String _formatDateCompact(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final targetDate = DateTime(date.year, date.month, date.day);
-    final difference = targetDate.difference(today).inDays;
-
-    if (difference == 0) return 'Today';
-    if (difference == 1) return 'Tomorrow';
-    if (difference == -1) return 'Yesterday';
-
-    return DateFormat('EEE, MMM d').format(date);
-  }
+  String _formatDateCompact(DateTime date) =>
+      TimeFormatter.formatDateCompact(date);
 
   @override
   Widget build(BuildContext context) {
@@ -729,7 +592,8 @@ class _DateTimeGroup extends StatelessWidget {
                     onTap: onDateTap,
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 8),
                       child: Row(
                         children: [
                           const Icon(Icons.calendar_today, size: 18),
@@ -773,7 +637,8 @@ class _DateTimeGroup extends StatelessWidget {
                     onTap: onTimeTap,
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

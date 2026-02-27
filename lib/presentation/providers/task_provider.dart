@@ -74,7 +74,9 @@ final allTasksProvider = FutureProvider<List<Task>>((ref) async {
 final tasksForRangeProvider =
     FutureProvider.family<List<Task>, DateRange>((ref, range) async {
   ref.watch(taskNotifierProvider);
-  return ref.read(taskRepositoryProvider).getTasksForRange(range.start, range.end);
+  return ref
+      .read(taskRepositoryProvider)
+      .getTasksForRange(range.start, range.end);
 });
 
 /// Returns a set of dates that have tasks scheduled.
@@ -84,6 +86,7 @@ final datesWithTasksProvider = FutureProvider<Set<DateTime>>((ref) async {
   ref.watch(taskNotifierProvider);
   final tasks = await ref.read(taskRepositoryProvider).getAll();
   return tasks
-      .map((t) => DateTime(t.startTime.year, t.startTime.month, t.startTime.day))
+      .map(
+          (t) => DateTime(t.startTime.year, t.startTime.month, t.startTime.day))
       .toSet();
 });

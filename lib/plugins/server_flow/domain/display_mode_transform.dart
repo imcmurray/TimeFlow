@@ -37,7 +37,8 @@ class DisplayModeTransform {
 
     for (final entry in groups.entries) {
       final host = entry.key;
-      final hostEvents = entry.value..sort((a, b) => a.startTime.compareTo(b.startTime));
+      final hostEvents = entry.value
+        ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
       // Walk sorted events: merge consecutive events whose gap <= 2 hours
       var barStart = hostEvents.first.startTime;
@@ -147,8 +148,7 @@ class DisplayModeTransform {
     // Midpoint of cluster
     final earliest = events.first.startTime;
     final latest = events.last.startTime;
-    final midMs =
-        earliest.millisecondsSinceEpoch +
+    final midMs = earliest.millisecondsSinceEpoch +
         (latest.millisecondsSinceEpoch - earliest.millisecondsSinceEpoch) ~/ 2;
     final midpoint = DateTime.fromMillisecondsSinceEpoch(midMs);
 

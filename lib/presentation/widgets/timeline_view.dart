@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:cron_timeflow/core/theme/app_colors.dart';
 import 'package:cron_timeflow/core/plugins/plugin_interface.dart';
 import 'package:cron_timeflow/core/plugins/plugin_state_provider.dart';
@@ -13,7 +12,6 @@ import 'package:cron_timeflow/domain/entities/task.dart';
 import 'package:cron_timeflow/presentation/providers/settings_provider.dart';
 import 'package:cron_timeflow/presentation/providers/task_provider.dart';
 import 'package:cron_timeflow/presentation/screens/task_detail_screen.dart';
-import 'package:cron_timeflow/presentation/widgets/breathing_room_indicator.dart';
 import 'package:cron_timeflow/presentation/widgets/confluence_modal.dart';
 import 'package:cron_timeflow/presentation/widgets/day_boundary_marker.dart';
 import 'package:cron_timeflow/presentation/widgets/merged_task_card.dart';
@@ -21,6 +19,8 @@ import 'package:cron_timeflow/presentation/widgets/reminder_line.dart';
 import 'package:cron_timeflow/presentation/widgets/task_card.dart';
 import 'package:cron_timeflow/presentation/widgets/time_of_day_background.dart';
 import 'package:cron_timeflow/services/reminder_sound_service.dart';
+import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
+import 'package:cron_timeflow/presentation/utils/timeline_offset.dart';
 import 'package:cron_timeflow/services/sun_times_service.dart';
 import 'package:window_to_front/window_to_front.dart';
 
@@ -271,35 +271,26 @@ class TimelineViewState extends ConsumerState<TimelineView>
 
   /// Calculate pixel offset for a given DateTime.
   double _getOffsetForDateTime(DateTime dateTime) {
-    final hoursFromReference =
-        dateTime.difference(_referenceDate).inMinutes / 60.0;
-
-    if (widget.upcomingTasksAboveNow) {
-      // When future is above, today is _daysLoadedAfter days from the top
-      final referenceOffset = _daysLoadedAfter * 24 * _hourHeight;
-      return referenceOffset - (hoursFromReference * _hourHeight);
-    } else {
-      // Past at top, future at bottom (natural order)
-      final referenceOffset = _daysLoadedBefore * 24 * _hourHeight;
-      return referenceOffset + (hoursFromReference * _hourHeight);
-    }
+    return TimelineOffset.forDateTime(
+      dateTime: dateTime,
+      referenceDate: _referenceDate,
+      hourHeight: _hourHeight,
+      daysLoadedBefore: _daysLoadedBefore,
+      daysLoadedAfter: _daysLoadedAfter,
+      upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+    );
   }
 
   /// Calculate DateTime for a given pixel offset.
   DateTime _getDateTimeAtOffset(double offset) {
-    final referenceOffset = widget.upcomingTasksAboveNow
-        ? _daysLoadedAfter * 24 * _hourHeight
-        : _daysLoadedBefore * 24 * _hourHeight;
-
-    double hoursFromReference;
-    if (widget.upcomingTasksAboveNow) {
-      hoursFromReference = (referenceOffset - offset) / _hourHeight;
-    } else {
-      hoursFromReference = (offset - referenceOffset) / _hourHeight;
-    }
-
-    return _referenceDate
-        .add(Duration(minutes: (hoursFromReference * 60).round()));
+    return TimelineOffset.atOffset(
+      offset: offset,
+      referenceDate: _referenceDate,
+      hourHeight: _hourHeight,
+      daysLoadedBefore: _daysLoadedBefore,
+      daysLoadedAfter: _daysLoadedAfter,
+      upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+    );
   }
 
   /// Calculate scroll offset to position NOW line at the user's chosen viewport position.
@@ -699,8 +690,6 @@ class _HourMarkersMultiDay extends ConsumerWidget {
     this.use24HourFormat = false,
   });
 
-  int get _totalDays => daysLoadedBefore + daysLoadedAfter + 1;
-
   double _getOffsetForHour(int dayOffset, double hour) {
     final hoursFromReference = (dayOffset * 24) + hour;
     final referenceOffset = upcomingTasksAboveNow
@@ -904,15 +893,8 @@ class _HourMarkersMultiDay extends ConsumerWidget {
     return Stack(children: markers);
   }
 
-  String _formatHour(int hour) {
-    if (use24HourFormat) {
-      return '${hour.toString().padLeft(2, '0')}:00';
-    }
-    if (hour == 0) return '12 AM';
-    if (hour == 12) return '12 PM';
-    if (hour < 12) return '$hour AM';
-    return '${hour - 12} PM';
-  }
+  String _formatHour(int hour) =>
+      TimeFormatter.formatHour(hour, use24HourFormat: use24HourFormat);
 
   String _formatExactTime(DateTime time) {
     if (use24HourFormat) {
@@ -1051,22 +1033,18 @@ class _DayDividerOverlay extends StatelessWidget {
 /// Paints a dashed horizontal line.
 class _DashedLinePainter extends CustomPainter {
   final Color color;
-  final double dashWidth;
-  final double dashSpace;
-  final double strokeWidth;
 
-  _DashedLinePainter({
-    required this.color,
-    this.dashWidth = 6,
-    this.dashSpace = 4,
-    this.strokeWidth = 1.5,
-  });
+  _DashedLinePainter({required this.color});
+
+  static const double _dashWidth = 6;
+  static const double _dashSpace = 4;
+  static const double _strokeWidth = 1.5;
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
-      ..strokeWidth = strokeWidth
+      ..strokeWidth = _strokeWidth
       ..strokeCap = StrokeCap.round;
 
     double startX = 0;
@@ -1075,19 +1053,16 @@ class _DashedLinePainter extends CustomPainter {
     while (startX < size.width) {
       canvas.drawLine(
         Offset(startX, y),
-        Offset(startX + dashWidth, y),
+        Offset(startX + _dashWidth, y),
         paint,
       );
-      startX += dashWidth + dashSpace;
+      startX += _dashWidth + _dashSpace;
     }
   }
 
   @override
   bool shouldRepaint(covariant _DashedLinePainter oldDelegate) {
-    return oldDelegate.color != color ||
-        oldDelegate.dashWidth != dashWidth ||
-        oldDelegate.dashSpace != dashSpace ||
-        oldDelegate.strokeWidth != strokeWidth;
+    return oldDelegate.color != color;
   }
 }
 
@@ -1373,33 +1348,25 @@ class _TaskCardsLayerMultiDayState
   }
 
   double _getOffsetForDateTime(DateTime dateTime) {
-    final hoursFromReference =
-        dateTime.difference(widget.referenceDate).inMinutes / 60.0;
-    final referenceOffset = widget.upcomingTasksAboveNow
-        ? widget.daysLoadedAfter * 24 * widget.hourHeight
-        : widget.daysLoadedBefore * 24 * widget.hourHeight;
-
-    if (widget.upcomingTasksAboveNow) {
-      return referenceOffset - (hoursFromReference * widget.hourHeight);
-    } else {
-      return referenceOffset + (hoursFromReference * widget.hourHeight);
-    }
+    return TimelineOffset.forDateTime(
+      dateTime: dateTime,
+      referenceDate: widget.referenceDate,
+      hourHeight: widget.hourHeight,
+      daysLoadedBefore: widget.daysLoadedBefore,
+      daysLoadedAfter: widget.daysLoadedAfter,
+      upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+    );
   }
 
   DateTime _getDateTimeAtOffset(double offset) {
-    final referenceOffset = widget.upcomingTasksAboveNow
-        ? widget.daysLoadedAfter * 24 * widget.hourHeight
-        : widget.daysLoadedBefore * 24 * widget.hourHeight;
-
-    double hoursFromReference;
-    if (widget.upcomingTasksAboveNow) {
-      hoursFromReference = (referenceOffset - offset) / widget.hourHeight;
-    } else {
-      hoursFromReference = (offset - referenceOffset) / widget.hourHeight;
-    }
-
-    return widget.referenceDate
-        .add(Duration(minutes: (hoursFromReference * 60).round()));
+    return TimelineOffset.atOffset(
+      offset: offset,
+      referenceDate: widget.referenceDate,
+      hourHeight: widget.hourHeight,
+      daysLoadedBefore: widget.daysLoadedBefore,
+      daysLoadedAfter: widget.daysLoadedAfter,
+      upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+    );
   }
 
   void _onDragStart(Task task, double currentTop) {
@@ -2254,21 +2221,8 @@ class _NowLineScrollable extends ConsumerStatefulWidget {
 class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
   double? _dragDelta;
 
-  String _formatTime(DateTime time) {
-    if (widget.use24HourFormat) {
-      final hour = time.hour.toString().padLeft(2, '0');
-      final minute = time.minute.toString().padLeft(2, '0');
-      return '$hour:$minute';
-    }
-    final hour = time.hour == 0
-        ? 12
-        : time.hour > 12
-            ? time.hour - 12
-            : time.hour;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
-  }
+  String _formatTime(DateTime time) =>
+      TimeFormatter.formatTime(time, use24HourFormat: widget.use24HourFormat);
 
   void _onLongPressStart(LongPressStartDetails details) {
     setState(() {
@@ -2447,141 +2401,6 @@ class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
   }
 }
 
-/// Fixed NOW line that stays in place on screen at a specified position.
-/// The calendar content scrolls to meet this fixed line.
-class _FixedNowLine extends StatelessWidget {
-  final DateTime currentTime;
-  final bool use24HourFormat;
-  final double nowLinePosition;
-
-  const _FixedNowLine({
-    required this.currentTime,
-    required this.nowLinePosition,
-    this.use24HourFormat = false,
-  });
-
-  String _formatTime(DateTime time) {
-    if (use24HourFormat) {
-      final hour = time.hour.toString().padLeft(2, '0');
-      final minute = time.minute.toString().padLeft(2, '0');
-      return '$hour:$minute';
-    }
-    final hour = time.hour == 0
-        ? 12
-        : time.hour > 12
-            ? time.hour - 12
-            : time.hour;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final lineColor = isDark ? AppColors.nowLineDark : AppColors.nowLineLight;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final nowY = screenHeight * nowLinePosition;
-
-    return IgnorePointer(
-      child: Stack(
-        children: [
-          // Glow effect behind the line
-          Positioned(
-            left: 0,
-            right: 0,
-            top: nowY - 20,
-            height: 40,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    lineColor.withValues(alpha: 0),
-                    lineColor.withValues(alpha: 0.4),
-                    lineColor.withValues(alpha: 0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Main NOW line
-          Positioned(
-            left: 0,
-            right: 0,
-            top: nowY - 1,
-            height: 2,
-            child: Container(
-              decoration: BoxDecoration(
-                color: lineColor,
-                boxShadow: [
-                  BoxShadow(
-                    color: lineColor.withValues(alpha: 0.5),
-                    blurRadius: 4,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Time badge
-          Positioned(
-            right: 16,
-            top: nowY - 14,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: lineColor,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: lineColor.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Text(
-                _formatTime(currentTime),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-
-          // NOW label
-          Positioned(
-            left: 12,
-            top: nowY - 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: lineColor,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'NOW',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// Preview widget shown during long-press task creation.
 /// Displays a semi-transparent box with the task duration.
 class _TaskCreationPreview extends StatelessWidget {
@@ -2599,21 +2418,8 @@ class _TaskCreationPreview extends StatelessWidget {
     this.hasConflict = false,
   });
 
-  String _formatTime(DateTime time) {
-    if (use24HourFormat) {
-      final hour = time.hour.toString().padLeft(2, '0');
-      final minute = time.minute.toString().padLeft(2, '0');
-      return '$hour:$minute';
-    }
-    final hour = time.hour == 0
-        ? 12
-        : time.hour > 12
-            ? time.hour - 12
-            : time.hour;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
-  }
+  String _formatTime(DateTime time) =>
+      TimeFormatter.formatTime(time, use24HourFormat: use24HourFormat);
 
   String _formatDuration(Duration duration) {
     final hours = duration.inHours;
@@ -2932,17 +2738,14 @@ class _PluginEventsLayer extends ConsumerWidget {
   });
 
   double _getOffsetForDateTime(DateTime time) {
-    final diff = time.difference(referenceDate);
-    final hoursFromReference = diff.inMinutes / 60.0;
-    final referenceOffset = upcomingTasksAboveNow
-        ? daysLoadedAfter * 24 * hourHeight
-        : daysLoadedBefore * 24 * hourHeight;
-
-    if (upcomingTasksAboveNow) {
-      return referenceOffset - (hoursFromReference * hourHeight);
-    } else {
-      return referenceOffset + (hoursFromReference * hourHeight);
-    }
+    return TimelineOffset.forDateTime(
+      dateTime: time,
+      referenceDate: referenceDate,
+      hourHeight: hourHeight,
+      daysLoadedBefore: daysLoadedBefore,
+      daysLoadedAfter: daysLoadedAfter,
+      upcomingTasksAboveNow: upcomingTasksAboveNow,
+    );
   }
 
   @override

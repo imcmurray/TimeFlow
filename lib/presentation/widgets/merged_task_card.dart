@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cron_timeflow/core/theme/app_colors.dart';
 import 'package:cron_timeflow/domain/entities/task.dart';
+import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
 import 'package:cron_timeflow/presentation/widgets/reminder_line.dart';
 import 'package:cron_timeflow/presentation/widgets/water_ripple_painter.dart';
 
@@ -350,9 +351,11 @@ class _MergedTaskCardState extends State<MergedTaskCard>
                 task.title,
                 style: TextStyle(
                   fontSize: isSmall ? 11 : 12,
-                  fontWeight: task.isImportant ? FontWeight.bold : FontWeight.w500,
+                  fontWeight:
+                      task.isImportant ? FontWeight.bold : FontWeight.w500,
                   color: color,
-                  decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+                  decoration:
+                      task.isCompleted ? TextDecoration.lineThrough : null,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -361,8 +364,8 @@ class _MergedTaskCardState extends State<MergedTaskCard>
             if (task.isCompleted)
               Padding(
                 padding: const EdgeInsets.only(left: 4),
-                child: Icon(
-                    Icons.check_circle, size: 12, color: color.withValues(alpha: 0.7)),
+                child: Icon(Icons.check_circle,
+                    size: 12, color: color.withValues(alpha: 0.7)),
               ),
           ],
         ),
@@ -443,8 +446,8 @@ class _MergedTaskCardState extends State<MergedTaskCard>
     // Get earliest pending reminder
     DateTime? earliest;
     if (pendingReminders.isNotEmpty) {
-      earliest = pendingReminders.values
-          .reduce((a, b) => a.isBefore(b) ? a : b);
+      earliest =
+          pendingReminders.values.reduce((a, b) => a.isBefore(b) ? a : b);
     }
 
     final isTriggered = triggeredCount > 0;
@@ -478,7 +481,9 @@ class _MergedTaskCardState extends State<MergedTaskCard>
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isTriggered ? Icons.notifications_active : Icons.notifications_outlined,
+            isTriggered
+                ? Icons.notifications_active
+                : Icons.notifications_outlined,
             size: 14,
             color: badgeColor,
           ),
@@ -541,21 +546,8 @@ class _MergedTaskCardState extends State<MergedTaskCard>
     );
   }
 
-  String _formatTime(DateTime time) {
-    if (widget.use24HourFormat) {
-      final hour = time.hour.toString().padLeft(2, '0');
-      final minute = time.minute.toString().padLeft(2, '0');
-      return '$hour:$minute';
-    }
-    final hour = time.hour == 0
-        ? 12
-        : time.hour > 12
-            ? time.hour - 12
-            : time.hour;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
-  }
+  String _formatTime(DateTime time) =>
+      TimeFormatter.formatTime(time, use24HourFormat: widget.use24HourFormat);
 
   String _formatCountdown(DateTime reminderTime) {
     final remaining = reminderTime.difference(DateTime.now());

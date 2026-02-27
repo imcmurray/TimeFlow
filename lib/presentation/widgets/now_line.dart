@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cron_timeflow/core/theme/app_colors.dart';
+import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
 
 /// The fixed NOW line that displays across the timeline.
 ///
@@ -55,16 +56,7 @@ class _NowLineState extends State<NowLine> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
-  String _formatTime(DateTime time) {
-    final hour = time.hour == 0
-        ? 12
-        : time.hour > 12
-            ? time.hour - 12
-            : time.hour;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
-  }
+  String _formatTime(DateTime time) => TimeFormatter.formatTime(time);
 
   @override
   Widget build(BuildContext context) {
@@ -128,7 +120,8 @@ class _NowLineState extends State<NowLine> with SingleTickerProviderStateMixin {
               right: 16,
               top: yPosition - 14,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: lineColor,
                   borderRadius: BorderRadius.circular(12),

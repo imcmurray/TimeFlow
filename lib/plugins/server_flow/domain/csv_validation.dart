@@ -18,7 +18,8 @@ class CsvValidator {
   /// Headers are expected to be lowercase and trimmed.
   /// Throws [CsvValidationException] listing any missing columns.
   static void validate(List<String> headers) {
-    final normalizedHeaders = headers.map((h) => h.trim().toLowerCase()).toSet();
+    final normalizedHeaders =
+        headers.map((h) => h.trim().toLowerCase()).toSet();
     final missing = mandatoryColumns
         .where((col) => !normalizedHeaders.contains(col))
         .toList();

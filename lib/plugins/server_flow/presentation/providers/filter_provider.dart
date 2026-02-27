@@ -38,9 +38,8 @@ class ServerFlowFilter {
       timeRangeStartHour: timeRangeStartHour != null
           ? timeRangeStartHour()
           : this.timeRangeStartHour,
-      timeRangeEndHour: timeRangeEndHour != null
-          ? timeRangeEndHour()
-          : this.timeRangeEndHour,
+      timeRangeEndHour:
+          timeRangeEndHour != null ? timeRangeEndHour() : this.timeRangeEndHour,
     );
   }
 }

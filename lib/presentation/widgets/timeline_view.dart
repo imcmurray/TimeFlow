@@ -339,12 +339,20 @@ class TimelineViewState extends ConsumerState<TimelineView>
   }
 
   /// Internal setter that clamps, updates state, and fires the callback.
+  /// Adjusts scroll position so the viewport center stays anchored.
   void _setHourHeight(double height) {
     final newHeight = height.clamp(40.0, 320.0);
     if (newHeight != _hourHeight) {
+      final ratio = newHeight / _hourHeight;
       setState(() {
         _hourHeight = newHeight;
       });
+      if (_scrollController.hasClients) {
+        final viewport = _scrollController.position.viewportDimension;
+        final oldCenter = _scrollController.offset + viewport / 2;
+        final newCenter = oldCenter * ratio;
+        _scrollController.jumpTo(newCenter - viewport / 2);
+      }
       widget.onZoomChanged?.call(_hourHeight);
     }
   }

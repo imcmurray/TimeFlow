@@ -366,6 +366,7 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                           upcomingTasksAboveNow:
                               ref.watch(settingsProvider).upcomingTasksAboveNow,
                           initialDate: _selectedDateFromCalendar,
+                          initialHourHeight: _currentHourHeight,
                           onVisibleDateChanged: _onVisibleDateChanged,
                           onNowLineVisibilityChanged:
                               _onNowLineVisibilityChanged,

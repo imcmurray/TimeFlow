@@ -45,6 +45,9 @@ class TimelineView extends ConsumerStatefulWidget {
   /// Called when the zoom level (hour height) changes.
   final ValueChanged<double>? onZoomChanged;
 
+  /// Initial hour height (zoom level) to use when the widget is first created.
+  final double initialHourHeight;
+
   const TimelineView({
     super.key,
     this.upcomingTasksAboveNow = true,
@@ -52,6 +55,7 @@ class TimelineView extends ConsumerStatefulWidget {
     this.onVisibleDateChanged,
     this.onNowLineVisibilityChanged,
     this.onZoomChanged,
+    this.initialHourHeight = TimelineViewState.defaultHourHeight,
   });
 
   @override
@@ -77,7 +81,7 @@ class TimelineViewState extends ConsumerState<TimelineView>
   static const double defaultHourHeight = 80.0;
 
   /// Height in pixels per hour of timeline. Mutable for zoom.
-  double _hourHeight = defaultHourHeight;
+  late double _hourHeight;
 
   /// Public getter for current hour height.
   double get hourHeight => _hourHeight;
@@ -95,6 +99,7 @@ class TimelineViewState extends ConsumerState<TimelineView>
   @override
   void initState() {
     super.initState();
+    _hourHeight = widget.initialHourHeight;
     _scrollController = ScrollController();
 
     // Register lifecycle observer to detect when app resumes

@@ -339,19 +339,21 @@ class TimelineViewState extends ConsumerState<TimelineView>
   }
 
   /// Internal setter that clamps, updates state, and fires the callback.
-  /// Adjusts scroll position so the viewport center stays anchored.
+  /// Adjusts scroll position so the NOW line stays fixed on screen.
   void _setHourHeight(double height) {
     final newHeight = height.clamp(40.0, 320.0);
     if (newHeight != _hourHeight) {
-      final ratio = newHeight / _hourHeight;
+      // Capture the NOW line's screen position before changing height.
+      final nowScreenY = _scrollController.hasClients
+          ? _getOffsetForDateTime(DateTime.now()) - _scrollController.offset
+          : 0.0;
       setState(() {
         _hourHeight = newHeight;
       });
       if (_scrollController.hasClients) {
-        final viewport = _scrollController.position.viewportDimension;
-        final oldCenter = _scrollController.offset + viewport / 2;
-        final newCenter = oldCenter * ratio;
-        _scrollController.jumpTo(newCenter - viewport / 2);
+        // The NOW offset scales by ratio; keep it at the same screen Y.
+        final newNowOffset = _getOffsetForDateTime(DateTime.now());
+        _scrollController.jumpTo(newNowOffset - nowScreenY);
       }
       widget.onZoomChanged?.call(_hourHeight);
     }

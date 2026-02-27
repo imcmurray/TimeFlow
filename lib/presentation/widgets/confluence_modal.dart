@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cron_timeflow/domain/entities/task.dart';
@@ -159,11 +161,15 @@ class _ConfluenceModalState extends State<ConfluenceModal>
       child: AnimatedBuilder(
         animation: _divergeController,
         builder: (context, child) {
-          return Container(
-            color: Colors.black.withValues(
-              alpha: 0.5 * _divergeController.value,
+          final blur = 8.0 * _divergeController.value;
+          return BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+            child: Container(
+              color: Colors.black.withValues(
+                alpha: 0.5 * _divergeController.value,
+              ),
+              child: child,
             ),
-            child: child,
           );
         },
         child: Stack(

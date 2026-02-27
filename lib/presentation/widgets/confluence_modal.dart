@@ -60,10 +60,12 @@ class _ConfluenceModalState extends State<ConfluenceModal>
   late AnimationController _divergeController;
   late List<Animation<double>> _slideAnimations;
   late List<Animation<double>> _fadeAnimations;
+  late List<Task> _tasks;
 
   @override
   void initState() {
     super.initState();
+    _tasks = List.of(widget.tasks);
 
     // Diverge animation for cards fanning out
     _divergeController = AnimationController(
@@ -132,8 +134,12 @@ class _ConfluenceModalState extends State<ConfluenceModal>
 
   @override
   Widget build(BuildContext context) {
+    if (_tasks.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     // Sort tasks: important first, then by start time
-    final sortedTasks = List<Task>.from(widget.tasks)
+    final sortedTasks = List<Task>.from(_tasks)
       ..sort((a, b) {
         if (a.isImportant && !b.isImportant) return -1;
         if (!a.isImportant && b.isImportant) return 1;
@@ -141,10 +147,10 @@ class _ConfluenceModalState extends State<ConfluenceModal>
       });
 
     // Calculate the time span for header
-    final earliestStart = widget.tasks
+    final earliestStart = _tasks
         .map((t) => t.startTime)
         .reduce((a, b) => a.isBefore(b) ? a : b);
-    final latestEnd = widget.tasks
+    final latestEnd = _tasks
         .map((t) => t.endTime)
         .reduce((a, b) => a.isAfter(b) ? a : b);
 
@@ -258,7 +264,7 @@ class _ConfluenceModalState extends State<ConfluenceModal>
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      '${widget.tasks.length} tasks',
+                      '${_tasks.length} tasks',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -326,9 +332,21 @@ class _ConfluenceModalState extends State<ConfluenceModal>
           },
           onComplete: () {
             widget.onTaskComplete?.call(task);
+            setState(() {
+              final i = _tasks.indexWhere((t) => t.id == task.id);
+              if (i != -1) {
+                _tasks[i] = _tasks[i].copyWith(
+                  isCompleted: !_tasks[i].isCompleted,
+                  updatedAt: DateTime.now(),
+                );
+              }
+            });
           },
           onDelete: () {
             widget.onTaskDelete?.call(task);
+            setState(() {
+              _tasks.removeWhere((t) => t.id == task.id);
+            });
           },
           onReminderAcknowledged: () {
             widget.onReminderAcknowledged?.call(task);

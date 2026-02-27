@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cron_timeflow/core/theme/app_colors.dart';
 import 'package:cron_timeflow/domain/entities/task.dart';
 import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
 import 'package:cron_timeflow/presentation/widgets/reminder_line.dart';
 import 'package:cron_timeflow/presentation/widgets/task_card.dart';
-import 'package:cron_timeflow/presentation/widgets/water_ripple_painter.dart';
 
 /// A modal that shows expanded view of merged/overlapping tasks.
 ///
@@ -58,9 +56,8 @@ class ConfluenceModal extends StatefulWidget {
 }
 
 class _ConfluenceModalState extends State<ConfluenceModal>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   late AnimationController _divergeController;
-  late AnimationController _rippleController;
   late List<Animation<double>> _slideAnimations;
   late List<Animation<double>> _fadeAnimations;
 
@@ -73,12 +70,6 @@ class _ConfluenceModalState extends State<ConfluenceModal>
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
-
-    // Background ripple animation
-    _rippleController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat();
 
     // Create staggered animations for each task
     _createAnimations();
@@ -128,7 +119,6 @@ class _ConfluenceModalState extends State<ConfluenceModal>
   @override
   void dispose() {
     _divergeController.dispose();
-    _rippleController.dispose();
     super.dispose();
   }
 
@@ -142,8 +132,6 @@ class _ConfluenceModalState extends State<ConfluenceModal>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     // Sort tasks: important first, then by start time
     final sortedTasks = List<Task>.from(widget.tasks)
       ..sort((a, b) {
@@ -174,22 +162,6 @@ class _ConfluenceModalState extends State<ConfluenceModal>
         },
         child: Stack(
           children: [
-            // Background ripple effect
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _rippleController,
-                builder: (context, child) {
-                  return CustomPaint(
-                    painter: WaterRipplePainter(
-                      animationValue: _rippleController.value,
-                      color: isDark ? Colors.white : AppColors.primaryBlue,
-                      rippleCount: 5,
-                    ),
-                  );
-                },
-              ),
-            ),
-
             // Modal content
             SafeArea(
               child: Column(
@@ -249,7 +221,7 @@ class _ConfluenceModalState extends State<ConfluenceModal>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
@@ -264,7 +236,7 @@ class _ConfluenceModalState extends State<ConfluenceModal>
                   Icon(
                     Icons.merge_type,
                     size: 18,
-                    color: AppColors.primaryBlue,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -272,7 +244,7 @@ class _ConfluenceModalState extends State<ConfluenceModal>
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -282,7 +254,7 @@ class _ConfluenceModalState extends State<ConfluenceModal>
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryBlue.withValues(alpha: 0.1),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -290,7 +262,7 @@ class _ConfluenceModalState extends State<ConfluenceModal>
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.primaryBlue,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
@@ -302,7 +274,7 @@ class _ConfluenceModalState extends State<ConfluenceModal>
 
             // Close button
             Material(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(20),
               child: InkWell(
                 onTap: _close,
@@ -312,7 +284,7 @@ class _ConfluenceModalState extends State<ConfluenceModal>
                   child: Icon(
                     Icons.close,
                     size: 24,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ),

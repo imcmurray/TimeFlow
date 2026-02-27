@@ -252,6 +252,50 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const Divider(),
 
+          // Event Alerts Section
+          _SectionHeader(title: 'Event Alerts'),
+          SwitchListTile(
+            secondary: const Icon(Icons.notifications_active),
+            title: const Text('Now-Line Event Alerts'),
+            subtitle: const Text('Alert when plugin events reach the now line'),
+            value: ref.watch(settingsProvider).eventCrossingAlertEnabled,
+            onChanged: (value) {
+              ref
+                  .read(settingsProvider.notifier)
+                  .setEventCrossingAlertEnabled(value);
+            },
+          ),
+          // Per-plugin crossing alert toggles
+          ...ref.watch(enabledPluginsProvider).map((plugin) {
+            final crossingState = ref.watch(pluginCrossingAlertStateProvider);
+            final enabled = crossingState[plugin.id] ?? true;
+            return SwitchListTile(
+              secondary: const SizedBox(width: 24),
+              title: Text(plugin.name),
+              value: enabled &&
+                  ref.watch(settingsProvider).eventCrossingAlertEnabled,
+              onChanged: ref.watch(settingsProvider).eventCrossingAlertEnabled
+                  ? (value) {
+                      ref
+                          .read(pluginCrossingAlertStateProvider.notifier)
+                          .setEnabled(plugin.id, value);
+                    }
+                  : null,
+            );
+          }),
+          ListTile(
+            leading: const Icon(Icons.music_note),
+            title: const Text('Event Alert Sound'),
+            subtitle: Text(ReminderSoundService.getLabel(
+                ref.watch(settingsProvider).eventCrossingAlertSound)),
+            enabled: ref.watch(settingsProvider).eventCrossingAlertEnabled,
+            onTap: ref.watch(settingsProvider).eventCrossingAlertEnabled
+                ? () => _showEventAlertSoundPicker(ref)
+                : null,
+          ),
+
+          const Divider(),
+
           // Data Section
           _SectionHeader(title: 'Data'),
           ListTile(
@@ -976,6 +1020,50 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               onTap: () {
                 ref.read(settingsProvider.notifier).setReminderSound(sound);
+                Navigator.pop(context);
+              },
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEventAlertSoundPicker(WidgetRef ref) {
+    final currentSound = ref.read(settingsProvider).eventCrossingAlertSound;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Choose Event Alert Sound'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: ReminderSoundService.availableSounds.map((sound) {
+            return ListTile(
+              title: Text(ReminderSoundService.getLabel(sound)),
+              leading: Radio<String>(
+                value: sound,
+                groupValue: currentSound,
+                onChanged: (value) {
+                  ref
+                      .read(settingsProvider.notifier)
+                      .setEventCrossingAlertSound(value!);
+                  Navigator.pop(context);
+                },
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.play_arrow),
+                onPressed: () => ReminderSoundService.play(sound),
+              ),
+              onTap: () {
+                ref
+                    .read(settingsProvider.notifier)
+                    .setEventCrossingAlertSound(sound);
                 Navigator.pop(context);
               },
             );

@@ -42,12 +42,16 @@ class TimelineView extends ConsumerStatefulWidget {
   /// Called when NOW line visibility changes.
   final ValueChanged<bool>? onNowLineVisibilityChanged;
 
+  /// Called when the zoom level (hour height) changes.
+  final ValueChanged<double>? onZoomChanged;
+
   const TimelineView({
     super.key,
     this.upcomingTasksAboveNow = true,
     this.initialDate,
     this.onVisibleDateChanged,
     this.onNowLineVisibilityChanged,
+    this.onZoomChanged,
   });
 
   @override
@@ -69,8 +73,14 @@ class TimelineViewState extends ConsumerState<TimelineView>
   final Set<String> _alertedEventIds = {};
   DateTime _previousTickTime = DateTime.now();
 
+  /// Default height in pixels per hour of timeline (1x zoom).
+  static const double defaultHourHeight = 80.0;
+
   /// Height in pixels per hour of timeline. Mutable for zoom.
-  double _hourHeight = 80.0;
+  double _hourHeight = defaultHourHeight;
+
+  /// Public getter for current hour height.
+  double get hourHeight => _hourHeight;
 
   /// Number of days to load in each direction from today.
   int _daysLoadedBefore = 7;
@@ -323,14 +333,30 @@ class TimelineViewState extends ConsumerState<TimelineView>
     _scrollToNow(animated: true);
   }
 
-  /// Set zoom level. [scale] is clamped to keep hourHeight between 40–320px.
-  void setZoomLevel(double scale) {
-    final newHeight = (80.0 * scale).clamp(40.0, 320.0);
+  /// Internal setter that clamps, updates state, and fires the callback.
+  void _setHourHeight(double height) {
+    final newHeight = height.clamp(40.0, 320.0);
     if (newHeight != _hourHeight) {
       setState(() {
         _hourHeight = newHeight;
       });
+      widget.onZoomChanged?.call(_hourHeight);
     }
+  }
+
+  /// Set zoom level as a scale of default. [scale] is clamped to keep hourHeight between 40–320px.
+  void setZoomLevel(double scale) {
+    _setHourHeight(defaultHourHeight * scale);
+  }
+
+  /// Set hour height to an absolute pixel value (clamped 40–320).
+  void setHourHeightAbsolute(double height) {
+    _setHourHeight(height);
+  }
+
+  /// Reset zoom to the default (1x).
+  void resetZoom() {
+    _setHourHeight(defaultHourHeight);
   }
 
   /// Public method to scroll to a specific date.
@@ -737,11 +763,24 @@ class _HourMarkersMultiDay extends ConsumerWidget {
           ),
         );
 
-        // Sub-markers at :15, :30, :45 when zoomed in enough
-        if (hourHeight >= 160) {
-          for (final minutes in [15, 30, 45]) {
+        // Dynamic sub-markers based on zoom level
+        if (hourHeight >= 120) {
+          final List<int> minuteMarks;
+          if (hourHeight >= 240) {
+            // Every 5 minutes
+            minuteMarks = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+          } else if (hourHeight >= 160) {
+            // Quarter hours
+            minuteMarks = [15, 30, 45];
+          } else {
+            // Half hour only
+            minuteMarks = [30];
+          }
+
+          for (final minutes in minuteMarks) {
             final subOffset =
                 _getOffsetForHour(dayOffset, hour + minutes / 60.0);
+            final bool isQuarterMark = minutes % 15 == 0;
             markers.add(
               Positioned(
                 top: subOffset - 6,
@@ -754,9 +793,11 @@ class _HourMarkersMultiDay extends ConsumerWidget {
                       child: Text(
                         ':${minutes.toString().padLeft(2, '0')}',
                         style: TextStyle(
-                          fontSize: 9,
-                          color: markerColor.withValues(alpha: 0.5),
-                          fontWeight: FontWeight.w400,
+                          fontSize: isQuarterMark ? 9 : 8,
+                          color: markerColor.withValues(
+                              alpha: isQuarterMark ? 0.5 : 0.35),
+                          fontWeight:
+                              isQuarterMark ? FontWeight.w400 : FontWeight.w300,
                         ),
                         textAlign: TextAlign.right,
                       ),

@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,6 +37,8 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
   DateTime? _selectedDateFromCalendar;
   double _pinchScale = 1.0;
   bool _isPinching = false;
+  double _currentHourHeight = TimelineViewState.defaultHourHeight;
+  double _baseHourHeight = TimelineViewState.defaultHourHeight;
   final FocusNode _focusNode = FocusNode();
 
   @override
@@ -73,6 +76,7 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
     if (details.pointerCount >= 2) {
       _isPinching = true;
       _pinchScale = 1.0;
+      _baseHourHeight = _currentHourHeight;
     }
   }
 
@@ -82,8 +86,9 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
     _pinchScale = details.scale;
 
     if (_viewMode == TimelineViewMode.day) {
-      // In day view: pinch zooms the timeline
-      _timelineKey.currentState?.setZoomLevel(_pinchScale);
+      // In day view: pinch zooms the timeline (accumulative)
+      _timelineKey.currentState
+          ?.setHourHeightAbsolute(_baseHourHeight * _pinchScale);
 
       // Very aggressive pinch-in escapes to calendar
       if (_pinchScale < 0.5) {
@@ -120,6 +125,21 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
 
   void _jumpToNow() {
     _timelineKey.currentState?.jumpToNow();
+  }
+
+  void _onZoomChanged(double hourHeight) {
+    setState(() => _currentHourHeight = hourHeight);
+  }
+
+  void _onPointerSignal(PointerSignalEvent event) {
+    if (event is PointerScrollEvent &&
+        HardwareKeyboard.instance.isControlPressed) {
+      GestureBinding.instance.pointerSignalResolver.register(event, (resolved) {
+        final zoomDelta = -resolved.scrollDelta.dy * 0.5;
+        final newHeight = _currentHourHeight + zoomDelta;
+        _timelineKey.currentState?.setHourHeightAbsolute(newHeight);
+      });
+    }
   }
 
   String _formatDate(DateTime date) {
@@ -183,6 +203,22 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
+          automaticallyImplyLeading: false,
+          leading: _currentHourHeight != TimelineViewState.defaultHourHeight
+              ? IconButton(
+                  icon: Badge(
+                    label: Text(
+                      '${(_currentHourHeight / TimelineViewState.defaultHourHeight * 100).round()}%',
+                      style: const TextStyle(fontSize: 9),
+                    ),
+                    child: const Icon(Icons.zoom_out_map),
+                  ),
+                  onPressed: () {
+                    _timelineKey.currentState?.resetZoom();
+                  },
+                  tooltip: 'Reset zoom',
+                )
+              : null,
           title: GestureDetector(
             onTap: _toggleViewMode,
             child: Container(
@@ -317,19 +353,24 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                 );
               },
               child: _viewMode == TimelineViewMode.day
-                  ? GestureDetector(
-                      key: const ValueKey('timeline'),
-                      behavior: HitTestBehavior.translucent,
-                      onScaleStart: _onScaleStart,
-                      onScaleUpdate: _onScaleUpdate,
-                      onScaleEnd: _onScaleEnd,
-                      child: TimelineView(
-                        key: _timelineKey,
-                        upcomingTasksAboveNow:
-                            ref.watch(settingsProvider).upcomingTasksAboveNow,
-                        initialDate: _selectedDateFromCalendar,
-                        onVisibleDateChanged: _onVisibleDateChanged,
-                        onNowLineVisibilityChanged: _onNowLineVisibilityChanged,
+                  ? Listener(
+                      onPointerSignal: _onPointerSignal,
+                      child: GestureDetector(
+                        key: const ValueKey('timeline'),
+                        behavior: HitTestBehavior.translucent,
+                        onScaleStart: _onScaleStart,
+                        onScaleUpdate: _onScaleUpdate,
+                        onScaleEnd: _onScaleEnd,
+                        child: TimelineView(
+                          key: _timelineKey,
+                          upcomingTasksAboveNow:
+                              ref.watch(settingsProvider).upcomingTasksAboveNow,
+                          initialDate: _selectedDateFromCalendar,
+                          onVisibleDateChanged: _onVisibleDateChanged,
+                          onNowLineVisibilityChanged:
+                              _onNowLineVisibilityChanged,
+                          onZoomChanged: _onZoomChanged,
+                        ),
                       ),
                     )
                   : CalendarOverview(
@@ -344,12 +385,10 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
               Positioned(
                 left: 16,
                 bottom: 16,
-                child: FloatingActionButton.small(
+                child: FloatingActionButton(
                   heroTag: 'jumpToNow',
                   onPressed: _jumpToNow,
                   tooltip: 'Jump to now',
-                  backgroundColor: colorScheme.secondaryContainer,
-                  foregroundColor: colorScheme.onSecondaryContainer,
                   child: const Icon(Icons.my_location),
                 ),
               ),

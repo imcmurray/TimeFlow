@@ -1,6 +1,6 @@
 {
-    "name": "TimeFlow",
-    "short_name": "TimeFlow",
+    "name": "CronTimeflow",
+    "short_name": "CronTimeflow",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FAFAFA",

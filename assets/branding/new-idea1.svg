@@ -1,0 +1,39 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background (remove for transparent) -->
+  <rect width="200" height="200" fill="#001F3F"/>
+  
+  <!-- Hourglass outline -->
+  <path d="M100 20 L80 60 L80 140 L100 180 L120 140 L120 60 Z" fill="none" stroke="#FFD700" stroke-width="4"/>
+  
+  <!-- Top chamber -->
+  <path d="M100 20 L80 60 L100 50 L120 60 Z" fill="url(#waveGradTop)"/>
+  
+  <!-- Waves in top -->
+  <defs>
+    <linearGradient id="waveGradTop" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#357ABD;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="waveGradBottom" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2E7BB5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E5A8A;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path d="M85 45 Q95 40 105 45 Q115 40 115 50 L115 55 L85 55 Z" fill="#4A90E2" opacity="0.8"/>
+  
+  <!-- Narrow neck -->
+  <rect x="95" y="60" width="10" height="80" fill="none" stroke="#FFD700" stroke-width="2"/>
+  
+  <!-- Bottom chamber -->
+  <path d="M100 180 L80 140 L100 150 L120 140 Z" fill="url(#waveGradBottom)"/>
+  
+  <!-- Waves in bottom -->
+  <path d="M85 155 Q95 160 105 155 Q115 160 115 150 L115 145 L85 145 Z" fill="#2E7BB5" opacity="0.8"/>
+  <path d="M90 150 Q100 155 110 150" stroke="#1E5A8A" stroke-width="3" fill="none" opacity="0.6"/>
+  
+  <!-- Flow line indicator (NOW line) -->
+  <line x1="100" y1="100" x2="100" y2="120" stroke="#FFD700" stroke-width="3" stroke-dasharray="5,5"/>
+  
+  <!-- Optional wordmark (for full logo) -->
+  <text x="100" y="190" text-anchor="middle" fill="#FFD700" font-family="Arial, sans-serif" font-size="16" font-weight="bold">TimeFlow</text>
+</svg>

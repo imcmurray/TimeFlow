@@ -1,5 +1,5 @@
-/// Stub implementation - should never be used at runtime.
-/// Conditional imports will select the correct platform implementation.
+// Stub implementation - should never be used at runtime.
+// Conditional imports will select the correct platform implementation.
 
 /// Result of an export operation.
 class ExportResult {

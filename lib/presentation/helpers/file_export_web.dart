@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+import 'package:web/web.dart' as web;
 
 /// Result of an export operation.
 class ExportResult {
@@ -32,20 +32,22 @@ class ImportResult {
 /// Exports JSON content by triggering a browser download.
 Future<ExportResult> exportJsonFile(String content, String fileName) async {
   try {
-    final bytes = utf8.encode(content);
-    final blob = html.Blob([bytes], 'application/json');
-    final url = html.Url.createObjectUrlFromBlob(blob);
+    final blob = web.Blob(
+      [content.toJS].toJS,
+      web.BlobPropertyBag(type: 'application/json'),
+    );
+    final url = web.URL.createObjectURL(blob);
 
-    final anchor = html.AnchorElement()
+    final anchor = web.document.createElement('a') as web.HTMLAnchorElement
       ..href = url
       ..download = fileName
       ..style.display = 'none';
 
-    html.document.body?.append(anchor);
+    web.document.body?.appendChild(anchor);
     anchor.click();
     anchor.remove();
 
-    html.Url.revokeObjectUrl(url);
+    web.URL.revokeObjectURL(url);
 
     return const ExportResult(success: true);
   } catch (e) {
@@ -58,22 +60,24 @@ Future<ImportResult> pickAndReadJsonFile() async {
   try {
     final completer = Completer<ImportResult>();
 
-    final input = html.FileUploadInputElement()..accept = '.json';
+    final input = web.document.createElement('input') as web.HTMLInputElement
+      ..type = 'file'
+      ..accept = '.json';
 
-    input.onChange.listen((event) async {
+    input.onchange = (web.Event event) {
       final files = input.files;
-      if (files == null || files.isEmpty) {
+      if (files == null || files.length == 0) {
         completer.complete(
           const ImportResult(success: false, error: 'No file selected'),
         );
         return;
       }
 
-      final file = files.first;
-      final reader = html.FileReader();
+      final file = files.item(0)!;
+      final reader = web.FileReader();
 
-      reader.onLoadEnd.listen((event) {
-        final content = reader.result as String?;
+      reader.onloadend = (web.ProgressEvent event) {
+        final content = (reader.result as JSString?)?.toDart;
         if (content != null) {
           completer.complete(ImportResult(success: true, content: content));
         } else {
@@ -81,16 +85,16 @@ Future<ImportResult> pickAndReadJsonFile() async {
             const ImportResult(success: false, error: 'Failed to read file'),
           );
         }
-      });
+      }.toJS;
 
-      reader.onError.listen((event) {
+      reader.onerror = (web.Event event) {
         completer.complete(
-          ImportResult(success: false, error: 'Error reading file: ${reader.error}'),
+          const ImportResult(success: false, error: 'Error reading file'),
         );
-      });
+      }.toJS;
 
       reader.readAsText(file);
-    });
+    }.toJS;
 
     input.click();
 

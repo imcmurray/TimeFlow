@@ -157,7 +157,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
               ),
             ),
             child: Column(
@@ -279,6 +279,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await ref.read(taskRepositoryProvider).clear();
       ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('All tasks deleted'),
@@ -388,37 +389,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Choose Theme'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<String>(
-              title: const Text('Light'),
-              value: 'light',
-              groupValue: currentTheme,
-              onChanged: (value) {
-                ref.read(settingsProvider.notifier).setTheme(value!);
-                Navigator.pop(context);
-              },
-            ),
-            RadioListTile<String>(
-              title: const Text('Dark'),
-              value: 'dark',
-              groupValue: currentTheme,
-              onChanged: (value) {
-                ref.read(settingsProvider.notifier).setTheme(value!);
-                Navigator.pop(context);
-              },
-            ),
-            RadioListTile<String>(
-              title: const Text('System default'),
-              value: 'auto',
-              groupValue: currentTheme,
-              onChanged: (value) {
-                ref.read(settingsProvider.notifier).setTheme(value!);
-                Navigator.pop(context);
-              },
-            ),
-          ],
+        content: RadioGroup<String>(
+          groupValue: currentTheme,
+          onChanged: (value) {
+            if (value == null) return;
+            ref.read(settingsProvider.notifier).setTheme(value);
+            Navigator.pop(context);
+          },
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<String>(
+                title: Text('Light'),
+                value: 'light',
+              ),
+              RadioListTile<String>(
+                title: Text('Dark'),
+                value: 'dark',
+              ),
+              RadioListTile<String>(
+                title: Text('System default'),
+                value: 'auto',
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -429,42 +423,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Timeline Density'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<double>(
-              title: const Text('Compact'),
-              subtitle: const Text('More hours visible'),
-              value: 0.7,
-              groupValue: _timelineDensity,
-              onChanged: (value) {
-                setState(() => _timelineDensity = value!);
-                Navigator.pop(context);
-                // TODO: Save via settings provider
-              },
-            ),
-            RadioListTile<double>(
-              title: const Text('Normal'),
-              value: 1.0,
-              groupValue: _timelineDensity,
-              onChanged: (value) {
-                setState(() => _timelineDensity = value!);
-                Navigator.pop(context);
-                // TODO: Save via settings provider
-              },
-            ),
-            RadioListTile<double>(
-              title: const Text('Spacious'),
-              subtitle: const Text('Easier to read'),
-              value: 1.3,
-              groupValue: _timelineDensity,
-              onChanged: (value) {
-                setState(() => _timelineDensity = value!);
-                Navigator.pop(context);
-                // TODO: Save via settings provider
-              },
-            ),
-          ],
+        content: RadioGroup<double>(
+          groupValue: _timelineDensity,
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() => _timelineDensity = value);
+            Navigator.pop(context);
+            // TODO: Save via settings provider
+          },
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<double>(
+                title: Text('Compact'),
+                subtitle: Text('More hours visible'),
+                value: 0.7,
+              ),
+              RadioListTile<double>(
+                title: Text('Normal'),
+                value: 1.0,
+              ),
+              RadioListTile<double>(
+                title: Text('Spacious'),
+                subtitle: Text('Easier to read'),
+                value: 1.3,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -475,23 +460,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Default Reminder Time'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final minutes in [5, 10, 15, 30, 60])
-              RadioListTile<int>(
-                title: Text(minutes == 60
-                    ? '1 hour before'
-                    : '$minutes minutes before'),
-                value: minutes,
-                groupValue: _defaultReminderMinutes,
-                onChanged: (value) {
-                  setState(() => _defaultReminderMinutes = value!);
-                  Navigator.pop(context);
-                  // TODO: Save via settings provider
-                },
-              ),
-          ],
+        content: RadioGroup<int>(
+          groupValue: _defaultReminderMinutes,
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() => _defaultReminderMinutes = value);
+            Navigator.pop(context);
+            // TODO: Save via settings provider
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final minutes in [5, 10, 15, 30, 60])
+                RadioListTile<int>(
+                  title: Text(minutes == 60
+                      ? '1 hour before'
+                      : '$minutes minutes before'),
+                  value: minutes,
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -503,29 +491,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Choose Alert Sound'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: ReminderSoundService.availableSounds.map((sound) {
-            return ListTile(
-              title: Text(ReminderSoundService.getLabel(sound)),
-              leading: Radio<String>(
-                value: sound,
-                groupValue: currentSound,
-                onChanged: (value) {
-                  ref.read(settingsProvider.notifier).setReminderSound(value!);
+        content: RadioGroup<String>(
+          groupValue: currentSound,
+          onChanged: (value) {
+            if (value == null) return;
+            ref.read(settingsProvider.notifier).setReminderSound(value);
+            Navigator.pop(context);
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: ReminderSoundService.availableSounds.map((sound) {
+              return ListTile(
+                title: Text(ReminderSoundService.getLabel(sound)),
+                leading: Radio<String>(
+                  value: sound,
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.play_arrow),
+                  onPressed: () => ReminderSoundService.play(sound),
+                ),
+                onTap: () {
+                  ref.read(settingsProvider.notifier).setReminderSound(sound);
                   Navigator.pop(context);
                 },
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.play_arrow),
-                onPressed: () => ReminderSoundService.play(sound),
-              ),
-              onTap: () {
-                ref.read(settingsProvider.notifier).setReminderSound(sound);
-                Navigator.pop(context);
-              },
-            );
-          }).toList(),
+              );
+            }).toList(),
+          ),
         ),
         actions: [
           TextButton(

@@ -125,3 +125,10 @@ docker-compose.yml
 
 # Backup directories
 web-vanilla-backup/
+
+# Archived debug artifacts (moved out of project root)
+/_archive/
+
+# Local agent working files
+.claude/
+CLAUDE-FABLE-5.md

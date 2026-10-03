@@ -2,14 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:timeflow/core/theme/app_colors.dart';
 import 'package:timeflow/domain/entities/task.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
 import 'package:timeflow/presentation/providers/task_provider.dart';
 import 'package:timeflow/presentation/screens/task_detail_screen.dart';
 import 'package:timeflow/presentation/widgets/ambient_particles.dart';
-import 'package:timeflow/presentation/widgets/breathing_room_indicator.dart';
 import 'package:timeflow/presentation/widgets/confluence_modal.dart';
 import 'package:timeflow/presentation/widgets/day_boundary_marker.dart';
 import 'package:timeflow/presentation/widgets/merged_task_card.dart';
@@ -370,7 +368,7 @@ class TimelineViewState extends ConsumerState<TimelineView> {
             child: IgnorePointer(
               child: AmbientParticles(
                 particleCount: 25,
-                color: particleColor.withOpacity(0.4),
+                color: particleColor.withValues(alpha: 0.4),
                 driftDown: true,
                 speed: 0.5,
               ),
@@ -483,7 +481,6 @@ class _HourMarkersMultiDay extends StatelessWidget {
     this.use24HourFormat = false,
   });
 
-  int get _totalDays => daysLoadedBefore + daysLoadedAfter + 1;
 
   double _getOffsetForHour(int dayOffset, int hour) {
     final hoursFromReference = (dayOffset * 24) + hour;
@@ -915,14 +912,14 @@ class _TaskCardsLayerMultiDayState
                     child: AnimatedContainer(
                       duration: Duration(milliseconds: isDragging ? 0 : 200),
                       transform: isDragging
-                          ? (Matrix4.identity()..scale(1.03))
+                          ? (Matrix4.identity()..scaleByDouble(1.03, 1.03, 1.03, 1.0))
                           : Matrix4.identity(),
                       transformAlignment: Alignment.center,
                       decoration: isDragging
                           ? BoxDecoration(
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.3),
+                                  color: Colors.black.withValues(alpha: 0.3),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),

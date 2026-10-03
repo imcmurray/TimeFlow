@@ -1,0 +1,25 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Optional preview bg (remove for prod) -->
+  <rect width="200" height="200" fill="#0F172A" rx="8"/>
+  
+  <!-- Flow lines (delta convergence) -->
+  <defs>
+    <linearGradient id="flowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0D9488;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Left arc -->
+  <path d="M60 20 Q80 80 90 140" stroke="url(#flowGrad)" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.9"/>
+  
+  <!-- Center arc (straight for stability) -->
+  <path d="M100 20 L100 140" stroke="url(#flowGrad)" stroke-width="7" stroke-linecap="round" fill="none" opacity="1"/>
+  
+  <!-- Right arc -->
+  <path d="M140 20 Q120 80 110 140" stroke="url(#flowGrad)" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.9"/>
+  
+  <!-- NOW bar (text-free anchor) -->
+  <rect x="70" y="135" width="60" height="10" rx="5" fill="#F59E0B" opacity="1"/>
+  <rect x="72" y="137" width="56" height="6" rx="3" fill="#0F172A" opacity="0.7"/>
+</svg>

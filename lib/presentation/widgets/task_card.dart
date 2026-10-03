@@ -194,14 +194,14 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
             border: Border.all(
               color: isTriggered
                   ? AppColors.reminderLine
-                  : cardColor.withOpacity(widget.task.isCompleted ? 0.3 : 0.5),
+                  : cardColor.withValues(alpha: widget.task.isCompleted ? 0.3 : 0.5),
               width: isTriggered ? 2.5 : 2,
             ),
             boxShadow: [
               BoxShadow(
                 color: isTriggered
                     ? AppColors.reminderLine.withValues(alpha: 0.3)
-                    : cardColor.withOpacity(0.1),
+                    : cardColor.withValues(alpha: 0.1),
                 blurRadius: isTriggered ? 12 : 8,
                 offset: const Offset(0, 2),
               ),
@@ -216,7 +216,7 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
                   width: 4,
                   color: isTriggered
                       ? AppColors.reminderLine
-                      : cardColor.withOpacity(widget.task.isCompleted ? 0.5 : 1.0),
+                      : cardColor.withValues(alpha: widget.task.isCompleted ? 0.5 : 1.0),
                 ),
                 // Content
                 Expanded(
@@ -366,7 +366,7 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
                       color: Theme.of(context)
                           .colorScheme
                           .onSurface
-                          .withOpacity(0.4),
+                          .withValues(alpha: 0.4),
                     ),
                   ],
                 ],

@@ -1,0 +1,39 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Optional preview bg -->
+  <rect width="200" height="200" fill="#0F172A" rx="10"/>
+  
+  <!-- Task flows (3 vertical-to-curved lines) -->
+  <defs>
+    <linearGradient id="flowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0D9488;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#14B8A6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Left flow -->
+  <path d="M60 20 L60 80 Q70 100 90 120" stroke="url(#flowGrad)" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.9"/>
+  
+  <!-- Middle flow -->
+  <path d="M100 20 L100 90 Q100 110 100 130" stroke="url(#flowGrad)" stroke-width="6" stroke-linecap="round" fill="none" opacity="1"/>
+  
+  <!-- Right flow -->
+  <path d="M140 20 L140 80 Q130 100 110 120" stroke="url(#flowGrad)" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.9"/>
+  
+  <!-- NOW bar (bold horizontal with glow) -->
+  <rect x="50" y="140" width="100" height="12" rx="6" fill="#F59E0B"/>
+  <rect x="52" y="142" width="96" height="8" rx="4" fill="#001F3F" opacity="0.8"/>
+  <text x="100" y="150" text-anchor="middle" fill="#0F172A" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="bold">NOW</text>
+  
+  <!-- Subtle shine on NOW -->
+  <rect x="50" y="140" width="100" height="12" rx="6" fill="url(#goldGlow)"/>
+  <defs>
+    <linearGradient id="goldGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FCD34D;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#F59E0B;stop-opacity:0" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Optional wordmark -->
+  <text x="100" y="185" text-anchor="middle" fill="#F59E0B" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="bold">TimeFlow</text>
+</svg>

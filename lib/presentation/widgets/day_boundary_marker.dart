@@ -54,8 +54,8 @@ class DayBoundaryMarker extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    colorScheme.outlineVariant.withOpacity(0.0),
-                    colorScheme.outlineVariant.withOpacity(0.5),
+                    colorScheme.outlineVariant.withValues(alpha: 0.0),
+                    colorScheme.outlineVariant.withValues(alpha: 0.5),
                   ],
                 ),
               ),
@@ -75,14 +75,14 @@ class DayBoundaryMarker extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isToday
-                    ? colorScheme.primary.withOpacity(0.5)
-                    : colorScheme.outlineVariant.withOpacity(0.3),
+                    ? colorScheme.primary.withValues(alpha: 0.5)
+                    : colorScheme.outlineVariant.withValues(alpha: 0.3),
                 width: isToday ? 2 : 1,
               ),
               boxShadow: [
                 if (isToday)
                   BoxShadow(
-                    color: colorScheme.primary.withOpacity(0.2),
+                    color: colorScheme.primary.withValues(alpha: 0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -118,8 +118,8 @@ class DayBoundaryMarker extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    colorScheme.outlineVariant.withOpacity(0.5),
-                    colorScheme.outlineVariant.withOpacity(0.0),
+                    colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    colorScheme.outlineVariant.withValues(alpha: 0.0),
                   ],
                 ),
               ),
@@ -180,7 +180,7 @@ class SimpleDayDivider extends StatelessWidget {
         Expanded(
           child: Container(
             height: 1,
-            color: colorScheme.outlineVariant.withOpacity(0.4),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
           ),
         ),
         Padding(
@@ -191,7 +191,7 @@ class SimpleDayDivider extends StatelessWidget {
               Icon(
                 icon,
                 size: 14,
-                color: iconColor.withOpacity(0.7),
+                color: iconColor.withValues(alpha: 0.7),
               ),
               const SizedBox(width: 6),
               Text(
@@ -210,7 +210,7 @@ class SimpleDayDivider extends StatelessWidget {
         Expanded(
           child: Container(
             height: 1,
-            color: colorScheme.outlineVariant.withOpacity(0.4),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
           ),
         ),
       ],

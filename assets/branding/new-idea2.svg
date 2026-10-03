@@ -1,0 +1,28 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Optional dark bg for preview (remove for transparent) -->
+  <rect width="200" height="200" fill="#001F3F" rx="20"/>
+  
+  <!-- Funnel outline (subtle gold stroke) -->
+  <path d="M50 30 Q100 10 150 30 L150 170 Q100 190 50 170 Z" fill="none" stroke="#FFD700" stroke-width="3" opacity="0.6"/>
+  
+  <!-- Flow waves (top to mid: tasks descending) -->
+  <defs>
+    <linearGradient id="flowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#0F766E;stop-opacity:0.7" />
+    </linearGradient>
+  </defs>
+  <!-- Wave 1 -->
+  <path d="M60 40 Q80 30 100 40 Q120 30 140 40" stroke="url(#flowGrad)" stroke-width="4" fill="none" opacity="0.8"/>
+  <!-- Wave 2 -->
+  <path d="M55 60 Q85 50 115 60 Q145 50 145 65" stroke="url(#flowGrad)" stroke-width="3" fill="none" opacity="0.7"/>
+  <!-- Wave 3 (narrowing) -->
+  <path d="M70 80 Q90 70 110 80 Q130 70 130 90" stroke="url(#flowGrad)" stroke-width="2.5" fill="none" opacity="0.6"/>
+  
+  <!-- NOW line (bold horizontal bar at bottom) -->
+  <rect x="40" y="160" width="120" height="8" rx="4" fill="#FFD700" opacity="1"/>
+  <text x="100" y="170" text-anchor="middle" fill="#001F3F" font-family="Arial, sans-serif" font-size="10" font-weight="bold">NOW</text>
+  
+  <!-- Optional wordmark (scale down for icon use) -->
+  <text x="100" y="195" text-anchor="middle" fill="#FFD700" font-family="Arial, sans-serif" font-size="14" font-weight="bold">TimeFlow</text>
+</svg>

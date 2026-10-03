@@ -98,7 +98,8 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
 
   Future<void> _shareAsText() async {
     final text = _generateShareText();
-    await Share.share(text, subject: 'Schedule for ${_formatDate()}');
+    await SharePlus.instance
+        .share(ShareParams(text: text, subject: 'Schedule for ${_formatDate()}'));
   }
 
   Future<void> _shareAsImage() async {
@@ -133,9 +134,11 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(imageBytes);
 
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        subject: 'Schedule for ${_formatDate()}',
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          subject: 'Schedule for ${_formatDate()}',
+        ),
       );
     }
   }

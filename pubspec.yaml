@@ -47,6 +47,9 @@ dependencies:
   # Audio playback
   audioplayers: ^6.5.1
 
+  # Web platform interop (used by file_export_web.dart)
+  web: ^1.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

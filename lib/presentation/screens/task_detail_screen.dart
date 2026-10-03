@@ -432,7 +432,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
             // Reminder dropdown
             DropdownButtonFormField<int?>(
-              value: _reminderMinutes,
+              initialValue: _reminderMinutes,
               decoration: const InputDecoration(
                 labelText: 'Reminder',
                 border: OutlineInputBorder(),
@@ -454,7 +454,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
             // Recurring dropdown
             DropdownButtonFormField<String?>(
-              value: _recurringPattern,
+              initialValue: _recurringPattern,
               decoration: const InputDecoration(
                 labelText: 'Repeat',
                 border: OutlineInputBorder(),
@@ -519,134 +519,6 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                   style: const TextStyle(fontSize: 16),
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TimePickerTile extends StatelessWidget {
-  final String label;
-  final String time;
-  final VoidCallback onTap;
-
-  const _TimePickerTile({
-    required this.label,
-    required this.time,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(color: Theme.of(context).dividerColor),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              time,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DateSelector extends StatelessWidget {
-  final String label;
-  final DateTime date;
-  final void Function(int days) onDateChanged;
-  final VoidCallback onTap;
-
-  const _DateSelector({
-    required this.label,
-    required this.date,
-    required this.onDateChanged,
-    required this.onTap,
-  });
-
-  String _formatDateCompact(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final targetDate = DateTime(date.year, date.month, date.day);
-    final difference = targetDate.difference(today).inDays;
-
-    if (difference == 0) return 'Today';
-    if (difference == 1) return 'Tomorrow';
-    if (difference == -1) return 'Yesterday';
-
-    return DateFormat('EEE, MMM d').format(date);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          border: Border.all(color: Theme.of(context).dividerColor),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatDateCompact(date),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ],
-              ),
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                InkWell(
-                  onTap: () => onDateChanged(-1),
-                  borderRadius: BorderRadius.circular(16),
-                  child: const Padding(
-                    padding: EdgeInsets.all(4),
-                    child: Icon(Icons.chevron_left, size: 20),
-                  ),
-                ),
-                InkWell(
-                  onTap: () => onDateChanged(1),
-                  borderRadius: BorderRadius.circular(16),
-                  child: const Padding(
-                    padding: EdgeInsets.all(4),
-                    child: Icon(Icons.chevron_right, size: 20),
-                  ),
-                ),
-              ],
             ),
           ],
         ),

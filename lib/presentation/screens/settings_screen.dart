@@ -68,6 +68,119 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           const Divider(),
 
+          // Location & Time Section
+          _SectionHeader(title: 'Location & Time'),
+          SwitchListTile(
+            secondary: const Icon(Icons.wb_sunny_outlined),
+            title: const Text('Show Sunrise/Sunset'),
+            subtitle: const Text('Display sun times on timeline'),
+            value: ref.watch(settingsProvider).showSunTimes,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setShowSunTimes(value);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.location_on_outlined),
+            title: const Text('Location'),
+            subtitle: Text(_getLocationLabel(
+              ref.watch(settingsProvider).latitude,
+              ref.watch(settingsProvider).longitude,
+            )),
+            enabled: ref.watch(settingsProvider).showSunTimes,
+            onTap: ref.watch(settingsProvider).showSunTimes
+                ? () => _showLocationDialog()
+                : null,
+          ),
+          ListTile(
+            leading: const Icon(Icons.schedule),
+            title: const Text('Timezone'),
+            subtitle: Text(_getTimezoneLabel(ref.watch(settingsProvider).timezoneOffsetHours)),
+            enabled: ref.watch(settingsProvider).showSunTimes,
+            onTap: ref.watch(settingsProvider).showSunTimes
+                ? () => _showTimezoneDialog()
+                : null,
+          ),
+
+          const Divider(),
+
+          // Day Watermark Section
+          _SectionHeader(title: 'Day Watermark'),
+          SwitchListTile(
+            secondary: const Icon(Icons.format_list_numbered),
+            title: const Text('Week Number'),
+            subtitle: const Text('Show W1, W2, etc.'),
+            value: ref.watch(settingsProvider).watermarkShowWeekNumber,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setWatermarkShowWeekNumber(value);
+            },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.celebration),
+            title: const Text('Holidays'),
+            subtitle: const Text('Show US federal holidays'),
+            value: ref.watch(settingsProvider).watermarkShowHolidays,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setWatermarkShowHolidays(value);
+            },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.nightlight_round),
+            title: const Text('Moon Phase'),
+            subtitle: const Text('Show current moon phase'),
+            value: ref.watch(settingsProvider).watermarkShowMoonPhase,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setWatermarkShowMoonPhase(value);
+            },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.pie_chart_outline),
+            title: const Text('Quarter'),
+            subtitle: const Text('Show Q1, Q2, Q3, Q4'),
+            value: ref.watch(settingsProvider).watermarkShowQuarter,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setWatermarkShowQuarter(value);
+            },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.event),
+            title: const Text('Day of Year'),
+            subtitle: const Text('Show Day 1 through Day 365'),
+            value: ref.watch(settingsProvider).watermarkShowDayOfYear,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setWatermarkShowDayOfYear(value);
+            },
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.timer_outlined),
+            title: const Text('Days Remaining'),
+            subtitle: const Text('Show days left in the year'),
+            value: ref.watch(settingsProvider).watermarkShowDaysRemaining,
+            onChanged: (value) {
+              ref.read(settingsProvider.notifier).setWatermarkShowDaysRemaining(value);
+            },
+          ),
+
+          const Divider(),
+
+          // Task Creation Section
+          _SectionHeader(title: 'Task Creation'),
+          ListTile(
+            leading: const Icon(Icons.touch_app_outlined),
+            title: const Text('Default Duration'),
+            subtitle: Text(_formatDurationMinutes(
+                ref.watch(settingsProvider).longPressDefaultDurationMinutes)),
+            onTap: () => _showDefaultDurationDialog(),
+          ),
+          ListTile(
+            leading: const Icon(Icons.straighten_outlined),
+            title: const Text('Snap Interval'),
+            subtitle: Text(_formatSnapInterval(
+                ref.watch(settingsProvider).longPressSnapIntervalMinutes)),
+            onTap: () => _showSnapIntervalDialog(),
+          ),
+
+          const Divider(),
+
           // Notifications Section
           _SectionHeader(title: 'Notifications'),
           SwitchListTile(
@@ -485,6 +598,296 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  String _formatDurationMinutes(int minutes) {
+    if (minutes >= 60) {
+      final hours = minutes ~/ 60;
+      final mins = minutes % 60;
+      if (mins == 0) {
+        return '$hours hour${hours > 1 ? 's' : ''}';
+      }
+      return '$hours hour${hours > 1 ? 's' : ''} $mins min';
+    }
+    return '$minutes minutes';
+  }
+
+  String _formatSnapInterval(int minutes) {
+    return '$minutes minute intervals';
+  }
+
+  void _showDefaultDurationDialog() {
+    final currentDuration = ref.read(settingsProvider).longPressDefaultDurationMinutes;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Default Task Duration'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: Text(
+                'Duration when long-pressing to create a task',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ),
+            for (final minutes in [15, 30, 45, 60, 90, 120])
+              RadioListTile<int>(
+                title: Text(_formatDurationMinutes(minutes)),
+                value: minutes,
+                groupValue: currentDuration,
+                onChanged: (value) {
+                  ref.read(settingsProvider.notifier).setLongPressDefaultDuration(value!);
+                  Navigator.pop(context);
+                },
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSnapIntervalDialog() {
+    final currentInterval = ref.read(settingsProvider).longPressSnapIntervalMinutes;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Time Snap Interval'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: Text(
+                'Snap times to nearest interval when creating tasks',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ),
+            for (final minutes in [5, 15, 30])
+              RadioListTile<int>(
+                title: Text('$minutes minutes'),
+                subtitle: Text(minutes == 15 ? 'Recommended' : ''),
+                value: minutes,
+                groupValue: currentInterval,
+                onChanged: (value) {
+                  ref.read(settingsProvider.notifier).setLongPressSnapInterval(value!);
+                  Navigator.pop(context);
+                },
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getTimezoneLabel(double? offset) {
+    if (offset == null) {
+      // Auto-detect from device
+      final deviceOffset = DateTime.now().timeZoneOffset.inMinutes / 60.0;
+      final sign = deviceOffset >= 0 ? '+' : '';
+      return 'Auto (UTC$sign${deviceOffset.toStringAsFixed(deviceOffset.truncateToDouble() == deviceOffset ? 0 : 1)})';
+    }
+    final sign = offset >= 0 ? '+' : '';
+    return 'UTC$sign${offset.toStringAsFixed(offset.truncateToDouble() == offset ? 0 : 1)}';
+  }
+
+  String _getLocationLabel(double latitude, double longitude) {
+    // Try to match to a known location preset
+    for (final preset in _locationPresets) {
+      if ((preset.latitude - latitude).abs() < 0.5 &&
+          (preset.longitude - longitude).abs() < 0.5) {
+        return preset.name;
+      }
+    }
+    // Otherwise show coordinates
+    final latDir = latitude >= 0 ? 'N' : 'S';
+    final lonDir = longitude >= 0 ? 'E' : 'W';
+    return '${latitude.abs().toStringAsFixed(1)}°$latDir, ${longitude.abs().toStringAsFixed(1)}°$lonDir';
+  }
+
+  /// Location presets for common cities/regions
+  static const List<_LocationPreset> _locationPresets = [
+    // US West Coast
+    _LocationPreset('Seattle, WA', 47.6, -122.3),
+    _LocationPreset('Portland, OR', 45.5, -122.7),
+    _LocationPreset('San Francisco, CA', 37.8, -122.4),
+    _LocationPreset('Los Angeles, CA', 34.0, -118.2),
+    _LocationPreset('San Diego, CA', 32.7, -117.2),
+    // US Mountain
+    _LocationPreset('Denver, CO', 39.7, -105.0),
+    _LocationPreset('Salt Lake City, UT', 40.8, -111.9),
+    _LocationPreset('Phoenix, AZ', 33.4, -112.1),
+    _LocationPreset('Albuquerque, NM', 35.1, -106.6),
+    _LocationPreset('Las Vegas, NV', 36.2, -115.1),
+    _LocationPreset('Boise, ID', 43.6, -116.2),
+    // US Central
+    _LocationPreset('Chicago, IL', 41.9, -87.6),
+    _LocationPreset('Dallas, TX', 32.8, -96.8),
+    _LocationPreset('Houston, TX', 29.8, -95.4),
+    _LocationPreset('Minneapolis, MN', 44.9, -93.3),
+    _LocationPreset('Kansas City, MO', 39.1, -94.6),
+    // US East Coast
+    _LocationPreset('New York, NY', 40.7, -74.0),
+    _LocationPreset('Boston, MA', 42.4, -71.1),
+    _LocationPreset('Philadelphia, PA', 40.0, -75.2),
+    _LocationPreset('Washington, DC', 38.9, -77.0),
+    _LocationPreset('Miami, FL', 25.8, -80.2),
+    _LocationPreset('Atlanta, GA', 33.7, -84.4),
+    // International
+    _LocationPreset('London, UK', 51.5, -0.1),
+    _LocationPreset('Paris, France', 48.9, 2.3),
+    _LocationPreset('Berlin, Germany', 52.5, 13.4),
+    _LocationPreset('Tokyo, Japan', 35.7, 139.7),
+    _LocationPreset('Sydney, Australia', -33.9, 151.2),
+    _LocationPreset('Toronto, Canada', 43.7, -79.4),
+    _LocationPreset('Vancouver, Canada', 49.3, -123.1),
+  ];
+
+  void _showLocationDialog() {
+    final currentLat = ref.read(settingsProvider).latitude;
+    final currentLon = ref.read(settingsProvider).longitude;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Location'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: ListView.builder(
+            itemCount: _locationPresets.length,
+            itemBuilder: (context, index) {
+              final preset = _locationPresets[index];
+              final isSelected = (preset.latitude - currentLat).abs() < 0.5 &&
+                  (preset.longitude - currentLon).abs() < 0.5;
+              return ListTile(
+                title: Text(preset.name),
+                subtitle: Text(
+                  '${preset.latitude.abs().toStringAsFixed(1)}°${preset.latitude >= 0 ? 'N' : 'S'}, '
+                  '${preset.longitude.abs().toStringAsFixed(1)}°${preset.longitude >= 0 ? 'E' : 'W'}',
+                ),
+                leading: Radio<bool>(
+                  value: true,
+                  groupValue: isSelected,
+                  onChanged: (_) {
+                    ref.read(settingsProvider.notifier).setLocation(
+                      preset.latitude,
+                      preset.longitude,
+                    );
+                    Navigator.pop(context);
+                  },
+                ),
+                selected: isSelected,
+                onTap: () {
+                  ref.read(settingsProvider.notifier).setLocation(
+                    preset.latitude,
+                    preset.longitude,
+                  );
+                  Navigator.pop(context);
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTimezoneDialog() {
+    final currentOffset = ref.read(settingsProvider).timezoneOffsetHours;
+
+    // Common timezone offsets
+    final timezones = <MapEntry<String, double?>>[
+      const MapEntry('Auto-detect from device', null),
+      const MapEntry('UTC-12 (Baker Island)', -12),
+      const MapEntry('UTC-11 (American Samoa)', -11),
+      const MapEntry('UTC-10 (Hawaii)', -10),
+      const MapEntry('UTC-9 (Alaska)', -9),
+      const MapEntry('UTC-8 (Pacific Time)', -8),
+      const MapEntry('UTC-7 (Mountain Time)', -7),
+      const MapEntry('UTC-6 (Central Time)', -6),
+      const MapEntry('UTC-5 (Eastern Time)', -5),
+      const MapEntry('UTC-4 (Atlantic Time)', -4),
+      const MapEntry('UTC-3 (Argentina)', -3),
+      const MapEntry('UTC-2 (Mid-Atlantic)', -2),
+      const MapEntry('UTC-1 (Azores)', -1),
+      const MapEntry('UTC+0 (London, GMT)', 0),
+      const MapEntry('UTC+1 (Paris, Berlin)', 1),
+      const MapEntry('UTC+2 (Athens, Cairo)', 2),
+      const MapEntry('UTC+3 (Moscow)', 3),
+      const MapEntry('UTC+4 (Dubai)', 4),
+      const MapEntry('UTC+5 (Pakistan)', 5),
+      const MapEntry('UTC+5:30 (India)', 5.5),
+      const MapEntry('UTC+6 (Bangladesh)', 6),
+      const MapEntry('UTC+7 (Bangkok)', 7),
+      const MapEntry('UTC+8 (Singapore, Perth)', 8),
+      const MapEntry('UTC+9 (Tokyo)', 9),
+      const MapEntry('UTC+9:30 (Adelaide)', 9.5),
+      const MapEntry('UTC+10 (Sydney)', 10),
+      const MapEntry('UTC+11 (Solomon Islands)', 11),
+      const MapEntry('UTC+12 (Auckland)', 12),
+      const MapEntry('UTC+13 (Samoa)', 13),
+      const MapEntry('UTC+14 (Line Islands)', 14),
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Timezone'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 400,
+          child: ListView.builder(
+            itemCount: timezones.length,
+            itemBuilder: (context, index) {
+              final tz = timezones[index];
+              final isSelected = currentOffset == tz.value;
+              return ListTile(
+                title: Text(tz.key),
+                leading: Radio<double?>(
+                  value: tz.value,
+                  groupValue: currentOffset,
+                  onChanged: (value) {
+                    ref.read(settingsProvider.notifier).setTimezoneOffsetHours(value);
+                    Navigator.pop(context);
+                  },
+                ),
+                selected: isSelected,
+                onTap: () {
+                  ref.read(settingsProvider.notifier).setTimezoneOffsetHours(tz.value);
+                  Navigator.pop(context);
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showSoundPicker(WidgetRef ref) {
     final currentSound = ref.read(settingsProvider).reminderSound;
     showDialog(
@@ -761,4 +1164,13 @@ class _SectionHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A location preset with name and coordinates.
+class _LocationPreset {
+  final String name;
+  final double latitude;
+  final double longitude;
+
+  const _LocationPreset(this.name, this.latitude, this.longitude);
 }

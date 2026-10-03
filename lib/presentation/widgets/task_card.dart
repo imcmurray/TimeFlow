@@ -139,10 +139,13 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isTriggered = widget.reminderState == ReminderState.triggered;
 
-    // Determine card color
+    // Determine card color - prioritize category color for visual consistency
     Color cardColor;
     if (widget.task.color != null) {
       cardColor = Color(int.parse(widget.task.color!.replaceFirst('#', '0xFF')));
+    } else if (widget.task.category != TaskCategory.none) {
+      // Use category color as the primary indicator
+      cardColor = widget.task.category.color;
     } else if (widget.task.isImportant) {
       cardColor = AppColors.accentCoral;
     } else if (widget.task.isCompleted) {
@@ -270,6 +273,16 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
             // Title row
             Row(
               children: [
+                // Show category icon in title row for small cards (when indicators won't show)
+                if (!showIndicators && widget.task.category != TaskCategory.none)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Icon(
+                      widget.task.category.icon,
+                      size: 14,
+                      color: widget.task.category.color,
+                    ),
+                  ),
                 if (widget.task.isImportant)
                   Padding(
                     padding: const EdgeInsets.only(right: 4),

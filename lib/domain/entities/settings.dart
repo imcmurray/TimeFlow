@@ -34,6 +34,61 @@ class Settings {
   /// Whether to display time in 24-hour format (14:30) vs 12-hour (2:30 PM).
   final bool use24HourFormat;
 
+  /// User's latitude for sunrise/sunset calculations.
+  /// Default is 40°N (continental US average, good for MST/CST/EST regions).
+  final double latitude;
+
+  /// User's longitude for sunrise/sunset calculations.
+  /// Default is 0.0 which signals auto-detection from device timezone.
+  final double longitude;
+
+  /// Manual timezone offset in hours (e.g., -5 for EST, +1 for CET).
+  /// Null means auto-detect from device.
+  final double? timezoneOffsetHours;
+
+  /// Whether to show sunrise/sunset indicators on the timeline.
+  final bool showSunTimes;
+
+  // Watermark display options
+
+  /// Whether to show week number in day watermark.
+  final bool watermarkShowWeekNumber;
+
+  /// Whether to show day of year in day watermark.
+  final bool watermarkShowDayOfYear;
+
+  /// Whether to show holidays in day watermark.
+  final bool watermarkShowHolidays;
+
+  /// Whether to show moon phase in day watermark.
+  final bool watermarkShowMoonPhase;
+
+  /// Whether to show quarter in day watermark.
+  final bool watermarkShowQuarter;
+
+  /// Whether to show days remaining in year in day watermark.
+  final bool watermarkShowDaysRemaining;
+
+  /// Custom NOW line offset in minutes from midnight.
+  /// When null, the NOW line follows the actual current time.
+  /// When set, the NOW line stays at this fixed position until reset.
+  final int? customNowLineMinutesFromMidnight;
+
+  /// NOW line viewport position as fraction from top (0.0 to 1.0).
+  /// Default is 0.75 (75% down the viewport).
+  final double nowLineViewportPosition;
+
+  /// Default duration in minutes for long-press task creation.
+  /// Default is 60 minutes (1 hour).
+  final int longPressDefaultDurationMinutes;
+
+  /// Snap interval in minutes for long-press task creation.
+  /// Options: 5, 15, or 30 minutes. Default is 15.
+  final int longPressSnapIntervalMinutes;
+
+  /// Whether the user has seen the long-press task creation hint.
+  final bool hasSeenLongPressHint;
+
   const Settings({
     this.theme = 'auto',
     this.defaultReminderMinutes = 10,
@@ -45,6 +100,21 @@ class Settings {
     this.reminderSoundEnabled = true,
     this.reminderSound = 'chime',
     this.use24HourFormat = false,
+    this.latitude = 40.0,
+    this.longitude = 0.0,
+    this.timezoneOffsetHours,
+    this.showSunTimes = true,
+    this.watermarkShowWeekNumber = true,
+    this.watermarkShowDayOfYear = false,
+    this.watermarkShowHolidays = true,
+    this.watermarkShowMoonPhase = false,
+    this.watermarkShowQuarter = false,
+    this.watermarkShowDaysRemaining = false,
+    this.customNowLineMinutesFromMidnight,
+    this.nowLineViewportPosition = 0.75,
+    this.longPressDefaultDurationMinutes = 60,
+    this.longPressSnapIntervalMinutes = 15,
+    this.hasSeenLongPressHint = false,
   });
 
   /// Default settings for first-time users.
@@ -62,6 +132,23 @@ class Settings {
     bool? reminderSoundEnabled,
     String? reminderSound,
     bool? use24HourFormat,
+    double? latitude,
+    double? longitude,
+    double? timezoneOffsetHours,
+    bool clearTimezoneOffset = false,
+    bool? showSunTimes,
+    bool? watermarkShowWeekNumber,
+    bool? watermarkShowDayOfYear,
+    bool? watermarkShowHolidays,
+    bool? watermarkShowMoonPhase,
+    bool? watermarkShowQuarter,
+    bool? watermarkShowDaysRemaining,
+    int? customNowLineMinutesFromMidnight,
+    bool clearCustomNowLine = false,
+    double? nowLineViewportPosition,
+    int? longPressDefaultDurationMinutes,
+    int? longPressSnapIntervalMinutes,
+    bool? hasSeenLongPressHint,
   }) {
     return Settings(
       theme: theme ?? this.theme,
@@ -74,6 +161,21 @@ class Settings {
       reminderSoundEnabled: reminderSoundEnabled ?? this.reminderSoundEnabled,
       reminderSound: reminderSound ?? this.reminderSound,
       use24HourFormat: use24HourFormat ?? this.use24HourFormat,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      timezoneOffsetHours: clearTimezoneOffset ? null : (timezoneOffsetHours ?? this.timezoneOffsetHours),
+      showSunTimes: showSunTimes ?? this.showSunTimes,
+      watermarkShowWeekNumber: watermarkShowWeekNumber ?? this.watermarkShowWeekNumber,
+      watermarkShowDayOfYear: watermarkShowDayOfYear ?? this.watermarkShowDayOfYear,
+      watermarkShowHolidays: watermarkShowHolidays ?? this.watermarkShowHolidays,
+      watermarkShowMoonPhase: watermarkShowMoonPhase ?? this.watermarkShowMoonPhase,
+      watermarkShowQuarter: watermarkShowQuarter ?? this.watermarkShowQuarter,
+      watermarkShowDaysRemaining: watermarkShowDaysRemaining ?? this.watermarkShowDaysRemaining,
+      customNowLineMinutesFromMidnight: clearCustomNowLine ? null : (customNowLineMinutesFromMidnight ?? this.customNowLineMinutesFromMidnight),
+      nowLineViewportPosition: nowLineViewportPosition ?? this.nowLineViewportPosition,
+      longPressDefaultDurationMinutes: longPressDefaultDurationMinutes ?? this.longPressDefaultDurationMinutes,
+      longPressSnapIntervalMinutes: longPressSnapIntervalMinutes ?? this.longPressSnapIntervalMinutes,
+      hasSeenLongPressHint: hasSeenLongPressHint ?? this.hasSeenLongPressHint,
     );
   }
 
@@ -90,12 +192,27 @@ class Settings {
         other.bringWindowToFrontOnReminder == bringWindowToFrontOnReminder &&
         other.reminderSoundEnabled == reminderSoundEnabled &&
         other.reminderSound == reminderSound &&
-        other.use24HourFormat == use24HourFormat;
+        other.use24HourFormat == use24HourFormat &&
+        other.latitude == latitude &&
+        other.longitude == longitude &&
+        other.timezoneOffsetHours == timezoneOffsetHours &&
+        other.showSunTimes == showSunTimes &&
+        other.watermarkShowWeekNumber == watermarkShowWeekNumber &&
+        other.watermarkShowDayOfYear == watermarkShowDayOfYear &&
+        other.watermarkShowHolidays == watermarkShowHolidays &&
+        other.watermarkShowMoonPhase == watermarkShowMoonPhase &&
+        other.watermarkShowQuarter == watermarkShowQuarter &&
+        other.watermarkShowDaysRemaining == watermarkShowDaysRemaining &&
+        other.customNowLineMinutesFromMidnight == customNowLineMinutesFromMidnight &&
+        other.nowLineViewportPosition == nowLineViewportPosition &&
+        other.longPressDefaultDurationMinutes == longPressDefaultDurationMinutes &&
+        other.longPressSnapIntervalMinutes == longPressSnapIntervalMinutes &&
+        other.hasSeenLongPressHint == hasSeenLongPressHint;
   }
 
   @override
   int get hashCode {
-    return Object.hash(
+    return Object.hashAll([
       theme,
       defaultReminderMinutes,
       timelineDensity,
@@ -106,7 +223,22 @@ class Settings {
       reminderSoundEnabled,
       reminderSound,
       use24HourFormat,
-    );
+      latitude,
+      longitude,
+      timezoneOffsetHours,
+      showSunTimes,
+      watermarkShowWeekNumber,
+      watermarkShowDayOfYear,
+      watermarkShowHolidays,
+      watermarkShowMoonPhase,
+      watermarkShowQuarter,
+      watermarkShowDaysRemaining,
+      customNowLineMinutesFromMidnight,
+      nowLineViewportPosition,
+      longPressDefaultDurationMinutes,
+      longPressSnapIntervalMinutes,
+      hasSeenLongPressHint,
+    ]);
   }
 
   @override
@@ -116,6 +248,18 @@ class Settings {
         'firstLaunch: $firstLaunch, upcomingTasksAboveNow: $upcomingTasksAboveNow, '
         'bringWindowToFrontOnReminder: $bringWindowToFrontOnReminder, '
         'reminderSoundEnabled: $reminderSoundEnabled, reminderSound: $reminderSound, '
-        'use24HourFormat: $use24HourFormat)';
+        'use24HourFormat: $use24HourFormat, latitude: $latitude, longitude: $longitude, '
+        'timezoneOffsetHours: $timezoneOffsetHours, showSunTimes: $showSunTimes, '
+        'watermarkShowWeekNumber: $watermarkShowWeekNumber, '
+        'watermarkShowDayOfYear: $watermarkShowDayOfYear, '
+        'watermarkShowHolidays: $watermarkShowHolidays, '
+        'watermarkShowMoonPhase: $watermarkShowMoonPhase, '
+        'watermarkShowQuarter: $watermarkShowQuarter, '
+        'watermarkShowDaysRemaining: $watermarkShowDaysRemaining, '
+        'customNowLineMinutesFromMidnight: $customNowLineMinutesFromMidnight, '
+        'nowLineViewportPosition: $nowLineViewportPosition, '
+        'longPressDefaultDurationMinutes: $longPressDefaultDurationMinutes, '
+        'longPressSnapIntervalMinutes: $longPressSnapIntervalMinutes, '
+        'hasSeenLongPressHint: $hasSeenLongPressHint)';
   }
 }

@@ -2,12 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:timeflow/core/theme/app_colors.dart';
 import 'package:timeflow/domain/entities/task.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
 import 'package:timeflow/presentation/providers/task_provider.dart';
 import 'package:timeflow/presentation/screens/task_detail_screen.dart';
-import 'package:timeflow/presentation/widgets/ambient_particles.dart';
 import 'package:timeflow/presentation/widgets/confluence_modal.dart';
 import 'package:timeflow/presentation/widgets/day_boundary_marker.dart';
 import 'package:timeflow/presentation/widgets/merged_task_card.dart';
@@ -15,6 +15,7 @@ import 'package:timeflow/presentation/widgets/reminder_line.dart';
 import 'package:timeflow/presentation/widgets/task_card.dart';
 import 'package:timeflow/presentation/widgets/time_of_day_background.dart';
 import 'package:timeflow/services/reminder_sound_service.dart';
+import 'package:timeflow/services/sun_times_service.dart';
 import 'package:window_to_front/window_to_front.dart';
 
 /// The main scrollable timeline widget with continuous multi-day flow.
@@ -47,7 +48,8 @@ class TimelineView extends ConsumerStatefulWidget {
   ConsumerState<TimelineView> createState() => TimelineViewState();
 }
 
-class TimelineViewState extends ConsumerState<TimelineView> {
+class TimelineViewState extends ConsumerState<TimelineView>
+    with WidgetsBindingObserver {
   late final ScrollController _scrollController;
   Timer? _autoScrollTimer;
   Timer? _timeUpdateTimer;
@@ -55,12 +57,10 @@ class TimelineViewState extends ConsumerState<TimelineView> {
   bool _wasNowLineVisible = true;
   DateTime? _lastReportedVisibleDate;
   DateTime _currentTime = DateTime.now();
+  DateTime _lastUpdateTime = DateTime.now();
 
   /// Height in pixels per hour of timeline.
   static const double _hourHeight = 80.0;
-
-  /// Position of NOW line as fraction from top (0.75 = 75% down).
-  static const double _nowLinePosition = 0.75;
 
   /// Number of days to load in each direction from today.
   int _daysLoadedBefore = 7;
@@ -76,6 +76,9 @@ class TimelineViewState extends ConsumerState<TimelineView> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+
+    // Register lifecycle observer to detect when app resumes
+    WidgetsBinding.instance.addObserver(this);
 
     // Set reference to today's midnight
     final now = DateTime.now();
@@ -101,6 +104,7 @@ class TimelineViewState extends ConsumerState<TimelineView> {
     _timeUpdateTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() {
         _currentTime = DateTime.now();
+        _lastUpdateTime = DateTime.now();
       });
     });
   }
@@ -114,11 +118,64 @@ class TimelineViewState extends ConsumerState<TimelineView> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _autoScrollTimer?.cancel();
     _timeUpdateTimer?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.resumed) {
+      // App has come back to foreground - immediately sync the NOW line
+      _syncNowLinePosition();
+    }
+  }
+
+  /// Syncs the NOW line position when returning from background.
+  /// This handles cases where the user left the app running and returns hours later.
+  void _syncNowLinePosition() {
+    final now = DateTime.now();
+    final timeSinceLastUpdate = now.difference(_lastUpdateTime);
+
+    // Always update current time
+    setState(() {
+      _currentTime = now;
+      _lastUpdateTime = now;
+    });
+
+    // If significant time has passed (more than 30 seconds), also update reference date
+    // in case we've crossed midnight while the app was in background
+    if (timeSinceLastUpdate.inSeconds > 30) {
+      final newReferenceDate = DateTime(now.year, now.month, now.day);
+      if (newReferenceDate != _referenceDate) {
+        _referenceDate = newReferenceDate;
+        _updateLoadedRange();
+      }
+
+      // Jump to NOW position (animated if not too far, immediate otherwise)
+      if (_scrollController.hasClients && !_isUserScrolling) {
+        final targetOffset = _calculateNowScrollOffset();
+        final currentOffset = _scrollController.offset;
+        final distance = (targetOffset - currentOffset).abs();
+
+        // If we've drifted significantly (more than 4 hours), jump immediately
+        // Otherwise animate smoothly
+        if (distance > _hourHeight * 4) {
+          _scrollController.jumpTo(targetOffset);
+        } else {
+          _scrollController.animateTo(
+            targetOffset,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+    }
   }
 
   /// Total number of days in the loaded range.
@@ -159,14 +216,14 @@ class TimelineViewState extends ConsumerState<TimelineView> {
     return _referenceDate.add(Duration(minutes: (hoursFromReference * 60).round()));
   }
 
-  /// Calculate scroll offset to position NOW line at 75% down viewport.
+  /// Calculate scroll offset to position NOW line at the user's chosen viewport position.
   double _calculateNowScrollOffset() {
     if (!_scrollController.hasClients) return 0;
 
-    final now = DateTime.now();
-    final nowOffset = _getOffsetForDateTime(now);
+    final nowLinePosition = ref.read(settingsProvider).nowLineViewportPosition;
+    final nowOffset = _getOffsetForDateTime(DateTime.now());
     final viewportHeight = _scrollController.position.viewportDimension;
-    final targetOffset = nowOffset - (viewportHeight * _nowLinePosition);
+    final targetOffset = nowOffset - (viewportHeight * nowLinePosition);
 
     return targetOffset.clamp(
       _scrollController.position.minScrollExtent,
@@ -355,116 +412,135 @@ class TimelineViewState extends ConsumerState<TimelineView> {
     final use24Hour = ref.watch(settingsProvider).use24HourFormat;
     final currentHour = _currentTime.hour;
 
-    // Particle color based on time of day
-    final particleColor = TimeOfDayBackground.getAccentColor(currentHour, isDark: isDark);
+    // Calculate the NOW line offset for scrollable content
+    final nowOffset = _getOffsetForDateTime(_currentTime);
 
     return TimeOfDayBackground(
       hour: currentHour,
       isDark: isDark,
-      child: Stack(
-        children: [
-          // Ambient particles layer (behind content)
-          Positioned.fill(
-            child: IgnorePointer(
-              child: AmbientParticles(
-                particleCount: 25,
-                color: particleColor.withValues(alpha: 0.4),
-                driftDown: true,
-                speed: 0.5,
-              ),
-            ),
-          ),
-
-          // Main timeline content
-          NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              if (notification is ScrollStartNotification) {
-                if (notification.dragDetails != null) {
-                  _isUserScrolling = true;
-                }
-              } else if (notification is ScrollEndNotification) {
-                _isUserScrolling = false;
-              }
-              return false;
-            },
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              physics: const BouncingScrollPhysics(),
-              child: SizedBox(
-                height: _totalHeight + MediaQuery.of(context).size.height,
-                child: Stack(
-                  children: [
-                    // Hour markers and day dividers
-                    Positioned(
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: 60,
-                      child: _HourMarkersMultiDay(
-                        hourHeight: _hourHeight,
-                        upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
-                        referenceDate: _referenceDate,
-                        daysLoadedBefore: _daysLoadedBefore,
-                        daysLoadedAfter: _daysLoadedAfter,
-                        use24HourFormat: use24Hour,
-                      ),
-                    ),
-
-                    // Timeline line
-                    Positioned(
-                      left: 56,
-                      top: 0,
-                      bottom: 0,
-                      width: 2,
-                      child: Container(
-                        color: isDark ? AppColors.timelineDark : AppColors.timelineLight,
-                      ),
-                    ),
-
-                    // Day dividers (full width) - now with sunrise/sunset icons
-                    _DayDividers(
-                      hourHeight: _hourHeight,
-                      upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
-                      referenceDate: _referenceDate,
-                      daysLoadedBefore: _daysLoadedBefore,
-                      daysLoadedAfter: _daysLoadedAfter,
-                    ),
-
-                    // Task cards area with breathing room indicators
-                    Positioned(
-                      left: 70,
-                      right: 16,
-                      top: 0,
-                      bottom: 0,
-                      child: _TaskCardsLayerMultiDay(
-                        hourHeight: _hourHeight,
-                        upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
-                        referenceDate: _referenceDate,
-                        daysLoadedBefore: _daysLoadedBefore,
-                        daysLoadedAfter: _daysLoadedAfter,
-                        loadedRange: _loadedRange,
-                      ),
-                    ),
-
-                    // NOW line (scrolls with content)
-                    _NowLineScrollable(
-                      currentTime: _currentTime,
-                      nowOffset: _getOffsetForDateTime(_currentTime),
-                      use24HourFormat: use24Hour,
-                    ),
-                  ],
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollStartNotification) {
+            if (notification.dragDetails != null) {
+              _isUserScrolling = true;
+            }
+          } else if (notification is ScrollEndNotification) {
+            _isUserScrolling = false;
+          }
+          return false;
+        },
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(),
+          child: SizedBox(
+            height: _totalHeight + MediaQuery.of(context).size.height,
+            child: Stack(
+              children: [
+                // Hour markers and day dividers
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 60,
+                  child: _HourMarkersMultiDay(
+                    hourHeight: _hourHeight,
+                    upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                    referenceDate: _referenceDate,
+                    daysLoadedBefore: _daysLoadedBefore,
+                    daysLoadedAfter: _daysLoadedAfter,
+                    use24HourFormat: use24Hour,
+                  ),
                 ),
-              ),
+
+                // Timeline line
+                Positioned(
+                  left: 56,
+                  top: 0,
+                  bottom: 0,
+                  width: 2,
+                  child: Container(
+                    color: isDark ? AppColors.timelineDark : AppColors.timelineLight,
+                  ),
+                ),
+
+                // Day dividers (full width) - now with sunrise/sunset icons
+                _DayDividers(
+                  hourHeight: _hourHeight,
+                  upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                  referenceDate: _referenceDate,
+                  daysLoadedBefore: _daysLoadedBefore,
+                  daysLoadedAfter: _daysLoadedAfter,
+                ),
+
+                // Day watermarks (large background date numbers)
+                _DayWatermarksWithTasks(
+                  hourHeight: _hourHeight,
+                  upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                  referenceDate: _referenceDate,
+                  daysLoadedBefore: _daysLoadedBefore,
+                  daysLoadedAfter: _daysLoadedAfter,
+                  loadedRange: _loadedRange,
+                ),
+
+                // Task cards area with breathing room indicators
+                Positioned(
+                  left: 70,
+                  right: 16,
+                  top: 0,
+                  bottom: 0,
+                  child: _TaskCardsLayerMultiDay(
+                    hourHeight: _hourHeight,
+                    upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                    referenceDate: _referenceDate,
+                    daysLoadedBefore: _daysLoadedBefore,
+                    daysLoadedAfter: _daysLoadedAfter,
+                    loadedRange: _loadedRange,
+                  ),
+                ),
+
+                // Day divider overlay (shows through tasks spanning midnight)
+                IgnorePointer(
+                  child: _DayDividerOverlay(
+                    hourHeight: _hourHeight,
+                    upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
+                    referenceDate: _referenceDate,
+                    daysLoadedBefore: _daysLoadedBefore,
+                    daysLoadedAfter: _daysLoadedAfter,
+                  ),
+                ),
+
+                // Scrollable NOW line (scrolls with content, draggable)
+                Builder(
+                  builder: (context) {
+                    // Get current scroll position for drag calculation
+                    final scrollOffset = _scrollController.hasClients
+                        ? _scrollController.offset
+                        : 0.0;
+                    final viewportHeight = _scrollController.hasClients
+                        ? _scrollController.position.viewportDimension
+                        : MediaQuery.of(context).size.height;
+
+                    return _NowLineScrollable(
+                      currentTime: _currentTime,
+                      nowOffset: nowOffset,
+                      use24HourFormat: use24Hour,
+                      scrollOffset: scrollOffset,
+                      viewportHeight: viewportHeight,
+                      onPositionChanged: () => _scrollToNow(animated: true),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// Displays hour markers for multiple days.
-class _HourMarkersMultiDay extends StatelessWidget {
+/// Displays hour markers for multiple days with sunrise/sunset indicators.
+class _HourMarkersMultiDay extends ConsumerWidget {
   final double hourHeight;
   final bool upcomingTasksAboveNow;
   final DateTime referenceDate;
@@ -481,8 +557,9 @@ class _HourMarkersMultiDay extends StatelessWidget {
     this.use24HourFormat = false,
   });
 
+  int get _totalDays => daysLoadedBefore + daysLoadedAfter + 1;
 
-  double _getOffsetForHour(int dayOffset, int hour) {
+  double _getOffsetForHour(int dayOffset, double hour) {
     final hoursFromReference = (dayOffset * 24) + hour;
     final referenceOffset = upcomingTasksAboveNow
         ? daysLoadedAfter * 24 * hourHeight
@@ -495,33 +572,133 @@ class _HourMarkersMultiDay extends StatelessWidget {
     }
   }
 
+  double _getOffsetForDateTime(int dayOffset, DateTime time) {
+    final fractionalHour = time.hour + (time.minute / 60.0);
+    return _getOffsetForHour(dayOffset, fractionalHour);
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final markerColor = isDark ? AppColors.hourMarkerDark : AppColors.hourMarkerLight;
+    final settings = ref.watch(settingsProvider);
+
+    // Pre-calculate sun times for each day if enabled
+    final Map<int, SunTimes> sunTimesMap = {};
+    if (settings.showSunTimes) {
+      for (int dayOffset = -daysLoadedBefore; dayOffset <= daysLoadedAfter; dayOffset++) {
+        final date = referenceDate.add(Duration(days: dayOffset));
+        sunTimesMap[dayOffset] = SunTimesService.calculate(
+          date: date,
+          latitude: settings.latitude,
+          longitude: settings.longitude,
+          timezoneOffsetHours: settings.timezoneOffsetHours,
+        );
+      }
+    }
 
     final markers = <Widget>[];
 
     // Generate hour markers for each day
     for (int dayOffset = -daysLoadedBefore; dayOffset <= daysLoadedAfter; dayOffset++) {
+      final sunTimes = sunTimesMap[dayOffset];
+
       for (int hour = 0; hour < 24; hour++) {
-        final offset = _getOffsetForHour(dayOffset, hour);
+        final offset = _getOffsetForHour(dayOffset, hour.toDouble());
+
         markers.add(
           Positioned(
             top: offset - 8,
-            left: 8,
-            right: 8,
-            child: Text(
-              _formatHour(hour),
-              style: TextStyle(
-                fontSize: 12,
-                color: markerColor,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.right,
+            left: 4,
+            right: 4,
+            child: Row(
+              children: [
+                const SizedBox(width: 14), // Placeholder to align text
+                // Hour text
+                Expanded(
+                  child: Text(
+                    _formatHour(hour),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: markerColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.right,
+                  ),
+                ),
+              ],
             ),
           ),
         );
+      }
+
+      // Add exact sunrise/sunset time markers (positioned precisely between hours)
+      if (settings.showSunTimes && sunTimes != null) {
+        // Sunrise marker
+        if (sunTimes.sunrise != null && !sunTimes.isPolarDay && !sunTimes.isPolarNight) {
+          final sunriseOffset = _getOffsetForDateTime(dayOffset, sunTimes.sunrise!);
+          markers.add(
+            Positioned(
+              top: sunriseOffset - 8,
+              left: 2,
+              right: 2,
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.wb_sunny,
+                    size: 10,
+                    color: Color(0xFFFFB74D),
+                  ),
+                  const SizedBox(width: 1),
+                  Expanded(
+                    child: Text(
+                      _formatExactTime(sunTimes.sunrise!),
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: Color(0xFFFFB74D),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Sunset marker
+        if (sunTimes.sunset != null && !sunTimes.isPolarDay && !sunTimes.isPolarNight) {
+          final sunsetOffset = _getOffsetForDateTime(dayOffset, sunTimes.sunset!);
+          markers.add(
+            Positioned(
+              top: sunsetOffset - 8,
+              left: 2,
+              right: 2,
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.nightlight_round,
+                    size: 10,
+                    color: Color(0xFF7986CB),
+                  ),
+                  const SizedBox(width: 1),
+                  Expanded(
+                    child: Text(
+                      _formatExactTime(sunTimes.sunset!),
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: Color(0xFF7986CB),
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
       }
     }
 
@@ -536,6 +713,15 @@ class _HourMarkersMultiDay extends StatelessWidget {
     if (hour == 12) return '12 PM';
     if (hour < 12) return '$hour AM';
     return '${hour - 12} PM';
+  }
+
+  String _formatExactTime(DateTime time) {
+    if (use24HourFormat) {
+      return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    }
+    final hour = time.hour == 0 ? 12 : (time.hour > 12 ? time.hour - 12 : time.hour);
+    final period = time.hour >= 12 ? 'p' : 'a';
+    return '$hour:${time.minute.toString().padLeft(2, '0')}$period';
   }
 }
 
@@ -599,6 +785,296 @@ class _DayDividers extends StatelessWidget {
   }
 }
 
+/// Overlay that renders day divider lines on top of task cards.
+/// This allows users to see midnight boundaries through tasks that span days.
+class _DayDividerOverlay extends StatelessWidget {
+  final double hourHeight;
+  final bool upcomingTasksAboveNow;
+  final DateTime referenceDate;
+  final int daysLoadedBefore;
+  final int daysLoadedAfter;
+
+  const _DayDividerOverlay({
+    required this.hourHeight,
+    required this.upcomingTasksAboveNow,
+    required this.referenceDate,
+    required this.daysLoadedBefore,
+    required this.daysLoadedAfter,
+  });
+
+  double _getOffsetForDayStart(int dayOffset) {
+    final hoursFromReference = dayOffset * 24;
+    final referenceOffset = upcomingTasksAboveNow
+        ? daysLoadedAfter * 24 * hourHeight
+        : daysLoadedBefore * 24 * hourHeight;
+
+    if (upcomingTasksAboveNow) {
+      return referenceOffset - (hoursFromReference * hourHeight);
+    } else {
+      return referenceOffset + (hoursFromReference * hourHeight);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lineColor = isDark
+        ? Colors.white.withValues(alpha: 0.3)
+        : Colors.black.withValues(alpha: 0.2);
+
+    final lines = <Widget>[];
+
+    for (int dayOffset = -daysLoadedBefore; dayOffset <= daysLoadedAfter; dayOffset++) {
+      final offset = _getOffsetForDayStart(dayOffset);
+
+      lines.add(
+        Positioned(
+          top: offset,
+          left: 70,
+          right: 16,
+          child: CustomPaint(
+            size: const Size(double.infinity, 2),
+            painter: _DashedLinePainter(color: lineColor),
+          ),
+        ),
+      );
+    }
+
+    return Stack(children: lines);
+  }
+}
+
+/// Paints a dashed horizontal line.
+class _DashedLinePainter extends CustomPainter {
+  final Color color;
+  final double dashWidth;
+  final double dashSpace;
+  final double strokeWidth;
+
+  _DashedLinePainter({
+    required this.color,
+    this.dashWidth = 6,
+    this.dashSpace = 4,
+    this.strokeWidth = 1.5,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    double startX = 0;
+    final y = size.height / 2;
+
+    while (startX < size.width) {
+      canvas.drawLine(
+        Offset(startX, y),
+        Offset(startX + dashWidth, y),
+        paint,
+      );
+      startX += dashWidth + dashSpace;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedLinePainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.dashWidth != dashWidth ||
+        oldDelegate.dashSpace != dashSpace ||
+        oldDelegate.strokeWidth != strokeWidth;
+  }
+}
+
+/// Displays large watermark dates in the background of each day.
+/// Adjusts position based on task overlap to avoid covering events.
+class _DayWatermarksWithTasks extends ConsumerStatefulWidget {
+  final double hourHeight;
+  final bool upcomingTasksAboveNow;
+  final DateTime referenceDate;
+  final int daysLoadedBefore;
+  final int daysLoadedAfter;
+  final DateRange loadedRange;
+
+  const _DayWatermarksWithTasks({
+    required this.hourHeight,
+    required this.upcomingTasksAboveNow,
+    required this.referenceDate,
+    required this.daysLoadedBefore,
+    required this.daysLoadedAfter,
+    required this.loadedRange,
+  });
+
+  @override
+  ConsumerState<_DayWatermarksWithTasks> createState() => _DayWatermarksWithTasksState();
+}
+
+class _DayWatermarksWithTasksState extends ConsumerState<_DayWatermarksWithTasks> {
+  // Track which day watermarks are currently highlighted (by day offset)
+  final Map<int, DateTime> _highlightedWatermarks = {};
+  Timer? _highlightTimer;
+
+  @override
+  void dispose() {
+    _highlightTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onWatermarkInteraction(int dayOffset) {
+    setState(() {
+      _highlightedWatermarks[dayOffset] = DateTime.now();
+    });
+    _startHighlightTimer();
+  }
+
+  void _startHighlightTimer() {
+    _highlightTimer?.cancel();
+    _highlightTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final now = DateTime.now();
+      final expiredKeys = <int>[];
+      for (final entry in _highlightedWatermarks.entries) {
+        if (now.difference(entry.value).inSeconds >= 30) {
+          expiredKeys.add(entry.key);
+        }
+      }
+      if (expiredKeys.isNotEmpty) {
+        setState(() {
+          for (final key in expiredKeys) {
+            _highlightedWatermarks.remove(key);
+          }
+        });
+      }
+      if (_highlightedWatermarks.isEmpty) {
+        _highlightTimer?.cancel();
+      }
+    });
+  }
+
+  double _getOffsetForHour(int dayOffset, double hour) {
+    final hoursFromReference = (dayOffset * 24) + hour;
+    final referenceOffset = widget.upcomingTasksAboveNow
+        ? widget.daysLoadedAfter * 24 * widget.hourHeight
+        : widget.daysLoadedBefore * 24 * widget.hourHeight;
+
+    if (widget.upcomingTasksAboveNow) {
+      return referenceOffset - (hoursFromReference * widget.hourHeight);
+    } else {
+      return referenceOffset + (hoursFromReference * widget.hourHeight);
+    }
+  }
+
+  /// Find the best start hour for watermark (moving it earlier if tasks overlap)
+  int _findBestWatermarkStartHour(DateTime date, List<Task> tasks, int defaultStartHour, int watermarkHeightHours) {
+    final dayStart = DateTime(date.year, date.month, date.day);
+
+    // Try positions from the default down to 0 (midnight)
+    for (int startHour = defaultStartHour; startHour >= 0; startHour--) {
+      final watermarkStart = dayStart.add(Duration(hours: startHour));
+      final watermarkEnd = dayStart.add(Duration(hours: startHour + watermarkHeightHours));
+
+      bool hasOverlap = false;
+      for (final task in tasks) {
+        // Check if task is on this day and overlaps with watermark time range
+        if (task.startTime.isBefore(watermarkEnd) && task.endTime.isAfter(watermarkStart)) {
+          hasOverlap = true;
+          break;
+        }
+      }
+
+      if (!hasOverlap) {
+        return startHour;
+      }
+    }
+
+    // If all positions have overlap, use 0 (midnight) and let events overwrite
+    return 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = ref.watch(settingsProvider);
+    final tasksAsync = ref.watch(tasksForRangeProvider(widget.loadedRange));
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    return tasksAsync.when(
+      loading: () => _buildWatermarks(context, settings, today, []),
+      error: (_, __) => _buildWatermarks(context, settings, today, []),
+      data: (tasks) => _buildWatermarks(context, settings, today, tasks),
+    );
+  }
+
+  Widget _buildWatermarks(BuildContext context, dynamic settings, DateTime today, List<Task> tasks) {
+    final watermarks = <Widget>[];
+
+    // Default position - early morning hours (around 4-8 AM)
+    const defaultWatermarkStartHour = 4;
+    const watermarkHeightHours = 5; // Spans about 5 hours
+
+    for (int dayOffset = -widget.daysLoadedBefore; dayOffset <= widget.daysLoadedAfter; dayOffset++) {
+      final date = widget.referenceDate.add(Duration(days: dayOffset));
+
+      final isToday = date.year == today.year &&
+          date.month == today.month &&
+          date.day == today.day;
+
+      // Filter tasks for this day
+      final dayStart = DateTime(date.year, date.month, date.day);
+      final dayEnd = dayStart.add(const Duration(days: 1));
+      final dayTasks = tasks.where((t) =>
+        t.startTime.isBefore(dayEnd) && t.endTime.isAfter(dayStart)
+      ).toList();
+
+      // Find the best position for the watermark (avoiding task overlap)
+      final watermarkStartHour = _findBestWatermarkStartHour(
+        date, dayTasks, defaultWatermarkStartHour, watermarkHeightHours
+      );
+
+      // Calculate position for this day's watermark
+      final topOffset = _getOffsetForHour(dayOffset, watermarkStartHour.toDouble());
+      final bottomOffset = _getOffsetForHour(dayOffset, (watermarkStartHour + watermarkHeightHours).toDouble());
+
+      // For upcomingTasksAboveNow, the bottom offset is smaller than top offset
+      final actualTop = widget.upcomingTasksAboveNow ? bottomOffset : topOffset;
+      final height = (watermarkHeightHours * widget.hourHeight).abs();
+
+      // Check if this watermark is highlighted
+      final isHighlighted = _highlightedWatermarks.containsKey(dayOffset);
+
+      watermarks.add(
+        Positioned(
+          top: actualTop,
+          left: 70,
+          right: 16,
+          height: height,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => _onWatermarkInteraction(dayOffset),
+            child: MouseRegion(
+              onEnter: (_) => _onWatermarkInteraction(dayOffset),
+              child: DayWatermark(
+                date: date,
+                isToday: isToday,
+                height: height,
+                showWeekNumber: settings.watermarkShowWeekNumber,
+                showDayOfYear: settings.watermarkShowDayOfYear,
+                showHolidays: settings.watermarkShowHolidays,
+                showMoonPhase: settings.watermarkShowMoonPhase,
+                showQuarter: settings.watermarkShowQuarter,
+                showDaysRemaining: settings.watermarkShowDaysRemaining,
+                isHighlighted: isHighlighted,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Stack(children: watermarks);
+  }
+}
+
 /// Layer containing positioned task cards for multiple days.
 class _TaskCardsLayerMultiDay extends ConsumerStatefulWidget {
   final double hourHeight;
@@ -636,6 +1112,18 @@ class _TaskCardsLayerMultiDayState
   double _dragOffsetY = 0.0;
   double _dragStartTop = 0.0;
 
+  // State for long-press task creation (using manual timer for web compatibility)
+  bool _isCreatingTask = false;
+  bool _isWaitingForLongPress = false;  // True while waiting for timer
+  Timer? _longPressTimer;
+  bool _tooltipDismissed = false;  // Local dismissal state for tooltip animation
+  double? _createTaskStartY;      // Initial tap Y position (in timeline coordinates)
+  double? _createTaskCurrentY;    // Current drag Y position
+  double? _createTaskStartX;      // Track X for cancel gesture
+  DateTime? _createTaskStartTime; // Snapped start time
+  int _lastSnappedMinutes = -1;   // Track for haptic feedback on snap
+  static const _longPressDuration = Duration(milliseconds: 500);
+
   @override
   void initState() {
     super.initState();
@@ -645,6 +1133,7 @@ class _TaskCardsLayerMultiDayState
   @override
   void dispose() {
     _reminderCheckTimer?.cancel();
+    _longPressTimer?.cancel();
     super.dispose();
   }
 
@@ -831,20 +1320,267 @@ class _TaskCardsLayerMultiDayState
     );
   }
 
+  // ============ Long-press task creation methods ============
+  // Using Listener + Timer for web compatibility (GestureDetector long-press
+  // doesn't work well on web due to scroll view gesture conflicts)
+
+  /// Snap a DateTime to configurable minute intervals
+  DateTime _snapToInterval(DateTime time, int intervalMinutes) {
+    final snappedMinutes = (time.minute / intervalMinutes).round() * intervalMinutes;
+    int hour = time.hour;
+    int minute = snappedMinutes;
+    if (minute >= 60) {
+      hour += 1;
+      minute = 0;
+    }
+    return DateTime(time.year, time.month, time.day, hour, minute);
+  }
+
+  /// Called when pointer goes down - starts the long-press timer
+  void _onPointerDown(PointerDownEvent event, double localY, double maxWidth) {
+    _longPressTimer?.cancel();
+
+    // Store initial position for later
+    final startX = event.localPosition.dx;
+    final startY = localY;
+
+    setState(() {
+      _isWaitingForLongPress = true;
+      _createTaskStartX = startX;
+      _createTaskStartY = startY;
+      _createTaskCurrentY = startY;
+    });
+
+    // Start timer - if it completes without being cancelled, trigger long-press
+    _longPressTimer = Timer(_longPressDuration, () {
+      if (!_isWaitingForLongPress) return;
+
+      // Long press triggered!
+      final settings = ref.read(settingsProvider);
+      final snapInterval = settings.longPressSnapIntervalMinutes;
+      final rawDateTime = _getDateTimeAtOffset(startY);
+      final snappedStart = _snapToInterval(rawDateTime, snapInterval);
+
+      setState(() {
+        _isWaitingForLongPress = false;
+        _isCreatingTask = true;
+        _createTaskStartTime = snappedStart;
+        _lastSnappedMinutes = snappedStart.hour * 60 + snappedStart.minute;
+      });
+
+      HapticFeedback.mediumImpact();
+    });
+  }
+
+  /// Called when pointer moves - update drag position or cancel if moved too much before long-press
+  void _onPointerMove(PointerMoveEvent event, double localY, double maxWidth) {
+    // If still waiting for long-press, check if we moved too much (cancel threshold)
+    if (_isWaitingForLongPress) {
+      final dx = event.localPosition.dx - (_createTaskStartX ?? 0);
+      final dy = localY - (_createTaskStartY ?? 0);
+      final distance = (dx * dx + dy * dy);
+
+      // If moved more than 20 pixels, cancel the long-press wait
+      if (distance > 400) {  // 20^2 = 400
+        _cancelLongPressWait();
+        return;
+      }
+    }
+
+    // If already creating task, update the drag position
+    if (_isCreatingTask && _createTaskStartY != null) {
+      // Check for cancel gesture (dragged too far left or right)
+      final currentX = event.localPosition.dx;
+      if (currentX < -50 || currentX > maxWidth + 50) {
+        _onCreateTaskCancel();
+        return;
+      }
+
+      setState(() {
+        _createTaskCurrentY = localY;
+      });
+
+      // Check if we've snapped to a new 15-minute interval and provide haptic feedback
+      final endTime = _getCreateTaskEndTime();
+      if (endTime != null) {
+        final endMinutes = endTime.hour * 60 + endTime.minute;
+        if (endMinutes != _lastSnappedMinutes) {
+          _lastSnappedMinutes = endMinutes;
+          HapticFeedback.selectionClick();
+        }
+      }
+    }
+  }
+
+  /// Called when pointer is released
+  void _onPointerUp(PointerUpEvent event) {
+    // If still waiting for long-press, just cancel
+    if (_isWaitingForLongPress) {
+      _cancelLongPressWait();
+      return;
+    }
+
+    // If creating task, finalize it
+    if (_isCreatingTask && _createTaskStartTime != null) {
+      final settings = ref.read(settingsProvider);
+      final defaultDuration = settings.longPressDefaultDurationMinutes;
+      final snapInterval = settings.longPressSnapIntervalMinutes;
+
+      final startTime = _createTaskStartTime!;
+      final endTime = _getCreateTaskEndTime() ?? startTime.add(Duration(minutes: defaultDuration));
+
+      // Ensure minimum duration equals snap interval
+      final duration = endTime.difference(startTime);
+      final finalEndTime = duration.inMinutes < snapInterval
+          ? startTime.add(Duration(minutes: snapInterval))
+          : endTime;
+
+      // Reset state before navigation
+      setState(() {
+        _isCreatingTask = false;
+        _createTaskStartY = null;
+        _createTaskCurrentY = null;
+        _createTaskStartX = null;
+        _createTaskStartTime = null;
+        _lastSnappedMinutes = -1;
+      });
+
+      HapticFeedback.lightImpact();
+
+      // Navigate to task detail screen with pre-filled times
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => TaskDetailScreen(
+            initialStartTime: startTime,
+            initialEndTime: finalEndTime,
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Called when pointer is cancelled (e.g., scroll took over)
+  void _onPointerCancel(PointerCancelEvent event) {
+    _cancelLongPressWait();
+    if (_isCreatingTask) {
+      _onCreateTaskCancel();
+    }
+  }
+
+  /// Cancel the long-press wait (timer)
+  void _cancelLongPressWait() {
+    _longPressTimer?.cancel();
+    _longPressTimer = null;
+    if (_isWaitingForLongPress) {
+      setState(() {
+        _isWaitingForLongPress = false;
+        _createTaskStartX = null;
+        _createTaskStartY = null;
+        _createTaskCurrentY = null;
+      });
+    }
+  }
+
+  void _onCreateTaskCancel() {
+    _longPressTimer?.cancel();
+    _longPressTimer = null;
+    setState(() {
+      _isWaitingForLongPress = false;
+      _isCreatingTask = false;
+      _createTaskStartY = null;
+      _createTaskCurrentY = null;
+      _createTaskStartX = null;
+      _createTaskStartTime = null;
+      _lastSnappedMinutes = -1;
+    });
+  }
+
+  /// Dismisses the long-press hint tooltip and persists the setting.
+  void _dismissLongPressHint() {
+    setState(() {
+      _tooltipDismissed = true;
+    });
+    ref.read(settingsProvider.notifier).setHasSeenLongPressHint(true);
+  }
+
+  /// Get the end time based on drag position, snapped to configurable interval
+  DateTime? _getCreateTaskEndTime() {
+    if (_createTaskStartTime == null || _createTaskStartY == null || _createTaskCurrentY == null) {
+      return null;
+    }
+
+    final settings = ref.read(settingsProvider);
+    final defaultDuration = settings.longPressDefaultDurationMinutes;
+    final snapInterval = settings.longPressSnapIntervalMinutes;
+
+    // Calculate duration based on drag distance
+    final dragDelta = _createTaskCurrentY! - _createTaskStartY!;
+
+    // Convert pixel delta to duration (accounting for timeline direction)
+    double hoursDelta;
+    if (widget.upcomingTasksAboveNow) {
+      // Dragging down (positive delta) = extending into the past = negative time
+      // Dragging up (negative delta) = extending into the future = positive time
+      // But for task creation, we want drag DOWN to extend the END time (make it later)
+      hoursDelta = -dragDelta / widget.hourHeight;
+    } else {
+      // Normal orientation: drag down = later time
+      hoursDelta = dragDelta / widget.hourHeight;
+    }
+
+    // Default duration (from settings) + any drag extension
+    final totalMinutes = defaultDuration + (hoursDelta * 60).round();
+
+    // Ensure minimum equals snap interval
+    final clampedMinutes = totalMinutes < snapInterval ? snapInterval : totalMinutes;
+
+    final rawEndTime = _createTaskStartTime!.add(Duration(minutes: clampedMinutes));
+    return _snapToInterval(rawEndTime, snapInterval);
+  }
+
+  /// Calculate the visual bounds for the task creation preview
+  ({double top, double height, Duration duration}) _getCreateTaskPreviewBounds() {
+    if (_createTaskStartTime == null) {
+      return (top: 0, height: 0, duration: Duration.zero);
+    }
+
+    final settings = ref.read(settingsProvider);
+    final defaultDuration = settings.longPressDefaultDurationMinutes;
+    final endTime = _getCreateTaskEndTime() ?? _createTaskStartTime!.add(Duration(minutes: defaultDuration));
+    final duration = endTime.difference(_createTaskStartTime!);
+
+    // Calculate positions
+    final startOffset = _getOffsetForDateTime(_createTaskStartTime!);
+    final endOffset = _getOffsetForDateTime(endTime);
+
+    // Handle timeline direction
+    final top = widget.upcomingTasksAboveNow
+        ? endOffset  // When future is above, end is visually higher (smaller Y)
+        : startOffset;
+    final height = (startOffset - endOffset).abs();
+
+    return (top: top, height: height, duration: duration);
+  }
+
+  /// Check if the new task time range overlaps with any existing tasks
+  bool _checkForConflicts(DateTime startTime, DateTime endTime, List<Task> existingTasks) {
+    for (final task in existingTasks) {
+      // Two time ranges overlap if one starts before the other ends
+      if (startTime.isBefore(task.endTime) && endTime.isAfter(task.startTime)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final tasksAsync = ref.watch(tasksForRangeProvider(widget.loadedRange));
 
     return tasksAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Error loading tasks: $error')),
-      data: (tasks) {
-        if (tasks.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return _buildTasksLayout(context, tasks);
-      },
+      loading: () => _buildTasksLayout(context, []),
+      error: (error, stack) => _buildTasksLayout(context, []),
+      data: (tasks) => _buildTasksLayout(context, tasks),
     );
   }
 
@@ -855,7 +1591,8 @@ class _TaskCardsLayerMultiDayState
         final overlappingGroups = _groupOverlappingTasks(tasks);
         final positionedCards = <Widget>[];
 
-        final use24Hour = ref.watch(settingsProvider).use24HourFormat;
+        final settings = ref.watch(settingsProvider);
+        final use24Hour = settings.use24HourFormat;
 
         // Minimum width for a readable task card title
         const minReadableWidth = 120.0;
@@ -912,14 +1649,14 @@ class _TaskCardsLayerMultiDayState
                     child: AnimatedContainer(
                       duration: Duration(milliseconds: isDragging ? 0 : 200),
                       transform: isDragging
-                          ? (Matrix4.identity()..scaleByDouble(1.03, 1.03, 1.03, 1.0))
+                          ? (Matrix4.identity()..scale(1.03))
                           : Matrix4.identity(),
                       transformAlignment: Alignment.center,
                       decoration: isDragging
                           ? BoxDecoration(
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.3),
+                                  color: Colors.black.withOpacity(0.3),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),
@@ -998,8 +1735,54 @@ class _TaskCardsLayerMultiDayState
 
         return Stack(
           children: [
+            // Background listener for long-press task creation
+            // Uses Listener + Timer instead of GestureDetector for web compatibility
+            Positioned.fill(
+              child: Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: (event) {
+                  final localY = event.localPosition.dy;
+                  _onPointerDown(event, localY, availableWidth);
+                },
+                onPointerMove: (event) {
+                  final localY = event.localPosition.dy;
+                  _onPointerMove(event, localY, availableWidth);
+                },
+                onPointerUp: _onPointerUp,
+                onPointerCancel: _onPointerCancel,
+                child: const SizedBox.expand(),
+              ),
+            ),
             ...reminderDots,
             ...positionedCards,
+            // Task creation preview box
+            if (_isCreatingTask && _createTaskStartTime != null)
+              Builder(
+                builder: (context) {
+                  final bounds = _getCreateTaskPreviewBounds();
+                  final endTime = _getCreateTaskEndTime() ?? _createTaskStartTime!.add(const Duration(hours: 1));
+                  final hasConflict = _checkForConflicts(_createTaskStartTime!, endTime, tasks);
+
+                  return Positioned(
+                    top: bounds.top,
+                    left: 0,
+                    right: 4,
+                    height: bounds.height.clamp(40.0, double.infinity),
+                    child: _TaskCreationPreview(
+                      startTime: _createTaskStartTime!,
+                      endTime: endTime,
+                      duration: bounds.duration,
+                      use24HourFormat: use24Hour,
+                      hasConflict: hasConflict,
+                    ),
+                  );
+                },
+              ),
+            // Onboarding tooltip for long-press task creation
+            if (!_tooltipDismissed && !settings.hasSeenLongPressHint && !_isCreatingTask)
+              _LongPressHintTooltip(
+                onDismiss: () => _dismissLongPressHint(),
+              ),
           ],
         );
       },
@@ -1207,14 +1990,232 @@ class _TaskCardsLayerMultiDayState
 }
 
 /// NOW line that scrolls with the timeline content.
-class _NowLineScrollable extends StatelessWidget {
+/// Long-press and drag to change where on the viewport the NOW line appears.
+class _NowLineScrollable extends ConsumerStatefulWidget {
   final DateTime currentTime;
   final double nowOffset;
   final bool use24HourFormat;
+  final double scrollOffset;
+  final double viewportHeight;
+  final VoidCallback? onPositionChanged;
 
   const _NowLineScrollable({
     required this.currentTime,
     required this.nowOffset,
+    required this.scrollOffset,
+    required this.viewportHeight,
+    this.use24HourFormat = false,
+    this.onPositionChanged,
+  });
+
+  @override
+  ConsumerState<_NowLineScrollable> createState() => _NowLineScrollableState();
+}
+
+class _NowLineScrollableState extends ConsumerState<_NowLineScrollable> {
+  double? _dragDelta;
+
+  String _formatTime(DateTime time) {
+    if (widget.use24HourFormat) {
+      final hour = time.hour.toString().padLeft(2, '0');
+      final minute = time.minute.toString().padLeft(2, '0');
+      return '$hour:$minute';
+    }
+    final hour = time.hour == 0
+        ? 12
+        : time.hour > 12
+            ? time.hour - 12
+            : time.hour;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  }
+
+  void _onLongPressStart(LongPressStartDetails details) {
+    setState(() {
+      _dragDelta = 0;
+    });
+    HapticFeedback.mediumImpact();
+  }
+
+  void _onLongPressMoveUpdate(LongPressMoveUpdateDetails details) {
+    setState(() {
+      _dragDelta = details.offsetFromOrigin.dy;
+    });
+  }
+
+  void _onLongPressEnd(LongPressEndDetails details) {
+    if (_dragDelta != null) {
+      // Calculate new viewport position
+      // Current viewport position of NOW line
+      final currentViewportY = widget.nowOffset - widget.scrollOffset;
+      // New viewport position after drag
+      final newViewportY = currentViewportY + _dragDelta!;
+      // Convert to percentage (0.0 to 1.0)
+      final newPosition = newViewportY / widget.viewportHeight;
+
+      // Save the new viewport position
+      ref.read(settingsProvider.notifier).setNowLineViewportPosition(newPosition);
+
+      // Trigger scroll to new position after a brief delay to let state update
+      Future.delayed(const Duration(milliseconds: 50), () {
+        widget.onPositionChanged?.call();
+      });
+
+      HapticFeedback.lightImpact();
+    }
+    setState(() {
+      _dragDelta = null;
+    });
+  }
+
+  void _onLongPressCancel() {
+    setState(() {
+      _dragDelta = null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final lineColor = isDark ? AppColors.nowLineDark : AppColors.nowLineLight;
+
+    // NOW line is always at current time's offset
+    // During drag, add the drag delta so the line visually follows the finger
+    final isDragging = _dragDelta != null;
+    final effectiveOffset = widget.nowOffset + (_dragDelta ?? 0);
+
+    return Stack(
+      children: [
+        // Glow effect behind the line
+        Positioned(
+          left: 0,
+          right: 0,
+          top: effectiveOffset - 20,
+          height: 40,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  lineColor.withValues(alpha: 0),
+                  lineColor.withValues(alpha: isDragging ? 0.6 : 0.4),
+                  lineColor.withValues(alpha: 0),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Main NOW line with drag gesture
+        Positioned(
+          left: 0,
+          right: 0,
+          top: effectiveOffset - 20,
+          height: 40,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onLongPressStart: _onLongPressStart,
+            onLongPressMoveUpdate: _onLongPressMoveUpdate,
+            onLongPressEnd: _onLongPressEnd,
+            onLongPressCancel: _onLongPressCancel,
+            child: Center(
+              child: Container(
+                height: 2,
+                decoration: BoxDecoration(
+                  color: lineColor,
+                  boxShadow: [
+                    BoxShadow(
+                      color: lineColor.withValues(alpha: 0.5),
+                      blurRadius: isDragging ? 8 : 4,
+                      spreadRadius: isDragging ? 2 : 1,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // Time badge - always shows current time
+        Positioned(
+          right: 16,
+          top: effectiveOffset - 14,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onLongPressStart: _onLongPressStart,
+            onLongPressMoveUpdate: _onLongPressMoveUpdate,
+            onLongPressEnd: _onLongPressEnd,
+            onLongPressCancel: _onLongPressCancel,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: lineColor,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: lineColor.withValues(alpha: 0.3),
+                    blurRadius: isDragging ? 12 : 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                _formatTime(widget.currentTime),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // NOW label
+        Positioned(
+          left: 12,
+          top: effectiveOffset - 12,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onLongPressStart: _onLongPressStart,
+            onLongPressMoveUpdate: _onLongPressMoveUpdate,
+            onLongPressEnd: _onLongPressEnd,
+            onLongPressCancel: _onLongPressCancel,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: lineColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'NOW',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Fixed NOW line that stays in place on screen at a specified position.
+/// The calendar content scrolls to meet this fixed line.
+class _FixedNowLine extends StatelessWidget {
+  final DateTime currentTime;
+  final bool use24HourFormat;
+  final double nowLinePosition;
+
+  const _FixedNowLine({
+    required this.currentTime,
+    required this.nowLinePosition,
     this.use24HourFormat = false,
   });
 
@@ -1238,100 +2239,426 @@ class _NowLineScrollable extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lineColor = isDark ? AppColors.nowLineDark : AppColors.nowLineLight;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final nowY = screenHeight * nowLinePosition;
 
-    return Stack(
-      children: [
-        // Glow effect behind the line
-        Positioned(
-          left: 0,
-          right: 0,
-          top: nowOffset - 20,
-          height: 40,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  lineColor.withValues(alpha: 0),
-                  lineColor.withValues(alpha: 0.4),
-                  lineColor.withValues(alpha: 0),
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          // Glow effect behind the line
+          Positioned(
+            left: 0,
+            right: 0,
+            top: nowY - 20,
+            height: 40,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    lineColor.withValues(alpha: 0),
+                    lineColor.withValues(alpha: 0.4),
+                    lineColor.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Main NOW line
+          Positioned(
+            left: 0,
+            right: 0,
+            top: nowY - 1,
+            height: 2,
+            child: Container(
+              decoration: BoxDecoration(
+                color: lineColor,
+                boxShadow: [
+                  BoxShadow(
+                    color: lineColor.withValues(alpha: 0.5),
+                    blurRadius: 4,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Time badge
+          Positioned(
+            right: 16,
+            top: nowY - 14,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: lineColor,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: lineColor.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                _formatTime(currentTime),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+
+          // NOW label
+          Positioned(
+            left: 12,
+            top: nowY - 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: lineColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'NOW',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Preview widget shown during long-press task creation.
+/// Displays a semi-transparent box with the task duration.
+class _TaskCreationPreview extends StatelessWidget {
+  final DateTime startTime;
+  final DateTime endTime;
+  final Duration duration;
+  final bool use24HourFormat;
+  final bool hasConflict;
+
+  const _TaskCreationPreview({
+    required this.startTime,
+    required this.endTime,
+    required this.duration,
+    required this.use24HourFormat,
+    this.hasConflict = false,
+  });
+
+  String _formatTime(DateTime time) {
+    if (use24HourFormat) {
+      final hour = time.hour.toString().padLeft(2, '0');
+      final minute = time.minute.toString().padLeft(2, '0');
+      return '$hour:$minute';
+    }
+    final hour = time.hour == 0
+        ? 12
+        : time.hour > 12
+            ? time.hour - 12
+            : time.hour;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $period';
+  }
+
+  String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+
+    if (hours > 0 && minutes > 0) {
+      return '${hours}h ${minutes}m';
+    } else if (hours > 0) {
+      return '${hours}h';
+    } else {
+      return '${minutes}m';
+    }
+  }
+
+  /// Check if task crosses midnight (spans multiple days)
+  bool get _crossesMidnight {
+    final startDay = DateTime(startTime.year, startTime.month, startTime.day);
+    final endDay = DateTime(endTime.year, endTime.month, endTime.day);
+    return endDay.isAfter(startDay);
+  }
+
+  /// Get the number of days the task spans
+  int get _daySpan {
+    final startDay = DateTime(startTime.year, startTime.month, startTime.day);
+    final endDay = DateTime(endTime.year, endTime.month, endTime.day);
+    return endDay.difference(startDay).inDays;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    // Use orange/red color when there's a conflict
+    final conflictColor = Colors.orange;
+    final baseColor = hasConflict ? conflictColor : primaryColor;
+
+    return IgnorePointer(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        decoration: BoxDecoration(
+          color: baseColor.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: baseColor.withValues(alpha: 0.6),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: baseColor.withValues(alpha: 0.2),
+              blurRadius: 8,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // "New Task" label with conflict warning
+              Row(
+                children: [
+                  if (hasConflict) ...[
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      size: 16,
+                      color: conflictColor,
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                  Expanded(
+                    child: Text(
+                      hasConflict ? 'Overlapping Task' : 'New Task',
+                      style: TextStyle(
+                        color: hasConflict
+                            ? conflictColor
+                            : (isDark ? Colors.white : Colors.black87),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              // Time range with midnight crossing indicator
+              Row(
+                children: [
+                  Text(
+                    '${_formatTime(startTime)} - ${_formatTime(endTime)}',
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black54,
+                      fontSize: 12,
+                    ),
+                  ),
+                  if (_crossesMidnight) ...[
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: (isDark ? Colors.white24 : Colors.black12),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '+${_daySpan}d',
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : Colors.black54,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const Spacer(),
+              // Duration badge at bottom
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: baseColor.withValues(alpha: 0.8),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _formatDuration(duration),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Onboarding tooltip that hints about long-press task creation.
+/// Positioned at the top of the timeline area and dismissable by tap.
+class _LongPressHintTooltip extends StatefulWidget {
+  final VoidCallback onDismiss;
+
+  const _LongPressHintTooltip({
+    required this.onDismiss,
+  });
+
+  @override
+  State<_LongPressHintTooltip> createState() => _LongPressHintTooltipState();
+}
+
+class _LongPressHintTooltipState extends State<_LongPressHintTooltip>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOut,
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, -0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    ));
+
+    // Start animation after a short delay
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _controller.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _dismiss() {
+    _controller.reverse().then((_) {
+      widget.onDismiss();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Positioned(
+      top: 80,
+      left: 8,
+      right: 8,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: GestureDetector(
+            onTap: _dismiss,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF2D3748)
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.touch_app_rounded,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Quick Task Creation',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Long-press anywhere on the timeline to create a new task',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? Colors.white70 : Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.close,
+                    size: 18,
+                    color: isDark ? Colors.white38 : Colors.black38,
+                  ),
                 ],
               ),
             ),
           ),
         ),
-
-        // Main NOW line
-        Positioned(
-          left: 0,
-          right: 0,
-          top: nowOffset - 1,
-          height: 2,
-          child: Container(
-            decoration: BoxDecoration(
-              color: lineColor,
-              boxShadow: [
-                BoxShadow(
-                  color: lineColor.withValues(alpha: 0.5),
-                  blurRadius: 4,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Time badge
-        Positioned(
-          right: 16,
-          top: nowOffset - 14,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: lineColor,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: lineColor.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Text(
-              _formatTime(currentTime),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-
-        // NOW label
-        Positioned(
-          left: 12,
-          top: nowOffset - 12,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: lineColor,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Text(
-              'NOW',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

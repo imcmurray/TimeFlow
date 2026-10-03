@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:timeflow/services/holidays_service.dart';
 
 /// Visual marker indicating day boundaries with sunrise/sunset theming.
 ///
@@ -54,8 +55,8 @@ class DayBoundaryMarker extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    colorScheme.outlineVariant.withValues(alpha: 0.0),
-                    colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    colorScheme.outlineVariant.withOpacity(0.0),
+                    colorScheme.outlineVariant.withOpacity(0.5),
                   ],
                 ),
               ),
@@ -75,14 +76,14 @@ class DayBoundaryMarker extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isToday
-                    ? colorScheme.primary.withValues(alpha: 0.5)
-                    : colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    ? colorScheme.primary.withOpacity(0.5)
+                    : colorScheme.outlineVariant.withOpacity(0.3),
                 width: isToday ? 2 : 1,
               ),
               boxShadow: [
                 if (isToday)
                   BoxShadow(
-                    color: colorScheme.primary.withValues(alpha: 0.2),
+                    color: colorScheme.primary.withOpacity(0.2),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -118,8 +119,8 @@ class DayBoundaryMarker extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    colorScheme.outlineVariant.withValues(alpha: 0.5),
-                    colorScheme.outlineVariant.withValues(alpha: 0.0),
+                    colorScheme.outlineVariant.withOpacity(0.5),
+                    colorScheme.outlineVariant.withOpacity(0.0),
                   ],
                 ),
               ),
@@ -152,7 +153,7 @@ class DayBoundaryMarker extends StatelessWidget {
   }
 }
 
-/// A simpler inline day divider with sunrise/sunset icon.
+/// A simpler inline day divider with sunrise/sunset icon and gradient band.
 class SimpleDayDivider extends StatelessWidget {
   final DateTime date;
   final bool isToday;
@@ -168,52 +169,128 @@ class SimpleDayDivider extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Determine if it's morning or evening based on what makes sense
-    // for the divider position (start of day = sunrise)
+    // Gradient colors for the band
+    final bandColor = isToday
+        ? (isDark ? colorScheme.primary.withOpacity(0.15) : colorScheme.primary.withOpacity(0.08))
+        : (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03));
+
+    final lineColor = isToday
+        ? colorScheme.primary.withOpacity(0.6)
+        : colorScheme.outlineVariant.withOpacity(0.5);
+
     final icon = Icons.wb_twilight;
     final iconColor = isDark
         ? const Color(0xFFFFB74D)
         : const Color(0xFFFF9800);
 
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 1,
-            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
-          ),
+    return Container(
+      height: 32,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            bandColor.withOpacity(0),
+            bandColor,
+            bandColor,
+            bandColor.withOpacity(0),
+          ],
+          stops: const [0.0, 0.3, 0.7, 1.0],
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 14,
-                color: iconColor.withValues(alpha: 0.7),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                _formatDayLabel(),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
-                  color: isToday
-                      ? colorScheme.primary
-                      : colorScheme.onSurfaceVariant,
+      ),
+      child: Row(
+        children: [
+          // Left gradient line
+          Expanded(
+            child: Container(
+              height: 2,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    lineColor.withOpacity(0),
+                    lineColor,
+                  ],
                 ),
+                boxShadow: isToday
+                    ? [
+                        BoxShadow(
+                          color: colorScheme.primary.withOpacity(0.3),
+                          blurRadius: 4,
+                        ),
+                      ]
+                    : null,
               ),
-            ],
+            ),
           ),
-        ),
-        Expanded(
-          child: Container(
-            height: 1,
-            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+
+          // Center badge with icon and date
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? (isToday ? colorScheme.primary.withOpacity(0.2) : Colors.grey[900]!.withOpacity(0.8))
+                  : (isToday ? colorScheme.primary.withOpacity(0.1) : Colors.white.withOpacity(0.9)),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isToday ? colorScheme.primary.withOpacity(0.5) : lineColor,
+                width: isToday ? 1.5 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 14,
+                  color: iconColor,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _formatDayLabel(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isToday ? FontWeight.bold : FontWeight.w600,
+                    color: isToday
+                        ? colorScheme.primary
+                        : colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+
+          // Right gradient line
+          Expanded(
+            child: Container(
+              height: 2,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    lineColor,
+                    lineColor.withOpacity(0),
+                  ],
+                ),
+                boxShadow: isToday
+                    ? [
+                        BoxShadow(
+                          color: colorScheme.primary.withOpacity(0.3),
+                          blurRadius: 4,
+                        ),
+                      ]
+                    : null,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -228,5 +305,203 @@ class SimpleDayDivider extends StatelessWidget {
     if (difference == -1) return 'Yesterday';
 
     return DateFormat('EEE, MMM d').format(date);
+  }
+}
+
+/// Large watermark date displayed in the background of each day.
+/// Shows a big day number that's semi-transparent so tasks can overlay it.
+/// Supports brightness boost on hover/tap via [isHighlighted].
+class DayWatermark extends StatelessWidget {
+  final DateTime date;
+  final bool isToday;
+  final double height;
+  final bool showWeekNumber;
+  final bool showDayOfYear;
+  final bool showHolidays;
+  final bool showMoonPhase;
+  final bool showQuarter;
+  final bool showDaysRemaining;
+  /// When true, displays watermark at higher opacity (brighter)
+  final bool isHighlighted;
+
+  const DayWatermark({
+    super.key,
+    required this.date,
+    required this.isToday,
+    required this.height,
+    this.showWeekNumber = true,
+    this.showDayOfYear = false,
+    this.showHolidays = true,
+    this.showMoonPhase = false,
+    this.showQuarter = false,
+    this.showDaysRemaining = false,
+    this.isHighlighted = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Large day number
+    final dayNumber = date.day.toString();
+    final dayName = DateFormat('EEEE').format(date);
+
+    // Opacity multiplier for highlighted state (3x brighter when highlighted)
+    final opacityMultiplier = isHighlighted ? 3.0 : 1.0;
+
+    // Color for the watermark - subtle but visible, boosted when highlighted
+    final baseWatermarkOpacity = isToday
+        ? (isDark ? 0.12 : 0.08)
+        : (isDark ? 0.04 : 0.03);
+    final watermarkColor = isToday
+        ? colorScheme.primary.withOpacity((baseWatermarkOpacity * opacityMultiplier).clamp(0.0, 0.5))
+        : (isDark
+            ? Colors.white.withOpacity((baseWatermarkOpacity * opacityMultiplier).clamp(0.0, 0.3))
+            : Colors.black.withOpacity((baseWatermarkOpacity * opacityMultiplier).clamp(0.0, 0.2)));
+
+    // Slightly more visible color for secondary info
+    final baseSecondaryOpacity = isToday
+        ? (isDark ? 0.10 : 0.06)
+        : (isDark ? 0.03 : 0.025);
+    final secondaryColor = isToday
+        ? colorScheme.primary.withOpacity((baseSecondaryOpacity * opacityMultiplier).clamp(0.0, 0.4))
+        : (isDark
+            ? Colors.white.withOpacity((baseSecondaryOpacity * opacityMultiplier).clamp(0.0, 0.25))
+            : Colors.black.withOpacity((baseSecondaryOpacity * opacityMultiplier).clamp(0.0, 0.15)));
+
+    // Holiday color (more prominent)
+    final baseHolidayOpacity = isToday
+        ? (isDark ? 0.18 : 0.12)
+        : (isDark ? 0.12 : 0.18);
+    final holidayColor = isToday
+        ? colorScheme.primary.withOpacity((baseHolidayOpacity * opacityMultiplier).clamp(0.0, 0.6))
+        : (isDark
+            ? Colors.amber.withOpacity((baseHolidayOpacity * opacityMultiplier).clamp(0.0, 0.5))
+            : Colors.amber.withOpacity((baseHolidayOpacity * opacityMultiplier).clamp(0.0, 0.5)));
+
+    // Build the secondary info line (Week X • Q1 • Day 28)
+    final infoParts = <String>[];
+
+    if (showWeekNumber) {
+      final weekNum = HolidaysService.getWeekNumber(date);
+      infoParts.add('WEEK $weekNum');
+    }
+
+    if (showQuarter) {
+      final quarter = HolidaysService.getQuarter(date);
+      infoParts.add('Q$quarter');
+    }
+
+    if (showDayOfYear) {
+      final dayOfYear = HolidaysService.getDayOfYear(date);
+      infoParts.add('DAY $dayOfYear');
+    }
+
+    if (showDaysRemaining) {
+      final remaining = HolidaysService.getDaysRemainingInYear(date);
+      infoParts.add('$remaining LEFT');
+    }
+
+    // Holiday name
+    String? holidayName;
+    if (showHolidays) {
+      holidayName = HolidaysService.getShortHolidayName(date);
+    }
+
+    // Moon phase
+    String? moonPhase;
+    if (showMoonPhase) {
+      moonPhase = HolidaysService.getMoonPhaseEmoji(date);
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      height: height,
+      child: Stack(
+        children: [
+          // Large day number watermark
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 10,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Big day number
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 300),
+                    style: TextStyle(
+                      fontSize: 120,
+                      fontWeight: FontWeight.w800,
+                      color: watermarkColor,
+                      height: 1.0,
+                    ),
+                    child: Text(dayNumber),
+                  ),
+
+                  // Day name
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 300),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 6,
+                      color: watermarkColor,
+                    ),
+                    child: Text(dayName.toUpperCase()),
+                  ),
+
+                  // Holiday name (if any) - slightly more prominent
+                  if (holidayName != null) ...[
+                    const SizedBox(height: 12),
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 300),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 3,
+                        color: holidayColor,
+                      ),
+                      child: Text(holidayName.toUpperCase()),
+                    ),
+                  ],
+
+                  // Secondary info line (Week • Quarter • Day of Year)
+                  if (infoParts.isNotEmpty) ...[
+                    SizedBox(height: holidayName != null ? 12 : 20),
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 300),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 3,
+                        color: secondaryColor,
+                      ),
+                      child: Text(infoParts.join('  •  ')),
+                    ),
+                  ],
+
+                  // Moon phase on its own line
+                  if (moonPhase != null) ...[
+                    const SizedBox(height: 12),
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 300),
+                      style: TextStyle(
+                        fontSize: 28,
+                        color: secondaryColor,
+                      ),
+                      child: Text(moonPhase),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

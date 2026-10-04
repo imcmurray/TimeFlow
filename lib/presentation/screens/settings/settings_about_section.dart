@@ -5,6 +5,12 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:timeflow/build_info.dart';
 import 'package:timeflow/presentation/screens/settings/section_header.dart';
 
+/// The app's version and build number, e.g. "1.0.0 (42)".
+final appVersionProvider = FutureProvider<String>((ref) async {
+  final info = await PackageInfo.fromPlatform();
+  return '${info.version} (${info.buildNumber})';
+});
+
 /// About settings: app info, support, legal.
 class SettingsAboutSection extends ConsumerWidget {
   const SettingsAboutSection({super.key});
@@ -18,70 +24,11 @@ class SettingsAboutSection extends ConsumerWidget {
         ListTile(
           leading: const Icon(Icons.info_outline),
           title: const Text('TimeFlow'),
-          subtitle: const Text('Version 1.0.0'),
-          onTap: () => _showAboutInfoDialog(context),
-        ),
-        // Build info for debugging
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color:
-                  Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.build_outlined,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Build Info',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              SelectableText(
-                'Branch: $gitBranch',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontFamily: 'monospace',
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 4),
-              SelectableText(
-                'Commit: $gitCommitHash',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontFamily: 'monospace',
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 4),
-              SelectableText(
-                'Built: $buildTimestamp',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontFamily: 'monospace',
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
+          subtitle: Text(ref.watch(appVersionProvider).maybeWhen(
+                data: (v) => 'Version $v',
+                orElse: () => 'Version',
+              )),
+          onTap: () => _showAboutInfoDialog(context, ref),
         ),
         ListTile(
           leading: const Icon(Icons.help_outline),
@@ -103,11 +50,11 @@ class SettingsAboutSection extends ConsumerWidget {
     );
   }
 
-  void _showAboutInfoDialog(BuildContext context) {
+  void _showAboutInfoDialog(BuildContext context, WidgetRef ref) {
     showAboutDialog(
       context: context,
       applicationName: 'TimeFlow',
-      applicationVersion: '1.0.0',
+      applicationVersion: ref.read(appVersionProvider).value ?? '',
       applicationIcon: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Image.asset(
@@ -145,7 +92,7 @@ class SettingsAboutSection extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Version: ${packageInfo.version}'),
-            Text('Build: #$gitCommitCount ($gitCommitHash)'),
+            Text('Build: $gitCommitHash ($buildTimestamp)'),
             const SizedBox(height: 16),
             const Text('Need help or found a bug?'),
             const SizedBox(height: 8),

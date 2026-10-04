@@ -1,7 +1,8 @@
-// Build information - overwritten by GitHub Actions during CI builds
-// Local development shows these default values
+// Build metadata, injected at build time with --dart-define, e.g.
+//   flutter build apk --dart-define=GIT_COMMIT=$(git rev-parse --short HEAD)
+// Local builds without the defines report 'dev'.
 
-const String gitCommitHash = '013e2c3';
-const String gitBranch = 'claude/analyze-and-plan-improvements-MMh18';
-const String gitCommitCount = '6';
-const String buildTimestamp = '2026-01-26T12:30:00Z';
+const String gitCommitHash =
+    String.fromEnvironment('GIT_COMMIT', defaultValue: 'dev');
+const String buildTimestamp =
+    String.fromEnvironment('BUILD_TIME', defaultValue: 'dev');

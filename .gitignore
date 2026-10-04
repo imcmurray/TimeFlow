@@ -90,45 +90,20 @@ coverage/
 !**/ios/**/default.pbxuser
 !**/ios/**/default.perspectivev3
 
-# Agent files
+# Agent / local working files
 .agent.lock
 .claude_settings.json
-
-# Prompts directory (internal)
-prompts/
-
-# Playwright
-node_modules/
-package-lock.json
-test-results/
-playwright-report/
-playwright/.cache/
-
-# Test screenshots and regression/debug artifacts
-*.png
-!web/icons/*.png
-!web/favicon.png
-!assets/images/*.png
-!**/android/**/mipmap-*/ic_launcher.png
-!assets/branding/*.svg
-test-*.js
-regression-*.js
-debug-*.js
-
-# Database and assistant files
-*.db
 .claude_assistant_settings.json
-
-# Docker (optional)
-Dockerfile.*
-docker-compose.yml
-
-# Backup directories
-web-vanilla-backup/
-
-# Archived debug artifacts (moved out of project root)
-/_archive/
-
-# Local agent working files
 .claude/
 CLAUDE-FABLE-5.md
+prompts/
+
+# Stray screenshots and debug artifacts in the repo root
+/*.png
+/*.jpg
+
+# Databases
+*.db
+
+# Archived local artifacts (not part of the app)
+/_archive/

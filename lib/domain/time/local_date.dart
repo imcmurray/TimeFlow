@@ -37,8 +37,11 @@ class LocalDate implements Comparable<LocalDate> {
   /// (Jan 31 + 1 month = Feb 28/29).
   LocalDate addMonthsClamped(int months) {
     final firstOfTarget = LocalDate(year, month + months, 1);
-    final length =
-        DateTime.utc(firstOfTarget.year, firstOfTarget.month + 1, 0).day;
+    final length = DateTime.utc(
+      firstOfTarget.year,
+      firstOfTarget.month + 1,
+      0,
+    ).day;
     return LocalDate._(
       firstOfTarget.year,
       firstOfTarget.month,
@@ -83,7 +86,10 @@ class LocalDate implements Comparable<LocalDate> {
     final parts = s.split('-');
     if (parts.length != 3) throw FormatException('Bad ISO date', s);
     return LocalDate(
-        int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+      int.parse(parts[0]),
+      int.parse(parts[1]),
+      int.parse(parts[2]),
+    );
   }
 
   static String _two(int n) => n.toString().padLeft(2, '0');

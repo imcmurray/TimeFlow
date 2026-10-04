@@ -45,7 +45,8 @@ List<TaskCluster> layoutTasks(Iterable<Task> tasks) {
   void close() {
     if (current.isEmpty) return;
     clusters.add(
-        TaskCluster(current, columnEnds.length, clusterStart!, clusterEnd!));
+      TaskCluster(current, columnEnds.length, clusterStart!, clusterEnd!),
+    );
     current = [];
     columnEnds = [];
   }

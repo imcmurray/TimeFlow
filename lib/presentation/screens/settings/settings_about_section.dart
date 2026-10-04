@@ -24,10 +24,11 @@ class SettingsAboutSection extends ConsumerWidget {
         ListTile(
           leading: const Icon(Icons.info_outline),
           title: const Text('TimeFlow'),
-          subtitle: Text(ref.watch(appVersionProvider).maybeWhen(
-                data: (v) => 'Version $v',
-                orElse: () => 'Version',
-              )),
+          subtitle: Text(
+            ref
+                .watch(appVersionProvider)
+                .maybeWhen(data: (v) => 'Version $v', orElse: () => 'Version'),
+          ),
           onTap: () => _showAboutInfoDialog(context, ref),
         ),
         ListTile(

@@ -37,8 +37,10 @@ class BackupCodec {
   }
 
   /// Parses a backup file. Throws [BackupFormatException] if it isn't one.
-  static List<StoredTask> decode(String source,
-      {required String Function() newId}) {
+  static List<StoredTask> decode(
+    String source, {
+    required String Function() newId,
+  }) {
     final Object? data;
     try {
       data = jsonDecode(source);
@@ -58,8 +60,9 @@ class BackupCodec {
           return [for (final t in tasks) _rowFromJson(_map(t))];
         default:
           throw BackupFormatException(
-              'This backup was made by a newer version of TimeFlow '
-              '(format $version). Update the app to restore it.');
+            'This backup was made by a newer version of TimeFlow '
+            '(format $version). Update the app to restore it.',
+          );
       }
     } on BackupFormatException {
       rethrow;
@@ -70,8 +73,10 @@ class BackupCodec {
 
   /// Converts a list of pre-1.0 task JSON objects (version 1 backups and the
   /// pre-1.0 web storage) to rows.
-  static List<StoredTask> decodeLegacyList(List<Object?> tasks,
-      {required String Function() newId}) {
+  static List<StoredTask> decodeLegacyList(
+    List<Object?> tasks, {
+    required String Function() newId,
+  }) {
     final legacy = [
       for (final t in tasks)
         () {
@@ -89,8 +94,9 @@ class BackupCodec {
               notes: j['notes'] as String?,
               attachmentPath: j['attachmentPath'] as String?,
               color: j['color'] as String?,
-              category:
-                  TaskCategoryExtension.fromString(j['category'] as String?),
+              category: TaskCategoryExtension.fromString(
+                j['category'] as String?,
+              ),
               createdAt: DateTime.parse(j['createdAt'] as String),
               updatedAt: DateTime.parse(j['updatedAt'] as String),
             ),
@@ -151,11 +157,13 @@ class BackupCodec {
         attachmentPath: j['attachmentPath'] as String?,
         color: j['color'] as String?,
         category: TaskCategoryExtension.fromString(j['category'] as String?),
-        recurrence:
-            recurrence != null ? RecurrenceRule.parse(recurrence) : null,
+        recurrence: recurrence != null
+            ? RecurrenceRule.parse(recurrence)
+            : null,
         seriesId: j['seriesId'] as String?,
-        occurrenceDate:
-            occurrenceDate != null ? LocalDate.parseIso(occurrenceDate) : null,
+        occurrenceDate: occurrenceDate != null
+            ? LocalDate.parseIso(occurrenceDate)
+            : null,
         createdAt: DateTime.parse(j['createdAt'] as String).toLocal(),
         updatedAt: DateTime.parse(j['updatedAt'] as String).toLocal(),
       ),

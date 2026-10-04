@@ -42,13 +42,19 @@ class RecurrenceRule {
     },
   );
   static const weekly = RecurrenceRule(frequency: Frequency.weekly);
-  static const fortnightly =
-      RecurrenceRule(frequency: Frequency.weekly, interval: 2);
+  static const fortnightly = RecurrenceRule(
+    frequency: Frequency.weekly,
+    interval: 2,
+  );
   static const monthly = RecurrenceRule(frequency: Frequency.monthly);
-  static const bimonthly =
-      RecurrenceRule(frequency: Frequency.monthly, interval: 2);
-  static const quarterly =
-      RecurrenceRule(frequency: Frequency.monthly, interval: 3);
+  static const bimonthly = RecurrenceRule(
+    frequency: Frequency.monthly,
+    interval: 2,
+  );
+  static const quarterly = RecurrenceRule(
+    frequency: Frequency.monthly,
+    interval: 3,
+  );
   static const yearly = RecurrenceRule(frequency: Frequency.yearly);
 
   /// The rule a pre-1.0 `recurringPattern` string stood for.
@@ -107,9 +113,11 @@ class RecurrenceRule {
           final days = start.daysUntil(from);
           offset = (days + interval - 1) ~/ interval * interval;
         }
-        for (var d = start.addDays(offset);
-            !d.isAfter(last);
-            d = d.addDays(interval)) {
+        for (
+          var d = start.addDays(offset);
+          !d.isAfter(last);
+          d = d.addDays(interval)
+        ) {
           yield d;
         }
 
@@ -219,11 +227,11 @@ class RecurrenceRule {
 
   @override
   int get hashCode => Object.hash(
-        frequency,
-        interval,
-        Object.hashAllUnordered(weekdays),
-        until,
-      );
+    frequency,
+    interval,
+    Object.hashAllUnordered(weekdays),
+    until,
+  );
 
   @override
   String toString() => 'RecurrenceRule(${toRRule()})';

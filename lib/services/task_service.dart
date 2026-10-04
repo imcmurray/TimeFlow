@@ -19,7 +19,7 @@ enum EditScope {
 /// split, update or override its series.
 class TaskService {
   TaskService(this._repo, {DateTime Function()? clock})
-      : _now = clock ?? DateTime.now;
+    : _now = clock ?? DateTime.now;
 
   final TaskRepository _repo;
   final DateTime Function() _now;
@@ -58,29 +58,33 @@ class TaskService {
   /// occurrences, while an individually edited title is kept.
   Future<void> update(Task original, Task edited, EditScope scope) async {
     if (!original.isOccurrence) {
-      await _repo.upsert(edited.copyWith(
-        id: original.id,
-        seriesId: null,
-        occurrenceDate: null,
-        isCompleted: edited.recurrence != null ? false : edited.isCompleted,
-        isVirtual: false,
-        createdAt: original.createdAt,
-        updatedAt: _now(),
-      ));
+      await _repo.upsert(
+        edited.copyWith(
+          id: original.id,
+          seriesId: null,
+          occurrenceDate: null,
+          isCompleted: edited.recurrence != null ? false : edited.isCompleted,
+          isVirtual: false,
+          createdAt: original.createdAt,
+          updatedAt: _now(),
+        ),
+      );
       return;
     }
 
     final series = await _repo.getSeries(original.seriesId!);
     if (series == null) {
       // The series disappeared underneath us; keep the edit as a plain task.
-      await _repo.upsert(edited.copyWith(
-        id: original.isVirtual ? TaskRepository.newId() : original.id,
-        recurrence: null,
-        seriesId: null,
-        occurrenceDate: null,
-        isVirtual: false,
-        updatedAt: _now(),
-      ));
+      await _repo.upsert(
+        edited.copyWith(
+          id: original.isVirtual ? TaskRepository.newId() : original.id,
+          recurrence: null,
+          seriesId: null,
+          occurrenceDate: null,
+          isVirtual: false,
+          updatedAt: _now(),
+        ),
+      );
       return;
     }
 
@@ -97,12 +101,15 @@ class TaskService {
     switch (scope) {
       case EditScope.thisOnly:
         await _saveOccurrence(
-            original, edited.copyWith(recurrence: original.recurrence));
+          original,
+          edited.copyWith(recurrence: original.recurrence),
+        );
 
       case EditScope.all:
         await _repo.transaction(() async {
-          final dayShift = LocalDate.of(original.startTime)
-              .daysUntil(LocalDate.of(edited.startTime));
+          final dayShift = LocalDate.of(
+            original.startTime,
+          ).daysUntil(LocalDate.of(edited.startTime));
           final newStart = seriesStart
               .addDays(dayShift)
               .at(edited.startTime.hour, edited.startTime.minute);
@@ -135,30 +142,36 @@ class TaskService {
       case EditScope.thisAndFuture:
         await _repo.transaction(() async {
           final oldRule = series.recurrence!;
-          await _repo.upsert(series.copyWith(
-            recurrence: oldRule.endingOn(date.addDays(-1)),
-            updatedAt: _now(),
-          ));
+          await _repo.upsert(
+            series.copyWith(
+              recurrence: oldRule.endingOn(date.addDays(-1)),
+              updatedAt: _now(),
+            ),
+          );
           final future = await _repo.overridesOf(series.id, from: date);
 
           if (edited.recurrence == null) {
             // Stop repeating: this occurrence becomes a plain task and the
             // later overrides go with the series.
             await _repo.deleteOverridesFrom(series.id, date);
-            await _repo.upsert(edited.copyWith(
-              id: original.isVirtual ? TaskRepository.newId() : original.id,
-              seriesId: null,
-              occurrenceDate: null,
-              isVirtual: false,
-              createdAt: _now(),
-              updatedAt: _now(),
-            ));
+            await _repo.upsert(
+              edited.copyWith(
+                id: original.isVirtual ? TaskRepository.newId() : original.id,
+                seriesId: null,
+                occurrenceDate: null,
+                isVirtual: false,
+                createdAt: _now(),
+                updatedAt: _now(),
+              ),
+            );
             return;
           }
 
           final newRule = edited.recurrence!.samePatternAs(oldRule)
               ? edited.recurrence!.copyWith(
-                  until: oldRule.until, clearUntil: oldRule.until == null)
+                  until: oldRule.until,
+                  clearUntil: oldRule.until == null,
+                )
               : edited.recurrence!;
           final newSeries = edited.copyWith(
             id: TaskRepository.newId(),
@@ -176,20 +189,23 @@ class TaskService {
           await _repo.deleteOverridesFrom(series.id, date);
           if (edited.isCompleted) {
             final first = LocalDate.of(newSeries.startTime);
-            await _repo.upsert(newSeries.copyWith(
-              id: TaskRepository.newId(),
-              isCompleted: true,
-              seriesId: newSeries.id,
-              occurrenceDate: first,
-            ));
+            await _repo.upsert(
+              newSeries.copyWith(
+                id: TaskRepository.newId(),
+                isCompleted: true,
+                seriesId: newSeries.id,
+                occurrenceDate: first,
+              ),
+            );
           }
           for (final o in future) {
             if (o.task.occurrenceDate == date) continue;
             await _repo.upsert(
-              _carryOver(o.task, series, newSeries).copyWith(
-                id: TaskRepository.newId(),
-                seriesId: newSeries.id,
-              ),
+              _carryOver(
+                o.task,
+                series,
+                newSeries,
+              ).copyWith(id: TaskRepository.newId(), seriesId: newSeries.id),
               isCancelled: o.isCancelled,
             );
           }
@@ -229,10 +245,12 @@ class TaskService {
         );
       case EditScope.thisAndFuture:
         await _repo.transaction(() async {
-          await _repo.upsert(series.copyWith(
-            recurrence: series.recurrence!.endingOn(date.addDays(-1)),
-            updatedAt: _now(),
-          ));
+          await _repo.upsert(
+            series.copyWith(
+              recurrence: series.recurrence!.endingOn(date.addDays(-1)),
+              updatedAt: _now(),
+            ),
+          );
           await _repo.deleteOverridesFrom(series.id, date);
         });
       case EditScope.all:
@@ -243,13 +261,15 @@ class TaskService {
   /// Stores [updated] as the state of [occurrence]: an override for a
   /// series occurrence, or a plain save for anything else.
   Future<void> _saveOccurrence(Task occurrence, Task updated) {
-    return _repo.upsert(updated.copyWith(
-      id: occurrence.isVirtual ? TaskRepository.newId() : occurrence.id,
-      seriesId: occurrence.seriesId,
-      occurrenceDate: occurrence.occurrenceDate,
-      isVirtual: false,
-      updatedAt: _now(),
-    ));
+    return _repo.upsert(
+      updated.copyWith(
+        id: occurrence.isVirtual ? TaskRepository.newId() : occurrence.id,
+        seriesId: occurrence.seriesId,
+        occurrenceDate: occurrence.occurrenceDate,
+        isVirtual: false,
+        updatedAt: _now(),
+      ),
+    );
   }
 
   /// Applies the changes between [oldBase] and [newBase] to [target], except
@@ -259,15 +279,27 @@ class TaskService {
 
     var result = target.copyWith(
       title: pick(target.title, oldBase.title, newBase.title),
-      description:
-          pick(target.description, oldBase.description, newBase.description),
+      description: pick(
+        target.description,
+        oldBase.description,
+        newBase.description,
+      ),
       notes: pick(target.notes, oldBase.notes, newBase.notes),
-      isImportant:
-          pick(target.isImportant, oldBase.isImportant, newBase.isImportant),
-      reminderMinutes: pick(target.reminderMinutes, oldBase.reminderMinutes,
-          newBase.reminderMinutes),
-      attachmentPath: pick(target.attachmentPath, oldBase.attachmentPath,
-          newBase.attachmentPath),
+      isImportant: pick(
+        target.isImportant,
+        oldBase.isImportant,
+        newBase.isImportant,
+      ),
+      reminderMinutes: pick(
+        target.reminderMinutes,
+        oldBase.reminderMinutes,
+        newBase.reminderMinutes,
+      ),
+      attachmentPath: pick(
+        target.attachmentPath,
+        oldBase.attachmentPath,
+        newBase.attachmentPath,
+      ),
       color: pick(target.color, oldBase.color, newBase.color),
       category: pick(target.category, oldBase.category, newBase.category),
     );
@@ -282,7 +314,9 @@ class TaskService {
       final day = LocalDate.of(target.startTime);
       final start = day.at(0, newTime);
       result = result.copyWith(
-          startTime: start, endTime: addWallMinutes(start, newLength));
+        startTime: start,
+        endTime: addWallMinutes(start, newLength),
+      );
     }
     return result;
   }

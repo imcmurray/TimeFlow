@@ -28,8 +28,9 @@ void main() {
 
   group('standalone tasks', () {
     test('create, read back, complete, delete', () async {
-      final t = await service
-          .create(draft('Dentist', start: DateTime(2026, 6, 3, 14)));
+      final t = await service.create(
+        draft('Dentist', start: DateTime(2026, 6, 3, 14)),
+      );
       var tasks = await day(6, 3);
       expect(tasks.single.title, 'Dentist');
       expect(tasks.single.id, t.id);
@@ -44,15 +45,17 @@ void main() {
 
     test('a task crossing midnight shows on both days', () async {
       await service.create(
-          draft('Night shift', start: DateTime(2026, 6, 3, 22), minutes: 240));
+        draft('Night shift', start: DateTime(2026, 6, 3, 22), minutes: 240),
+      );
       expect((await day(6, 3)).length, 1);
       expect((await day(6, 4)).length, 1);
       expect(await day(6, 5), isEmpty);
     });
 
     test('editing can clear optional fields', () async {
-      await service
-          .create(draft('Call', start: DateTime(2026, 6, 3, 9), reminder: 15));
+      await service.create(
+        draft('Call', start: DateTime(2026, 6, 3, 9), reminder: 15),
+      );
       final t = (await day(6, 3)).single;
       await service.update(t, t.copyWith(reminderMinutes: null), EditScope.all);
       expect((await day(6, 3)).single.reminderMinutes, isNull);
@@ -62,7 +65,10 @@ void main() {
       await service.create(draft('Meds', start: DateTime(2026, 6, 3, 8)));
       final t = (await day(6, 3)).single;
       await service.update(
-          t, t.copyWith(recurrence: RecurrenceRule.daily), EditScope.all);
+        t,
+        t.copyWith(recurrence: RecurrenceRule.daily),
+        EditScope.all,
+      );
       final week = await range(DateTime(2026, 6, 3), DateTime(2026, 6, 10));
       expect(week.length, 7);
       expect(week.every((o) => o.isOccurrence && o.title == 'Meds'), isTrue);
@@ -72,10 +78,14 @@ void main() {
   group('series', () {
     late Task series;
     setUp(() async {
-      series = await service.create(draft('Walk dogs',
+      series = await service.create(
+        draft(
+          'Walk dogs',
           start: DateTime(2026, 6, 1, 7),
           minutes: 30,
-          rule: RecurrenceRule.daily));
+          rule: RecurrenceRule.daily,
+        ),
+      );
     });
 
     test('occurrences are generated indefinitely', () async {
@@ -99,12 +109,14 @@ void main() {
     test('edit this occurrence only', () async {
       final occ = (await day(6, 3)).single;
       await service.update(
-          occ,
-          occ.copyWith(
-              title: 'Long walk',
-              startTime: DateTime(2026, 6, 3, 8),
-              endTime: DateTime(2026, 6, 3, 9)),
-          EditScope.thisOnly);
+        occ,
+        occ.copyWith(
+          title: 'Long walk',
+          startTime: DateTime(2026, 6, 3, 8),
+          endTime: DateTime(2026, 6, 3, 9),
+        ),
+        EditScope.thisOnly,
+      );
       final moved = (await day(6, 3)).single;
       expect(moved.title, 'Long walk');
       expect(moved.startTime.hour, 8);
@@ -115,11 +127,13 @@ void main() {
     test('moving an occurrence to another day keeps its slot empty', () async {
       final occ = (await day(6, 3)).single;
       await service.update(
-          occ,
-          occ.copyWith(
-              startTime: DateTime(2026, 6, 4, 18),
-              endTime: DateTime(2026, 6, 4, 18, 30)),
-          EditScope.thisOnly);
+        occ,
+        occ.copyWith(
+          startTime: DateTime(2026, 6, 4, 18),
+          endTime: DateTime(2026, 6, 4, 18, 30),
+        ),
+        EditScope.thisOnly,
+      );
       expect(await day(6, 3), isEmpty);
       expect((await day(6, 4)).length, 2);
     });
@@ -143,45 +157,54 @@ void main() {
       expect(await repo.count(), 0);
     });
 
-    test('edit all: rename and retime carries over to plain overrides',
-        () async {
-      await service.setCompleted((await day(6, 2)).single, true);
-      final renamedByHand = (await day(6, 3)).single;
-      await service.update(renamedByHand,
-          renamedByHand.copyWith(title: 'Vet visit'), EditScope.thisOnly);
+    test(
+      'edit all: rename and retime carries over to plain overrides',
+      () async {
+        await service.setCompleted((await day(6, 2)).single, true);
+        final renamedByHand = (await day(6, 3)).single;
+        await service.update(
+          renamedByHand,
+          renamedByHand.copyWith(title: 'Vet visit'),
+          EditScope.thisOnly,
+        );
 
-      final occ = (await day(6, 10)).single;
-      await service.update(
+        final occ = (await day(6, 10)).single;
+        await service.update(
           occ,
           occ.copyWith(
-              title: 'Morning walk',
-              startTime: DateTime(2026, 6, 10, 6, 30),
-              endTime: DateTime(2026, 6, 10, 7, 15)),
-          EditScope.all);
+            title: 'Morning walk',
+            startTime: DateTime(2026, 6, 10, 6, 30),
+            endTime: DateTime(2026, 6, 10, 7, 15),
+          ),
+          EditScope.all,
+        );
 
-      final d2 = (await day(6, 2)).single;
-      expect(d2.title, 'Morning walk');
-      expect(d2.isCompleted, isTrue);
-      expect(d2.startTime, DateTime(2026, 6, 2, 6, 30));
-      expect(d2.durationMinutes, 45);
-      final d3 = (await day(6, 3)).single;
-      expect(d3.title, 'Vet visit', reason: 'individual edit is kept');
-      final d20 = (await day(6, 20)).single;
-      expect(d20.title, 'Morning walk');
-      expect(d20.startTime.hour, 6);
-    });
+        final d2 = (await day(6, 2)).single;
+        expect(d2.title, 'Morning walk');
+        expect(d2.isCompleted, isTrue);
+        expect(d2.startTime, DateTime(2026, 6, 2, 6, 30));
+        expect(d2.durationMinutes, 45);
+        final d3 = (await day(6, 3)).single;
+        expect(d3.title, 'Vet visit', reason: 'individual edit is kept');
+        final d20 = (await day(6, 20)).single;
+        expect(d20.title, 'Morning walk');
+        expect(d20.startTime.hour, 6);
+      },
+    );
 
     test('edit this and future splits the series', () async {
       await service.setCompleted((await day(6, 2)).single, true);
       await service.setCompleted((await day(6, 12)).single, true);
       final occ = (await day(6, 10)).single;
       await service.update(
-          occ,
-          occ.copyWith(
-              title: 'Evening walk',
-              startTime: DateTime(2026, 6, 10, 19),
-              endTime: DateTime(2026, 6, 10, 19, 30)),
-          EditScope.thisAndFuture);
+        occ,
+        occ.copyWith(
+          title: 'Evening walk',
+          startTime: DateTime(2026, 6, 10, 19),
+          endTime: DateTime(2026, 6, 10, 19, 30),
+        ),
+        EditScope.thisAndFuture,
+      );
 
       expect((await day(6, 9)).single.title, 'Walk dogs');
       expect((await day(6, 2)).single.isCompleted, isTrue);
@@ -195,22 +218,41 @@ void main() {
       expect(await repo.count(), 2);
     });
 
-    test('this and future on the first occurrence edits the whole series',
-        () async {
-      final occ = (await day(6, 1)).single;
-      await service.update(
-          occ, occ.copyWith(title: 'Walk'), EditScope.thisAndFuture);
-      expect(await repo.count(), 1);
-      expect((await day(6, 5)).single.title, 'Walk');
-    });
+    test(
+      'this and future on the first occurrence edits the whole series',
+      () async {
+        final occ = (await day(6, 1)).single;
+        await service.update(
+          occ,
+          occ.copyWith(title: 'Walk'),
+          EditScope.thisAndFuture,
+        );
+        expect(await repo.count(), 1);
+        expect((await day(6, 5)).single.title, 'Walk');
+      },
+    );
 
     test('changing the pattern for this and future', () async {
       final occ = (await day(6, 8)).single; // a Monday
-      await service.update(occ, occ.copyWith(recurrence: RecurrenceRule.weekly),
-          EditScope.thisAndFuture);
+      await service.update(
+        occ,
+        occ.copyWith(recurrence: RecurrenceRule.weekly),
+        EditScope.thisAndFuture,
+      );
       final june = await range(DateTime(2026, 6, 1), DateTime(2026, 7, 1));
-      expect(june.map((t) => t.startTime.day),
-          [1, 2, 3, 4, 5, 6, 7, 8, 15, 22, 29]);
+      expect(june.map((t) => t.startTime.day), [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        15,
+        22,
+        29,
+      ]);
     });
 
     test('stop repeating keeps history and leaves one plain task', () async {
@@ -224,8 +266,10 @@ void main() {
     });
 
     test('watchRange emits on change', () async {
-      final stream =
-          repo.watchRange(DateTime(2026, 6, 2), DateTime(2026, 6, 3));
+      final stream = repo.watchRange(
+        DateTime(2026, 6, 2),
+        DateTime(2026, 6, 3),
+      );
       final seen = <bool>[];
       final sub = stream.listen((t) => seen.add(t.single.isCompleted));
       await pumpEventQueue();
@@ -239,34 +283,45 @@ void main() {
 
   group('backup', () {
     test('round-trips series, overrides and cancellations', () async {
-      final s = await service.create(draft('Meds',
-          start: DateTime(2026, 6, 1, 8), rule: RecurrenceRule.daily));
+      final s = await service.create(
+        draft(
+          'Meds',
+          start: DateTime(2026, 6, 1, 8),
+          rule: RecurrenceRule.daily,
+        ),
+      );
       await service.create(draft('Dentist', start: DateTime(2026, 6, 3, 14)));
       await service.setCompleted((await day(6, 2)).single, true);
       await service.delete(
-          (await day(6, 4)).firstWhere((t) => t.seriesId == s.id),
-          EditScope.thisOnly);
+        (await day(6, 4)).firstWhere((t) => t.seriesId == s.id),
+        EditScope.thisOnly,
+      );
       final json = await repo.exportToJson();
       final before = await range(DateTime(2026, 6, 1), DateTime(2026, 6, 8));
 
       await repo.clear();
       expect(await repo.importFromJson(json), 2);
       final after = await range(DateTime(2026, 6, 1), DateTime(2026, 6, 8));
-      expect(after.map((t) => (t.title, t.startTime, t.isCompleted)),
-          before.map((t) => (t.title, t.startTime, t.isCompleted)));
+      expect(
+        after.map((t) => (t.title, t.startTime, t.isCompleted)),
+        before.map((t) => (t.title, t.startTime, t.isCompleted)),
+      );
       expect(after.where((t) => t.startTime.day == 4), isEmpty);
     });
 
     test('rejects files that are not backups', () async {
       expect(() => repo.importFromJson('hello'), throwsA(isA<Exception>()));
-      expect(() => repo.importFromJson('{"version": 9, "tasks": []}'),
-          throwsA(isA<Exception>()));
+      expect(
+        () => repo.importFromJson('{"version": 9, "tasks": []}'),
+        throwsA(isA<Exception>()),
+      );
     });
   });
 
   test('LocalDate keys survive in overrides', () async {
     final s = await service.create(
-        draft('X', start: DateTime(2026, 6, 1, 8), rule: RecurrenceRule.daily));
+      draft('X', start: DateTime(2026, 6, 1, 8), rule: RecurrenceRule.daily),
+    );
     await service.setCompleted((await day(6, 2)).single, true);
     final o = (await repo.overridesOf(s.id)).single;
     expect(o.task.occurrenceDate, LocalDate(2026, 6, 2));

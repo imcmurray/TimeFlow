@@ -89,10 +89,7 @@ class _WaterRippleEffectState extends State<WaterRippleEffect>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
 
     if (widget.isActive) {
       _controller.repeat();

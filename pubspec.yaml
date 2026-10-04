@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ^3.9.0
 
 dependencies:
   flutter:
@@ -46,6 +46,8 @@ dependencies:
 
   # Web platform interop (used by file_export_web.dart)
   web: ^1.1.0
+  flutter_timezone: ^5.1.1
+  archive: ^4.3.0
 
 dev_dependencies:
   flutter_test:

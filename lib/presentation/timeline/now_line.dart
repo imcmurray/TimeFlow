@@ -48,8 +48,11 @@ class _NowLineState extends ConsumerState<NowLine> {
     final scroll = widget.scrollController;
     if (delta == null || !scroll.hasClients) return;
     final screenY = widget.y - scroll.offset + delta;
-    ref.read(settingsProvider.notifier).setNowLineViewportPosition(
-        screenY / scroll.position.viewportDimension);
+    ref
+        .read(settingsProvider.notifier)
+        .setNowLineViewportPosition(
+          screenY / scroll.position.viewportDimension,
+        );
     widget.onPositionChanged?.call();
     HapticFeedback.lightImpact();
   }
@@ -57,25 +60,28 @@ class _NowLineState extends ConsumerState<NowLine> {
   void _cancel() => setState(() => _dragDelta = null);
 
   Widget _draggable(Widget child) => GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onLongPressStart: _start,
-        onLongPressMoveUpdate: _update,
-        onLongPressEnd: _end,
-        onLongPressCancel: _cancel,
-        child: child,
-      );
+    behavior: HitTestBehavior.translucent,
+    onLongPressStart: _start,
+    onLongPressMoveUpdate: _update,
+    onLongPressEnd: _end,
+    onLongPressCancel: _cancel,
+    child: child,
+  );
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = isDark ? AppColors.nowLineDark : AppColors.nowLineLight;
     final onColor = isDark ? AppColors.onNowLineDark : AppColors.onNowLineLight;
-    final use24Hour =
-        ref.watch(settingsProvider.select((s) => s.use24HourFormat));
+    final use24Hour = ref.watch(
+      settingsProvider.select((s) => s.use24HourFormat),
+    );
     final dragging = _dragDelta != null;
     final y = widget.y + (_dragDelta ?? 0);
-    final time = TimeFormatter.formatTime(widget.currentTime,
-        use24HourFormat: use24Hour);
+    final time = TimeFormatter.formatTime(
+      widget.currentTime,
+      use24HourFormat: use24Hour,
+    );
 
     return Stack(
       children: [
@@ -134,8 +140,10 @@ class _NowLineState extends ConsumerState<NowLine> {
           child: ExcludeSemantics(
             child: _draggable(
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: color,
                   borderRadius: BorderRadius.circular(12),

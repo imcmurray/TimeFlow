@@ -1,155 +1,80 @@
 import 'dart:math' as math;
 
-/// Service for calculating sunrise and sunset times.
+/// Sunrise and sunset times, from NOAA's solar position equations.
 ///
-/// Uses a simplified solar position algorithm that provides reasonably
-/// accurate times for most locations. Accuracy is typically within a few minutes.
+/// Accurate to a couple of minutes away from the poles. Times are computed
+/// in UTC and converted to the device's local time, so DST and the time
+/// zone are handled by the platform.
 class SunTimesService {
-  /// Default latitude (approximately 40°N - good for continental US average).
-  /// This is more accurate for MST/CST/EST regions than the previous 45°N.
-  static const double defaultLatitude = 40.0;
+  const SunTimesService._();
 
-  /// Default longitude - will be estimated from timezone if not set.
-  static const double defaultLongitude = 0.0;
-
-  /// Estimates longitude from the device's timezone offset.
-  /// Timezones are roughly based on 15 degrees of longitude per hour.
-  static double estimateLongitudeFromTimezone() {
-    final now = DateTime.now();
-    final offsetHours = now.timeZoneOffset.inMinutes / 60.0;
-    // Each hour of timezone offset ≈ 15 degrees of longitude
-    return offsetHours * 15.0;
-  }
-
-  /// Gets the timezone offset in hours for the current device.
-  static double getTimezoneOffsetHours() {
-    return DateTime.now().timeZoneOffset.inMinutes / 60.0;
-  }
-
-  /// Calculates sunrise and sunset times for a given date and location.
-  ///
-  /// Returns a [SunTimes] record with sunrise and sunset as DateTime objects.
-  /// If the sun doesn't rise or set on this day (polar regions), returns null
-  /// for those values.
-  ///
-  /// The [timezoneOffsetHours] parameter should be the device's timezone offset
-  /// (e.g., -5 for EST, +1 for CET). If not provided, it will be auto-detected.
+  /// Sunrise and sunset on [date] (its calendar day) at the given location.
   static SunTimes calculate({
     required DateTime date,
-    double latitude = defaultLatitude,
-    double longitude = defaultLongitude,
-    double? timezoneOffsetHours,
+    required double latitude,
+    required double longitude,
   }) {
-    // Use provided timezone offset or detect from device
-    final tzOffset = timezoneOffsetHours ?? getTimezoneOffsetHours();
+    final dayStartUtc = DateTime.utc(date.year, date.month, date.day);
+    final dayOfYear = dayStartUtc.difference(DateTime.utc(date.year)).inDays;
+    final daysInYear = DateTime.utc(
+      date.year + 1,
+    ).difference(DateTime.utc(date.year)).inDays;
 
-    // If longitude is 0 (default/unset), estimate from timezone
-    final effectiveLongitude =
-        (longitude == 0.0) ? estimateLongitudeFromTimezone() : longitude;
+    // Evaluate at local solar noon, where the day's values matter most.
+    final solarNoonUtcHours = 12 - longitude / 15;
+    final gamma =
+        2 * math.pi / daysInYear * (dayOfYear + (solarNoonUtcHours - 12) / 24);
 
-    // Day of year (1-366)
-    final dayOfYear = _dayOfYear(date);
+    final eqTimeMinutes =
+        229.18 *
+        (0.000075 +
+            0.001868 * math.cos(gamma) -
+            0.032077 * math.sin(gamma) -
+            0.014615 * math.cos(2 * gamma) -
+            0.040849 * math.sin(2 * gamma));
+    final declination =
+        0.006918 -
+        0.399912 * math.cos(gamma) +
+        0.070257 * math.sin(gamma) -
+        0.006758 * math.cos(2 * gamma) +
+        0.000907 * math.sin(2 * gamma) -
+        0.002697 * math.cos(3 * gamma) +
+        0.00148 * math.sin(3 * gamma);
 
-    // Solar declination angle (radians)
-    final declination = _solarDeclination(dayOfYear);
+    final lat = latitude * math.pi / 180;
+    // 90.833°: the sun's centre at the horizon plus refraction and the
+    // sun's apparent radius.
+    final zenith = 90.833 * math.pi / 180;
+    final cosHourAngle =
+        math.cos(zenith) / (math.cos(lat) * math.cos(declination)) -
+        math.tan(lat) * math.tan(declination);
 
-    // Latitude in radians
-    final latRad = latitude * math.pi / 180;
+    if (cosHourAngle < -1) return const SunTimes(isPolarDay: true);
+    if (cosHourAngle > 1) return const SunTimes(isPolarNight: true);
 
-    // Hour angle at sunrise/sunset
-    final cosHourAngle = -math.tan(latRad) * math.tan(declination);
-
-    // Check for polar day/night
-    if (cosHourAngle < -1) {
-      // Sun never sets (midnight sun)
-      return SunTimes(
-        sunrise: DateTime(date.year, date.month, date.day, 0, 0),
-        sunset: DateTime(date.year, date.month, date.day, 23, 59),
-        isPolarDay: true,
-        isPolarNight: false,
-      );
-    }
-    if (cosHourAngle > 1) {
-      // Sun never rises (polar night)
-      return SunTimes(
-        sunrise: null,
-        sunset: null,
-        isPolarDay: false,
-        isPolarNight: true,
-      );
-    }
-
-    final hourAngle = math.acos(cosHourAngle);
-
-    // Convert hour angle to hours
-    final hourAngleHours = hourAngle * 180 / math.pi / 15;
-
-    // Equation of time correction (simplified)
-    final eot = _equationOfTime(dayOfYear);
-
-    // Calculate solar noon in UTC, then convert to local time
-    // Solar noon at longitude 0 is 12:00 UTC
-    // Each 15 degrees of longitude shifts solar noon by 1 hour
-    final solarNoonUTC = 12.0 - effectiveLongitude / 15 - eot / 60;
-
-    // Convert to local time by adding timezone offset
-    final solarNoonLocal = solarNoonUTC + tzOffset;
-
-    // Sunrise and sunset times in local time
-    final sunriseHour = solarNoonLocal - hourAngleHours;
-    final sunsetHour = solarNoonLocal + hourAngleHours;
+    final hourAngleDeg = math.acos(cosHourAngle) * 180 / math.pi;
+    DateTime local(double utcMinutes) =>
+        dayStartUtc.add(Duration(seconds: (utcMinutes * 60).round())).toLocal();
 
     return SunTimes(
-      sunrise: _hoursToDateTime(date, sunriseHour),
-      sunset: _hoursToDateTime(date, sunsetHour),
-      isPolarDay: false,
-      isPolarNight: false,
+      sunrise: local(720 - 4 * (longitude + hourAngleDeg) - eqTimeMinutes),
+      sunset: local(720 - 4 * (longitude - hourAngleDeg) - eqTimeMinutes),
     );
-  }
-
-  /// Gets the day of year (1-366) for a given date.
-  static int _dayOfYear(DateTime date) {
-    final firstDayOfYear = DateTime(date.year, 1, 1);
-    return date.difference(firstDayOfYear).inDays + 1;
-  }
-
-  /// Calculates solar declination angle in radians.
-  static double _solarDeclination(int dayOfYear) {
-    // Simplified formula
-    return 0.409 * math.sin(2 * math.pi / 365 * (dayOfYear - 81));
-  }
-
-  /// Simplified equation of time (returns minutes).
-  static double _equationOfTime(int dayOfYear) {
-    final b = 2 * math.pi * (dayOfYear - 81) / 365;
-    return 9.87 * math.sin(2 * b) - 7.53 * math.cos(b) - 1.5 * math.sin(b);
-  }
-
-  /// Converts decimal hours to a DateTime.
-  static DateTime _hoursToDateTime(DateTime date, double hours) {
-    // Clamp to valid range
-    hours = hours.clamp(0, 24);
-
-    final hour = hours.floor();
-    final minuteDecimal = (hours - hour) * 60;
-    final minute = minuteDecimal.round().clamp(0, 59);
-
-    return DateTime(date.year, date.month, date.day, hour.clamp(0, 23), minute);
   }
 }
 
-/// Represents sunrise and sunset times for a day.
+/// Sunrise and sunset for one day.
 class SunTimes {
-  /// Time of sunrise, or null if sun doesn't rise.
+  /// Local sunrise, or null during polar day or night.
   final DateTime? sunrise;
 
-  /// Time of sunset, or null if sun doesn't set.
+  /// Local sunset, or null during polar day or night.
   final DateTime? sunset;
 
-  /// True if this is a polar day (midnight sun).
+  /// The sun doesn't set.
   final bool isPolarDay;
 
-  /// True if this is a polar night (no sunrise).
+  /// The sun doesn't rise.
   final bool isPolarNight;
 
   const SunTimes({
@@ -159,16 +84,10 @@ class SunTimes {
     this.isPolarNight = false,
   });
 
-  /// Gets the hour of sunrise (0-23), or null if no sunrise.
-  int? get sunriseHour => sunrise?.hour;
-
-  /// Gets the hour of sunset (0-23), or null if no sunset.
-  int? get sunsetHour => sunset?.hour;
-
   @override
   String toString() {
-    if (isPolarDay) return 'SunTimes(Polar Day)';
-    if (isPolarNight) return 'SunTimes(Polar Night)';
+    if (isPolarDay) return 'SunTimes(polar day)';
+    if (isPolarNight) return 'SunTimes(polar night)';
     return 'SunTimes(sunrise: $sunrise, sunset: $sunset)';
   }
 }

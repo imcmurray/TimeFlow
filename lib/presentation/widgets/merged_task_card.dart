@@ -55,16 +55,22 @@ class _MergedTaskCardState extends State<MergedTaskCard>
   void initState() {
     super.initState();
     initShake();
-    setShakeActive(widget.reminderStates.values
-        .any((state) => state == ReminderState.triggered));
+    setShakeActive(
+      widget.reminderStates.values.any(
+        (state) => state == ReminderState.triggered,
+      ),
+    );
     _startCountdownTimer();
   }
 
   @override
   void didUpdateWidget(MergedTaskCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    setShakeActive(widget.reminderStates.values
-        .any((state) => state == ReminderState.triggered));
+    setShakeActive(
+      widget.reminderStates.values.any(
+        (state) => state == ReminderState.triggered,
+      ),
+    );
     _startCountdownTimer();
   }
 
@@ -73,9 +79,11 @@ class _MergedTaskCardState extends State<MergedTaskCard>
 
     // Find the earliest upcoming reminder
     final upcomingReminders = widget.reminderTimes.entries
-        .where((e) =>
-            widget.reminderStates[e.key] != ReminderState.triggered &&
-            widget.reminderStates[e.key] != ReminderState.acknowledged)
+        .where(
+          (e) =>
+              widget.reminderStates[e.key] != ReminderState.triggered &&
+              widget.reminderStates[e.key] != ReminderState.acknowledged,
+        )
         .toList();
 
     if (upcomingReminders.isEmpty) return;
@@ -104,8 +112,9 @@ class _MergedTaskCardState extends State<MergedTaskCard>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasTriggeredReminder = widget.reminderStates.values
-        .any((state) => state == ReminderState.triggered);
+    final hasTriggeredReminder = widget.reminderStates.values.any(
+      (state) => state == ReminderState.triggered,
+    );
     final gradient = _buildGradient();
     final dominantColor = _getDominantColor();
 
@@ -246,7 +255,8 @@ class _MergedTaskCardState extends State<MergedTaskCard>
           return Flexible(
             child: Padding(
               padding: EdgeInsets.only(
-                  right: index < displayTasks.length - 1 ? 8 : 0),
+                right: index < displayTasks.length - 1 ? 8 : 0,
+              ),
               child: _buildTitlePill(task),
             ),
           );
@@ -273,17 +283,11 @@ class _MergedTaskCardState extends State<MergedTaskCard>
     return GestureDetector(
       onTap: widget.onTapTask != null ? () => widget.onTapTask!(task) : null,
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 8,
-          vertical: 2,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: color.withValues(alpha: 0.5),
-            width: 1.5,
-          ),
+          border: Border.all(color: color.withValues(alpha: 0.5), width: 1.5),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -298,11 +302,13 @@ class _MergedTaskCardState extends State<MergedTaskCard>
                 task.title,
                 style: TextStyle(
                   fontSize: 11,
-                  fontWeight:
-                      task.isImportant ? FontWeight.bold : FontWeight.w500,
+                  fontWeight: task.isImportant
+                      ? FontWeight.bold
+                      : FontWeight.w500,
                   color: color,
-                  decoration:
-                      task.isCompleted ? TextDecoration.lineThrough : null,
+                  decoration: task.isCompleted
+                      ? TextDecoration.lineThrough
+                      : null,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -311,8 +317,11 @@ class _MergedTaskCardState extends State<MergedTaskCard>
             if (task.isCompleted)
               Padding(
                 padding: const EdgeInsets.only(left: 4),
-                child: Icon(Icons.check_circle,
-                    size: 12, color: color.withValues(alpha: 0.7)),
+                child: Icon(
+                  Icons.check_circle,
+                  size: 12,
+                  color: color.withValues(alpha: 0.7),
+                ),
               ),
           ],
         ),
@@ -335,18 +344,11 @@ class _MergedTaskCardState extends State<MergedTaskCard>
 
     return Row(
       children: [
-        Icon(
-          Icons.schedule,
-          size: 14,
-          color: Colors.white70,
-        ),
+        Icon(Icons.schedule, size: 14, color: Colors.white70),
         const SizedBox(width: 4),
         Text(
           '$startStr - $endStr',
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.white70,
-          ),
+          style: const TextStyle(fontSize: 12, color: Colors.white70),
         ),
         const SizedBox(width: 8),
         Container(
@@ -393,8 +395,9 @@ class _MergedTaskCardState extends State<MergedTaskCard>
     // Get earliest pending reminder
     DateTime? earliest;
     if (pendingReminders.isNotEmpty) {
-      earliest =
-          pendingReminders.values.reduce((a, b) => a.isBefore(b) ? a : b);
+      earliest = pendingReminders.values.reduce(
+        (a, b) => a.isBefore(b) ? a : b,
+      );
     }
 
     final isTriggered = triggeredCount > 0;
@@ -419,10 +422,7 @@ class _MergedTaskCardState extends State<MergedTaskCard>
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: badgeColor,
-          width: 1.5,
-        ),
+        border: Border.all(color: badgeColor, width: 1.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -461,33 +461,20 @@ class _MergedTaskCardState extends State<MergedTaskCard>
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: color,
-                  width: 2,
-                ),
+                border: Border.all(color: color, width: 2),
                 boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.5),
-                    blurRadius: 2,
-                  ),
+                  BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 2),
                 ],
               ),
             ),
           );
         }),
         const Spacer(),
-        const Icon(
-          Icons.touch_app,
-          size: 14,
-          color: Colors.white54,
-        ),
+        const Icon(Icons.touch_app, size: 14, color: Colors.white54),
         const SizedBox(width: 4),
         const Text(
           'Tap to expand',
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.white54,
-          ),
+          style: TextStyle(fontSize: 10, color: Colors.white54),
         ),
       ],
     );

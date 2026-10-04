@@ -35,14 +35,16 @@ class TaskActions {
     final messenger = ScaffoldMessenger.maybeOf(context);
     await _service.delete(task, scope);
     if (scope == EditScope.thisOnly && !task.isRecurring) {
-      messenger?.showSnackBar(SnackBar(
-        content: Text('Deleted "${task.title}"'),
-        behavior: SnackBarBehavior.floating,
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () => _ref.read(taskRepositoryProvider).upsert(task),
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text('Deleted "${task.title}"'),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () => _ref.read(taskRepositoryProvider).upsert(task),
+          ),
         ),
-      ));
+      );
     }
     return true;
   }

@@ -143,8 +143,9 @@ class Task {
       recurrence: identical(recurrence, _keep)
           ? this.recurrence
           : recurrence as RecurrenceRule?,
-      seriesId:
-          identical(seriesId, _keep) ? this.seriesId : seriesId as String?,
+      seriesId: identical(seriesId, _keep)
+          ? this.seriesId
+          : seriesId as String?,
       occurrenceDate: identical(occurrenceDate, _keep)
           ? this.occurrenceDate
           : occurrenceDate as LocalDate?,

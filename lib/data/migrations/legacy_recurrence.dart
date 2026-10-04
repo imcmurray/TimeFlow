@@ -81,8 +81,9 @@ List<StoredTask> _collapseGroup(
                   ? t
                   : t.copyWith(
                       startTime: t.startTime.subtract(shift),
-                      endTime: t.endTime.subtract(shift));
-            }()
+                      endTime: t.endTime.subtract(shift),
+                    );
+            }(),
         ]
       : sorted;
   final rule = RecurrenceRule.fromLegacyPattern(group.first.pattern)!;
@@ -121,23 +122,32 @@ List<StoredTask> _collapseGroup(
   }
 
   final lastDate = LocalDate.of(instances.last.startTime);
-  for (final date
-      in rule.occurrences(firstDate, from: firstDate, to: lastDate)) {
+  for (final date in rule.occurrences(
+    firstDate,
+    from: firstDate,
+    to: lastDate,
+  )) {
     final generated = SeriesExpander.occurrenceOn(series, date);
     final instance = byDate.remove(date);
     if (instance == null) {
-      result.add(StoredTask(
-        generated.copyWith(id: newId(), recurrence: null, isVirtual: false),
-        isCancelled: true,
-      ));
+      result.add(
+        StoredTask(
+          generated.copyWith(id: newId(), recurrence: null, isVirtual: false),
+          isCancelled: true,
+        ),
+      );
       continue;
     }
     if (!instance.sameContentAs(generated)) {
-      result.add(StoredTask(instance.copyWith(
-        recurrence: null,
-        seriesId: series.id,
-        occurrenceDate: date,
-      )));
+      result.add(
+        StoredTask(
+          instance.copyWith(
+            recurrence: null,
+            seriesId: series.id,
+            occurrenceDate: date,
+          ),
+        ),
+      );
     }
   }
 

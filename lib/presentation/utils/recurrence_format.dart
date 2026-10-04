@@ -21,7 +21,7 @@ String _ordinal(int n) {
     1 => '${n}st',
     2 => '${n}nd',
     3 => '${n}rd',
-    _ => '${n}th'
+    _ => '${n}th',
   };
 }
 
@@ -34,22 +34,23 @@ String describeRecurrence(RecurrenceRule rule, LocalDate start) {
   final base = switch (rule.frequency) {
     Frequency.daily => n == 1 ? 'Every day' : 'Every $n days',
     Frequency.weekly => () {
-        final days = rule.weekdays.isEmpty ? {start.weekday} : rule.weekdays;
-        if (n == 1 &&
-            days.length == 5 &&
-            !days.contains(DateTime.saturday) &&
-            !days.contains(DateTime.sunday)) {
-          return 'Every weekday (Mon–Fri)';
-        }
-        if (n == 1 && days.length == 7) return 'Every day';
-        final sorted = days.toList()..sort();
-        final names = sorted.length == 1
-            ? _weekdayLong[sorted.single - 1]
-            : sorted.map(weekdayShort).join(', ');
-        return '${every('week')} on $names';
-      }(),
-    Frequency.monthly => '${every('month')} on the ${_ordinal(start.day)}'
-        '${start.day > 28 ? ' (or last day)' : ''}',
+      final days = rule.weekdays.isEmpty ? {start.weekday} : rule.weekdays;
+      if (n == 1 &&
+          days.length == 5 &&
+          !days.contains(DateTime.saturday) &&
+          !days.contains(DateTime.sunday)) {
+        return 'Every weekday (Mon–Fri)';
+      }
+      if (n == 1 && days.length == 7) return 'Every day';
+      final sorted = days.toList()..sort();
+      final names = sorted.length == 1
+          ? _weekdayLong[sorted.single - 1]
+          : sorted.map(weekdayShort).join(', ');
+      return '${every('week')} on $names';
+    }(),
+    Frequency.monthly =>
+      '${every('month')} on the ${_ordinal(start.day)}'
+          '${start.day > 28 ? ' (or last day)' : ''}',
     Frequency.yearly =>
       '${every('year')} on ${DateFormat.MMMMd().format(start.startOfDay)}',
   };

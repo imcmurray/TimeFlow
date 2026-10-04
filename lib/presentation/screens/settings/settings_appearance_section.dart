@@ -31,24 +31,25 @@ class SettingsAppearanceSection extends ConsumerWidget {
           title: const Text('Upcoming tasks above NOW'),
           subtitle: const Text('Future tasks flow down toward the NOW line'),
           value: settings.upcomingTasksAboveNow,
-          onChanged:
-              ref.read(settingsProvider.notifier).setUpcomingTasksAboveNow,
+          onChanged: ref
+              .read(settingsProvider.notifier)
+              .setUpcomingTasksAboveNow,
         ),
       ],
     );
   }
 
   String _themeLabel(String theme) => switch (theme) {
-        'light' => 'Light',
-        'dark' => 'Dark',
-        _ => 'System default',
-      };
+    'light' => 'Light',
+    'dark' => 'Dark',
+    _ => 'System default',
+  };
 
   String _clockLabel(bool? use24Hour) => switch (use24Hour) {
-        true => '24-hour (14:30)',
-        false => '12-hour (2:30 PM)',
-        null => 'System default',
-      };
+    true => '24-hour (14:30)',
+    false => '12-hour (2:30 PM)',
+    null => 'System default',
+  };
 
   Future<void> _showThemeDialog(BuildContext context, WidgetRef ref) async {
     final theme = await showChoiceDialog<String>(
@@ -81,7 +82,10 @@ class SettingsAppearanceSection extends ConsumerWidget {
       ],
     );
     if (choice == null) return;
-    ref.read(settingsProvider.notifier).setUse24HourPreference(
-        switch (choice) { '24' => true, '12' => false, _ => null });
+    ref.read(settingsProvider.notifier).setUse24HourPreference(switch (choice) {
+      '24' => true,
+      '12' => false,
+      _ => null,
+    });
   }
 }

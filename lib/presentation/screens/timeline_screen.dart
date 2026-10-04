@@ -37,9 +37,13 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
   DateTime? _selectedDateFromCalendar;
   double _pinchScale = 1.0;
   bool _isPinching = false;
-  late double _currentHourHeight = (TimelineViewState.defaultHourHeight *
-          ref.read(settingsProvider).timelineZoom)
-      .clamp(TimelineViewState.minHourHeight, TimelineViewState.maxHourHeight);
+  late double _currentHourHeight =
+      (TimelineViewState.defaultHourHeight *
+              ref.read(settingsProvider).timelineZoom)
+          .clamp(
+            TimelineViewState.minHourHeight,
+            TimelineViewState.maxHourHeight,
+          );
   late double _baseHourHeight = _currentHourHeight;
   final FocusNode _focusNode = FocusNode();
   bool _isCtrlPressed = false;
@@ -100,8 +104,9 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
 
     if (_viewMode == TimelineViewMode.day) {
       // In day view: pinch zooms the timeline (accumulative)
-      _timelineKey.currentState
-          ?.setHourHeightAbsolute(_baseHourHeight * _pinchScale);
+      _timelineKey.currentState?.setHourHeightAbsolute(
+        _baseHourHeight * _pinchScale,
+      );
 
       // Very aggressive pinch-in escapes to calendar
       if (_pinchScale < 0.5) {
@@ -211,8 +216,8 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                 color: _viewMode == TimelineViewMode.calendar
                     ? colorScheme.tertiaryContainer
                     : _isViewingToday
-                        ? colorScheme.primaryContainer
-                        : Colors.transparent,
+                    ? colorScheme.primaryContainer
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -228,8 +233,8 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                       color: _viewMode == TimelineViewMode.calendar
                           ? colorScheme.tertiary
                           : _isViewingToday
-                              ? colorScheme.primary
-                              : null,
+                          ? colorScheme.primary
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -241,8 +246,8 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                     color: _viewMode == TimelineViewMode.calendar
                         ? colorScheme.tertiary
                         : _isViewingToday
-                            ? colorScheme.primary
-                            : colorScheme.onSurface,
+                        ? colorScheme.primary
+                        : colorScheme.onSurface,
                   ),
                 ],
               ),
@@ -283,8 +288,10 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                 return FadeTransition(
                   opacity: animation,
                   child: ScaleTransition(
-                    scale:
-                        Tween<double>(begin: 0.95, end: 1.0).animate(animation),
+                    scale: Tween<double>(
+                      begin: 0.95,
+                      end: 1.0,
+                    ).animate(animation),
                     child: child,
                   ),
                 );
@@ -320,7 +327,8 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
 
             if (_viewMode == TimelineViewMode.day &&
                 !ref.watch(
-                    settingsProvider.select((s) => s.hasSeenLongPressHint)))
+                  settingsProvider.select((s) => s.hasSeenLongPressHint),
+                ))
               LongPressHintTooltip(
                 onDismiss: () => ref
                     .read(settingsProvider.notifier)
@@ -346,9 +354,8 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => TaskDetailScreen(
-                        initialDate: _visibleDate,
-                      ),
+                      builder: (context) =>
+                          TaskDetailScreen(initialDate: _visibleDate),
                     ),
                   );
                 },

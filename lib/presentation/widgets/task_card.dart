@@ -128,8 +128,9 @@ class _TaskCardState extends State<TaskCard>
     // Determine card color - prioritize category color for visual consistency
     Color cardColor;
     if (widget.task.color != null) {
-      cardColor =
-          Color(int.parse(widget.task.color!.replaceFirst('#', '0xFF')));
+      cardColor = Color(
+        int.parse(widget.task.color!.replaceFirst('#', '0xFF')),
+      );
     } else if (widget.task.category != TaskCategory.none) {
       // Use category color as the primary indicator
       cardColor = widget.task.category.color;
@@ -143,17 +144,22 @@ class _TaskCardState extends State<TaskCard>
       cardColor = AppColors.primaryBlue;
     }
 
+    // Swipe right to complete, left to delete (the delete can be undone).
+    // Without callbacks (read-only views) the card doesn't swipe.
+    final direction = switch ((widget.onComplete, widget.onDelete)) {
+      (null, null) => DismissDirection.none,
+      (_, null) => DismissDirection.startToEnd,
+      (null, _) => DismissDirection.endToStart,
+      _ => DismissDirection.horizontal,
+    };
     Widget card = Dismissible(
       key: Key(widget.task.id),
-      direction: DismissDirection.horizontal,
+      direction: direction,
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
           widget.onComplete?.call();
         } else {
-          final confirmed = await _showDeleteConfirmation(context);
-          if (confirmed) {
-            widget.onDelete?.call();
-          }
+          widget.onDelete?.call();
         }
         return false;
       },
@@ -185,7 +191,8 @@ class _TaskCardState extends State<TaskCard>
               color: isTriggered
                   ? AppColors.reminderLine
                   : cardColor.withValues(
-                      alpha: widget.task.isCompleted ? 0.3 : 0.5),
+                      alpha: widget.task.isCompleted ? 0.3 : 0.5,
+                    ),
               width: isTriggered ? 2.5 : 2,
             ),
             boxShadow: [
@@ -208,7 +215,8 @@ class _TaskCardState extends State<TaskCard>
                   color: isTriggered
                       ? AppColors.reminderLine
                       : cardColor.withValues(
-                          alpha: widget.task.isCompleted ? 0.5 : 1.0),
+                          alpha: widget.task.isCompleted ? 0.5 : 1.0,
+                        ),
                 ),
                 // Content
                 Expanded(
@@ -234,7 +242,10 @@ class _TaskCardState extends State<TaskCard>
   }
 
   Widget _buildContent(
-      BuildContext context, BoxConstraints constraints, Color cardColor) {
+    BuildContext context,
+    BoxConstraints constraints,
+    Color cardColor,
+  ) {
     final availableHeight = constraints.maxHeight;
     final padding = availableHeight < 40 ? 4.0 : 8.0;
 
@@ -256,11 +267,7 @@ class _TaskCardState extends State<TaskCard>
             if (widget.task.isImportant)
               Padding(
                 padding: const EdgeInsets.only(right: 4),
-                child: Icon(
-                  Icons.star,
-                  size: 16,
-                  color: AppColors.accentCoral,
-                ),
+                child: Icon(Icons.star, size: 16, color: AppColors.accentCoral),
               ),
             Expanded(
               child: Text(
@@ -272,10 +279,9 @@ class _TaskCardState extends State<TaskCard>
                       ? TextDecoration.lineThrough
                       : TextDecoration.none,
                   color: widget.task.isCompleted
-                      ? Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.5)
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.5)
                       : Theme.of(context).colorScheme.onSurface,
                 ),
                 maxLines: 1,
@@ -302,8 +308,9 @@ class _TaskCardState extends State<TaskCard>
           style: TextStyle(
             fontSize: 12,
             decoration: TextDecoration.none,
-            color:
-                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
 
@@ -314,20 +321,16 @@ class _TaskCardState extends State<TaskCard>
           Row(
             children: [
               if (widget.task.category != TaskCategory.none)
-                CategoryBadge(
-                  category: widget.task.category,
-                  compact: true,
-                ),
+                CategoryBadge(category: widget.task.category, compact: true),
               if (widget.task.isRecurring) ...[
                 if (widget.task.category != TaskCategory.none)
                   const SizedBox(width: 6),
                 Icon(
                   Icons.repeat,
                   size: 14,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.4),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.4),
                 ),
               ],
             ],
@@ -343,10 +346,9 @@ class _TaskCardState extends State<TaskCard>
             style: TextStyle(
               fontSize: 12,
               decoration: TextDecoration.none,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -381,8 +383,8 @@ class _TaskCardState extends State<TaskCard>
       onTap: isTriggered
           ? widget.onReminderAcknowledged
           : isAcknowledged
-              ? widget.onReminderRescheduled
-              : null,
+          ? widget.onReminderRescheduled
+          : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
@@ -396,18 +398,10 @@ class _TaskCardState extends State<TaskCard>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 14,
-              color: badgeColor,
-            ),
+            Icon(icon, size: 14, color: badgeColor),
             if (isAcknowledged) ...[
               const SizedBox(width: 2),
-              Icon(
-                Icons.check,
-                size: 10,
-                color: badgeColor,
-              ),
+              Icon(Icons.check, size: 10, color: badgeColor),
             ] else if (timeText != null) ...[
               const SizedBox(width: 2),
               Text(
@@ -448,28 +442,6 @@ class _TaskCardState extends State<TaskCard>
 
   String _formatTime(DateTime time) =>
       TimeFormatter.formatTime(time, use24HourFormat: widget.use24HourFormat);
-
-  Future<bool> _showDeleteConfirmation(BuildContext context) async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Delete Task'),
-            content: Text('Delete "${widget.task.title}"?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: const Text('Delete'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-  }
 }
 
 /// Background shown during swipe gestures.

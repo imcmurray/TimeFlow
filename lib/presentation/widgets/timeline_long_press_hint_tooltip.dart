@@ -6,10 +6,7 @@ import 'package:flutter/material.dart';
 class LongPressHintTooltip extends StatefulWidget {
   final VoidCallback onDismiss;
 
-  const LongPressHintTooltip({
-    super.key,
-    required this.onDismiss,
-  });
+  const LongPressHintTooltip({super.key, required this.onDismiss});
 
   @override
   State<LongPressHintTooltip> createState() => _LongPressHintTooltipState();
@@ -35,10 +32,7 @@ class _LongPressHintTooltipState extends State<LongPressHintTooltip>
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, -0.3),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     // Start animation after a short delay
     Future.delayed(const Duration(milliseconds: 500), () {
@@ -74,14 +68,17 @@ class _LongPressHintTooltipState extends State<LongPressHintTooltip>
           opacity: _fadeAnimation,
           child: Semantics(
             button: true,
-            label: 'Tip: long-press anywhere on the timeline to create a task. '
+            label:
+                'Tip: long-press anywhere on the timeline to create a task. '
                 'Tap to dismiss.',
             excludeSemantics: true,
             child: GestureDetector(
               onTap: _dismiss,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF2D3748) : Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -93,10 +90,9 @@ class _LongPressHintTooltipState extends State<LongPressHintTooltip>
                     ),
                   ],
                   border: Border.all(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withValues(alpha: 0.3),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -105,10 +101,9 @@ class _LongPressHintTooltipState extends State<LongPressHintTooltip>
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withValues(alpha: 0.1),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(

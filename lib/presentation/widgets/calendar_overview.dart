@@ -122,16 +122,13 @@ class _MonthGrid extends ConsumerWidget {
   final DateTime month;
   final ValueChanged<DateTime> onDateSelected;
 
-  const _MonthGrid({
-    required this.month,
-    required this.onDateSelected,
-  });
+  const _MonthGrid({required this.month, required this.onDateSelected});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final datesWithTasks =
         ref.watch(monthTaskDaysProvider(LocalDate.of(month))).value ??
-            const <LocalDate>{};
+        const <LocalDate>{};
     final colorScheme = Theme.of(context).colorScheme;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -260,7 +257,7 @@ class _MonthGrid extends ConsumerWidget {
       'September',
       'October',
       'November',
-      'December'
+      'December',
     ];
     return '${months[month.month - 1]} ${month.year}';
   }
@@ -289,8 +286,9 @@ class _DayButton extends StatelessWidget {
       style: TextButton.styleFrom(
         shape: const CircleBorder(),
         backgroundColor: isToday ? colorScheme.primary : Colors.transparent,
-        foregroundColor:
-            isToday ? colorScheme.onPrimary : colorScheme.onSurface,
+        foregroundColor: isToday
+            ? colorScheme.onPrimary
+            : colorScheme.onSurface,
         padding: EdgeInsets.zero,
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,

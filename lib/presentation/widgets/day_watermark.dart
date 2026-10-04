@@ -15,6 +15,7 @@ class DayWatermark extends StatelessWidget {
   final bool showMoonPhase;
   final bool showQuarter;
   final bool showDaysRemaining;
+  final HolidayRegion holidayRegion;
 
   /// When true, displays watermark at higher opacity (brighter)
   final bool isHighlighted;
@@ -30,6 +31,7 @@ class DayWatermark extends StatelessWidget {
     this.showMoonPhase = false,
     this.showQuarter = false,
     this.showDaysRemaining = false,
+    this.holidayRegion = HolidayRegion.us,
     this.isHighlighted = false,
   });
 
@@ -46,79 +48,104 @@ class DayWatermark extends StatelessWidget {
     final opacityMultiplier = isHighlighted ? 3.0 : 1.0;
 
     // Color for the watermark - subtle but visible, boosted when highlighted
-    final baseWatermarkOpacity =
-        isToday ? (isDark ? 0.12 : 0.08) : (isDark ? 0.04 : 0.03);
+    final baseWatermarkOpacity = isToday
+        ? (isDark ? 0.12 : 0.08)
+        : (isDark ? 0.04 : 0.03);
     final watermarkColor = isToday
         ? colorScheme.primary.withValues(
-            alpha: (baseWatermarkOpacity * opacityMultiplier).clamp(0.0, 0.5))
+            alpha: (baseWatermarkOpacity * opacityMultiplier).clamp(0.0, 0.5),
+          )
         : (isDark
-            ? Colors.white.withValues(
-                alpha:
-                    (baseWatermarkOpacity * opacityMultiplier).clamp(0.0, 0.3))
-            : Colors.black.withValues(
-                alpha: (baseWatermarkOpacity * opacityMultiplier)
-                    .clamp(0.0, 0.2)));
+              ? Colors.white.withValues(
+                  alpha: (baseWatermarkOpacity * opacityMultiplier).clamp(
+                    0.0,
+                    0.3,
+                  ),
+                )
+              : Colors.black.withValues(
+                  alpha: (baseWatermarkOpacity * opacityMultiplier).clamp(
+                    0.0,
+                    0.2,
+                  ),
+                ));
 
     // Slightly more visible color for secondary info
-    final baseSecondaryOpacity =
-        isToday ? (isDark ? 0.10 : 0.06) : (isDark ? 0.03 : 0.025);
+    final baseSecondaryOpacity = isToday
+        ? (isDark ? 0.10 : 0.06)
+        : (isDark ? 0.03 : 0.025);
     final secondaryColor = isToday
         ? colorScheme.primary.withValues(
-            alpha: (baseSecondaryOpacity * opacityMultiplier).clamp(0.0, 0.4))
+            alpha: (baseSecondaryOpacity * opacityMultiplier).clamp(0.0, 0.4),
+          )
         : (isDark
-            ? Colors.white.withValues(
-                alpha:
-                    (baseSecondaryOpacity * opacityMultiplier).clamp(0.0, 0.25))
-            : Colors.black.withValues(
-                alpha: (baseSecondaryOpacity * opacityMultiplier)
-                    .clamp(0.0, 0.15)));
+              ? Colors.white.withValues(
+                  alpha: (baseSecondaryOpacity * opacityMultiplier).clamp(
+                    0.0,
+                    0.25,
+                  ),
+                )
+              : Colors.black.withValues(
+                  alpha: (baseSecondaryOpacity * opacityMultiplier).clamp(
+                    0.0,
+                    0.15,
+                  ),
+                ));
 
     // Holiday color (more prominent)
-    final baseHolidayOpacity =
-        isToday ? (isDark ? 0.18 : 0.12) : (isDark ? 0.12 : 0.18);
+    final baseHolidayOpacity = isToday
+        ? (isDark ? 0.18 : 0.12)
+        : (isDark ? 0.12 : 0.18);
     final holidayColor = isToday
         ? colorScheme.primary.withValues(
-            alpha: (baseHolidayOpacity * opacityMultiplier).clamp(0.0, 0.6))
+            alpha: (baseHolidayOpacity * opacityMultiplier).clamp(0.0, 0.6),
+          )
         : (isDark
-            ? Colors.amber.withValues(
-                alpha: (baseHolidayOpacity * opacityMultiplier).clamp(0.0, 0.5))
-            : Colors.amber.withValues(
-                alpha:
-                    (baseHolidayOpacity * opacityMultiplier).clamp(0.0, 0.5)));
+              ? Colors.amber.withValues(
+                  alpha: (baseHolidayOpacity * opacityMultiplier).clamp(
+                    0.0,
+                    0.5,
+                  ),
+                )
+              : Colors.amber.withValues(
+                  alpha: (baseHolidayOpacity * opacityMultiplier).clamp(
+                    0.0,
+                    0.5,
+                  ),
+                ));
 
     // Build the secondary info line (Week X • Q1 • Day 28)
     final infoParts = <String>[];
 
     if (showWeekNumber) {
-      final weekNum = HolidaysService.getWeekNumber(date);
+      final weekNum = HolidaysService.weekNumber(date);
       infoParts.add('WEEK $weekNum');
     }
 
     if (showQuarter) {
-      final quarter = HolidaysService.getQuarter(date);
+      final quarter = HolidaysService.quarter(date);
       infoParts.add('Q$quarter');
     }
 
     if (showDayOfYear) {
-      final dayOfYear = HolidaysService.getDayOfYear(date);
+      final dayOfYear = HolidaysService.dayOfYear(date);
       infoParts.add('DAY $dayOfYear');
     }
 
     if (showDaysRemaining) {
-      final remaining = HolidaysService.getDaysRemainingInYear(date);
+      final remaining = HolidaysService.daysRemainingInYear(date);
       infoParts.add('$remaining LEFT');
     }
 
     // Holiday name
     String? holidayName;
     if (showHolidays) {
-      holidayName = HolidaysService.getShortHolidayName(date);
+      holidayName = HolidaysService.holidayName(date, holidayRegion);
     }
 
     // Moon phase
     String? moonPhase;
     if (showMoonPhase) {
-      moonPhase = HolidaysService.getMoonPhaseEmoji(date);
+      moonPhase = HolidaysService.moonPhaseEmoji(date);
     }
 
     return AnimatedContainer(
@@ -195,10 +222,7 @@ class DayWatermark extends StatelessWidget {
                     const SizedBox(height: 12),
                     AnimatedDefaultTextStyle(
                       duration: const Duration(milliseconds: 300),
-                      style: TextStyle(
-                        fontSize: 28,
-                        color: secondaryColor,
-                      ),
+                      style: TextStyle(fontSize: 28, color: secondaryColor),
                       child: Text(moonPhase),
                     ),
                   ],

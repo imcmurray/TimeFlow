@@ -10,27 +10,40 @@ import 'package:timeflow/presentation/timeline/timeline_geometry.dart';
 import 'package:timeflow/presentation/timeline/timeline_tasks.dart';
 import 'package:timeflow/presentation/timeline/timeline_view.dart';
 import 'package:timeflow/presentation/widgets/day_boundary_marker.dart';
+import 'package:timeflow/services/holidays_service.dart';
 
 /// Date bands at each midnight.
 class DayDividersLayer extends StatelessWidget {
   final TimelineGeometry geometry;
   final DayRange days;
 
-  const DayDividersLayer(
-      {super.key, required this.geometry, required this.days});
+  const DayDividersLayer({
+    super.key,
+    required this.geometry,
+    required this.days,
+  });
 
   @override
   Widget build(BuildContext context) {
     final today = LocalDate.today();
-    return Stack(children: [
-      for (var day = days.first; !day.isAfter(days.last); day = day.addDays(1))
-        Positioned(
-          top: geometry.yOfDayHour(day, 0) - 16,
-          left: TimelineLayout.contentLeft,
-          right: TimelineLayout.contentRight,
-          child: SimpleDayDivider(date: day.startOfDay, isToday: day == today),
-        ),
-    ]);
+    return Stack(
+      children: [
+        for (
+          var day = days.first;
+          !day.isAfter(days.last);
+          day = day.addDays(1)
+        )
+          Positioned(
+            top: geometry.yOfDayHour(day, 0) - 16,
+            left: TimelineLayout.contentLeft,
+            right: TimelineLayout.contentRight,
+            child: SimpleDayDivider(
+              date: day.startOfDay,
+              isToday: day == today,
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -40,8 +53,11 @@ class DayDividerOverlay extends StatelessWidget {
   final TimelineGeometry geometry;
   final DayRange days;
 
-  const DayDividerOverlay(
-      {super.key, required this.geometry, required this.days});
+  const DayDividerOverlay({
+    super.key,
+    required this.geometry,
+    required this.days,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -49,16 +65,22 @@ class DayDividerOverlay extends StatelessWidget {
     final color = isDark
         ? Colors.white.withValues(alpha: 0.3)
         : Colors.black.withValues(alpha: 0.2);
-    return Stack(children: [
-      for (var day = days.first; !day.isAfter(days.last); day = day.addDays(1))
-        Positioned(
-          top: geometry.yOfDayHour(day, 0) - 1,
-          left: TimelineLayout.contentLeft,
-          right: TimelineLayout.contentRight,
-          height: 2,
-          child: CustomPaint(painter: DashedLinePainter(color: color)),
-        ),
-    ]);
+    return Stack(
+      children: [
+        for (
+          var day = days.first;
+          !day.isAfter(days.last);
+          day = day.addDays(1)
+        )
+          Positioned(
+            top: geometry.yOfDayHour(day, 0) - 1,
+            left: TimelineLayout.contentLeft,
+            right: TimelineLayout.contentRight,
+            height: 2,
+            child: CustomPaint(painter: DashedLinePainter(color: color)),
+          ),
+      ],
+    );
   }
 }
 
@@ -68,8 +90,11 @@ class DayWatermarksLayer extends ConsumerStatefulWidget {
   final TimelineGeometry geometry;
   final DayRange days;
 
-  const DayWatermarksLayer(
-      {super.key, required this.geometry, required this.days});
+  const DayWatermarksLayer({
+    super.key,
+    required this.geometry,
+    required this.days,
+  });
 
   @override
   ConsumerState<DayWatermarksLayer> createState() => _DayWatermarksLayerState();
@@ -104,8 +129,9 @@ class _DayWatermarksLayerState extends ConsumerState<DayWatermarksLayer> {
     for (var start = _preferredStartHour; start >= 0; start--) {
       final from = day.at(start, 0);
       final to = day.at(start + _heightHours, 0);
-      final clear = !_tasks
-          .any((t) => t.startTime.isBefore(to) && t.endTime.isAfter(from));
+      final clear = !_tasks.any(
+        (t) => t.startTime.isBefore(to) && t.endTime.isAfter(from),
+      );
       if (clear) return start;
     }
     return 0;
@@ -119,44 +145,49 @@ class _DayWatermarksLayerState extends ConsumerState<DayWatermarksLayer> {
     final today = LocalDate.today();
     final height = _heightHours * g.hourHeight;
 
-    return Stack(children: [
-      for (var day = widget.days.first;
+    return Stack(
+      children: [
+        for (
+          var day = widget.days.first;
           !day.isAfter(widget.days.last);
-          day = day.addDays(1))
-        () {
-          final start = _startHourFor(day).toDouble();
-          final top = g.futureAtTop
-              ? g.yOfDayHour(day, start + _heightHours)
-              : g.yOfDayHour(day, start);
-          return Positioned(
-            top: top,
-            left: TimelineLayout.contentLeft,
-            right: TimelineLayout.contentRight,
-            height: height,
-            child: ExcludeSemantics(
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () => _highlight(day),
-                child: MouseRegion(
-                  onEnter: (_) => _highlight(day),
-                  child: DayWatermark(
-                    date: day.startOfDay,
-                    isToday: day == today,
-                    height: height,
-                    showWeekNumber: s.watermarkShowWeekNumber,
-                    showDayOfYear: s.watermarkShowDayOfYear,
-                    showHolidays: s.watermarkShowHolidays,
-                    showMoonPhase: s.watermarkShowMoonPhase,
-                    showQuarter: s.watermarkShowQuarter,
-                    showDaysRemaining: s.watermarkShowDaysRemaining,
-                    isHighlighted: _highlighted.containsKey(day),
+          day = day.addDays(1)
+        )
+          () {
+            final start = _startHourFor(day).toDouble();
+            final top = g.futureAtTop
+                ? g.yOfDayHour(day, start + _heightHours)
+                : g.yOfDayHour(day, start);
+            return Positioned(
+              top: top,
+              left: TimelineLayout.contentLeft,
+              right: TimelineLayout.contentRight,
+              height: height,
+              child: ExcludeSemantics(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () => _highlight(day),
+                  child: MouseRegion(
+                    onEnter: (_) => _highlight(day),
+                    child: DayWatermark(
+                      date: day.startOfDay,
+                      isToday: day == today,
+                      height: height,
+                      showWeekNumber: s.watermarkShowWeekNumber,
+                      showDayOfYear: s.watermarkShowDayOfYear,
+                      showHolidays: s.watermarkShowHolidays,
+                      showMoonPhase: s.watermarkShowMoonPhase,
+                      showQuarter: s.watermarkShowQuarter,
+                      showDaysRemaining: s.watermarkShowDaysRemaining,
+                      holidayRegion: HolidayRegion.fromCode(s.holidayRegion),
+                      isHighlighted: _highlighted.containsKey(day),
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
-        }(),
-    ]);
+            );
+          }(),
+      ],
+    );
   }
 }
 

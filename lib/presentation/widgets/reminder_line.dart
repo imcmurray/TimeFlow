@@ -26,10 +26,7 @@ class ReminderDot extends StatelessWidget {
   /// Current state based on time until reminder.
   final ReminderState state;
 
-  const ReminderDot({
-    super.key,
-    required this.state,
-  });
+  const ReminderDot({super.key, required this.state});
 
   @override
   Widget build(BuildContext context) {
@@ -49,14 +46,14 @@ class ReminderDot extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow:
             state == ReminderState.triggered || state == ReminderState.imminent
-                ? [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.5),
-                      blurRadius: 4,
-                      spreadRadius: 1,
-                    ),
-                  ]
-                : null,
+            ? [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.5),
+                  blurRadius: 4,
+                  spreadRadius: 1,
+                ),
+              ]
+            : null,
       ),
     );
   }

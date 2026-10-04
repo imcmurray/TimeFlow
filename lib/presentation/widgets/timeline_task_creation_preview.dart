@@ -65,10 +65,7 @@ class TaskCreationPreview extends StatelessWidget {
         decoration: BoxDecoration(
           color: baseColor.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: baseColor.withValues(alpha: 0.6),
-            width: 2,
-          ),
+          border: Border.all(color: baseColor.withValues(alpha: 0.6), width: 2),
           boxShadow: [
             BoxShadow(
               color: baseColor.withValues(alpha: 0.2),
@@ -121,8 +118,10 @@ class TaskCreationPreview extends StatelessWidget {
                 if (_crossesMidnight) ...[
                   const SizedBox(width: 4),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
                       color: (isDark ? Colors.white24 : Colors.black12),
                       borderRadius: BorderRadius.circular(4),

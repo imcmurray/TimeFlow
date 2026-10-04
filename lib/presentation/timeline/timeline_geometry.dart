@@ -82,11 +82,11 @@ class TimelineGeometry {
 
   /// A copy covering [dayCount] days centred on [center].
   TimelineGeometry centeredOn(LocalDate center) => TimelineGeometry(
-        firstDay: center.addDays(-(dayCount ~/ 2)),
-        dayCount: dayCount,
-        hourHeight: hourHeight,
-        futureAtTop: futureAtTop,
-      );
+    firstDay: center.addDays(-(dayCount ~/ 2)),
+    dayCount: dayCount,
+    hourHeight: hourHeight,
+    futureAtTop: futureAtTop,
+  );
 
   TimelineGeometry copyWith({double? hourHeight, bool? futureAtTop}) =>
       TimelineGeometry(

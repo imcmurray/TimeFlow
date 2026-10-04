@@ -15,8 +15,10 @@ Future<void> migrateLegacyWebStorage(TaskRepository repo) async {
   if (json == null) return;
   try {
     final list = (jsonDecode(json) as List).cast<Object?>();
-    final rows =
-        BackupCodec.decodeLegacyList(list, newId: TaskRepository.newId);
+    final rows = BackupCodec.decodeLegacyList(
+      list,
+      newId: TaskRepository.newId,
+    );
     await repo.importRows(rows);
     await prefs.remove(key);
   } catch (e, stack) {

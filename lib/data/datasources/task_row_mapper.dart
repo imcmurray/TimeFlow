@@ -11,26 +11,28 @@ extension TaskRowMapping on TaskRow {
   /// The domain task for this row. [seriesRule] fills in the repeat rule for
   /// overrides, whose own row doesn't store it.
   Task toTask({RecurrenceRule? seriesRule}) => Task(
-        id: id,
-        title: title,
-        description: description,
-        notes: notes,
-        startTime: startAt,
-        endTime: endAt,
-        isImportant: isImportant,
-        isCompleted: isCompleted,
-        reminderMinutes: reminderMinutes,
-        attachmentPath: attachmentPath,
-        color: color,
-        category: TaskCategoryExtension.fromString(category),
-        recurrence:
-            recurrence != null ? RecurrenceRule.parse(recurrence!) : seriesRule,
-        seriesId: seriesId,
-        occurrenceDate:
-            occurrenceDate != null ? LocalDate.parseIso(occurrenceDate!) : null,
-        createdAt: createdAt,
-        updatedAt: updatedAt,
-      );
+    id: id,
+    title: title,
+    description: description,
+    notes: notes,
+    startTime: startAt,
+    endTime: endAt,
+    isImportant: isImportant,
+    isCompleted: isCompleted,
+    reminderMinutes: reminderMinutes,
+    attachmentPath: attachmentPath,
+    color: color,
+    category: TaskCategoryExtension.fromString(category),
+    recurrence: recurrence != null
+        ? RecurrenceRule.parse(recurrence!)
+        : seriesRule,
+    seriesId: seriesId,
+    occurrenceDate: occurrenceDate != null
+        ? LocalDate.parseIso(occurrenceDate!)
+        : null,
+    createdAt: createdAt,
+    updatedAt: updatedAt,
+  );
 }
 
 TasksCompanion taskToCompanion(Task task, {bool isCancelled = false}) =>

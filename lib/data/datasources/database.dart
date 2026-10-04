@@ -33,9 +33,10 @@ class WallClockConverter extends TypeConverter<DateTime, String> {
 @DataClassName('TaskRow')
 @TableIndex(name: 'tasks_start_at', columns: {#startAt})
 @TableIndex(
-    name: 'tasks_series_occurrence',
-    columns: {#seriesId, #occurrenceDate},
-    unique: true)
+  name: 'tasks_series_occurrence',
+  columns: {#seriesId, #occurrenceDate},
+  unique: true,
+)
 class Tasks extends Table {
   TextColumn get id => text()();
   TextColumn get title => text()();
@@ -71,22 +72,24 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) => m.createAll(),
-        onUpgrade: (m, from, to) async {
-          if (from < 3) await migrateToSchemaV3(this, m, from);
-        },
-      );
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 3) await migrateToSchemaV3(this, m, from);
+    },
+  );
 
   static QueryExecutor _open() => driftDatabase(
-        name: 'timeflow',
-        native: DriftNativeOptions(
-          // Keep the file name the app has always used.
-          databasePath: () async => p.join(
-              (await getApplicationDocumentsDirectory()).path, 'timeflow.db'),
-        ),
-        web: DriftWebOptions(
-          sqlite3Wasm: Uri.parse('sqlite3.wasm'),
-          driftWorker: Uri.parse('drift_worker.js'),
-        ),
-      );
+    name: 'timeflow',
+    native: DriftNativeOptions(
+      // Keep the file name the app has always used.
+      databasePath: () async => p.join(
+        (await getApplicationDocumentsDirectory()).path,
+        'timeflow.db',
+      ),
+    ),
+    web: DriftWebOptions(
+      sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+      driftWorker: Uri.parse('drift_worker.js'),
+    ),
+  );
 }

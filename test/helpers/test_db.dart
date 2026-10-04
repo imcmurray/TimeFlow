@@ -17,14 +17,13 @@ Task draft(
   int minutes = 60,
   RecurrenceRule? rule,
   int? reminder,
-}) =>
-    Task(
-      id: 'draft',
-      title: title,
-      startTime: start,
-      endTime: start.add(Duration(minutes: minutes)),
-      recurrence: rule,
-      reminderMinutes: reminder,
-      createdAt: _created,
-      updatedAt: _created,
-    );
+}) => Task(
+  id: 'draft',
+  title: title,
+  startTime: start,
+  endTime: start.add(Duration(minutes: minutes)),
+  recurrence: rule,
+  reminderMinutes: reminder,
+  createdAt: _created,
+  updatedAt: _created,
+);

@@ -2,7 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timeflow/domain/entities/settings.dart';
-import 'package:timeflow/services/sun_times_service.dart';
+import 'package:timeflow/services/holidays_service.dart';
+import 'package:timeflow/services/zone_coordinates.dart';
 
 /// The preferences store, loaded in `main()` before the first frame so
 /// settings are available synchronously (no flash of defaults or of the
@@ -10,6 +11,16 @@ import 'package:timeflow/services/sun_times_service.dart';
 final sharedPreferencesProvider = Provider<SharedPreferences>(
   (ref) => throw UnimplementedError('Override in main() or the test'),
 );
+
+/// The device's IANA time zone (e.g. 'America/Denver'), read at startup.
+/// Null when the platform didn't report one.
+final deviceTimeZoneProvider = Provider<String?>((ref) => null);
+
+/// Default sun-times location: the principal city of the device's time
+/// zone, or a point on the time zone's meridian when the zone is unknown.
+(double, double) defaultLocationFor(String? timeZone) =>
+    zoneCoordinates[timeZone] ??
+    (40.0, DateTime.now().timeZoneOffset.inMinutes / 60 * 15);
 
 /// App settings, persisted to shared preferences.
 class SettingsNotifier extends Notifier<Settings> {
@@ -48,6 +59,9 @@ class SettingsNotifier extends Notifier<Settings> {
     final p = _prefs;
     const d = Settings();
     final hasLocation = p.containsKey(_latitude) && p.containsKey(_longitude);
+    final defaultLocation = defaultLocationFor(
+      ref.watch(deviceTimeZoneProvider),
+    );
     return Settings(
       theme: p.getString(_theme) ?? d.theme,
       defaultReminderMinutes:
@@ -65,10 +79,8 @@ class SettingsNotifier extends Notifier<Settings> {
       use24HourPreference: p.getBool(_use24HourFormat),
       systemUses24Hour:
           WidgetsBinding.instance.platformDispatcher.alwaysUse24HourFormat,
-      latitude: hasLocation ? p.getDouble(_latitude)! : d.latitude,
-      longitude: hasLocation
-          ? p.getDouble(_longitude)!
-          : SunTimesService.estimateLongitudeFromTimezone(),
+      latitude: hasLocation ? p.getDouble(_latitude)! : defaultLocation.$1,
+      longitude: hasLocation ? p.getDouble(_longitude)! : defaultLocation.$2,
       hasChosenLocation: hasLocation,
       showSunTimes: p.getBool(_showSunTimes) ?? d.showSunTimes,
       watermarkShowWeekNumber:
@@ -83,7 +95,11 @@ class SettingsNotifier extends Notifier<Settings> {
           p.getBool(_watermarkQuarter) ?? d.watermarkShowQuarter,
       watermarkShowDaysRemaining:
           p.getBool(_watermarkDaysRemaining) ?? d.watermarkShowDaysRemaining,
-      holidayRegion: p.getString(_holidayRegion) ?? d.holidayRegion,
+      holidayRegion:
+          p.getString(_holidayRegion) ??
+          HolidayRegion.forCountry(
+            WidgetsBinding.instance.platformDispatcher.locale.countryCode,
+          ).name,
       nowLineViewportPosition:
           p.getDouble(_nowLinePosition) ?? d.nowLineViewportPosition,
       longPressDefaultDurationMinutes:
@@ -119,22 +135,37 @@ class SettingsNotifier extends Notifier<Settings> {
   void setTheme(String v) => _setString(_theme, v, state.copyWith(theme: v));
 
   void setDefaultReminderMinutes(int v) => _setInt(
-      _defaultReminderMinutes, v, state.copyWith(defaultReminderMinutes: v));
+    _defaultReminderMinutes,
+    v,
+    state.copyWith(defaultReminderMinutes: v),
+  );
 
   void setNotificationsEnabled(bool v) => _setBool(
-      _notificationsEnabled, v, state.copyWith(notificationsEnabled: v));
+    _notificationsEnabled,
+    v,
+    state.copyWith(notificationsEnabled: v),
+  );
 
   void setFirstLaunch(bool v) =>
       _setBool(_firstLaunch, v, state.copyWith(firstLaunch: v));
 
   void setUpcomingTasksAboveNow(bool v) => _setBool(
-      _upcomingTasksAboveNow, v, state.copyWith(upcomingTasksAboveNow: v));
+    _upcomingTasksAboveNow,
+    v,
+    state.copyWith(upcomingTasksAboveNow: v),
+  );
 
   void setBringWindowToFrontOnReminder(bool v) => _setBool(
-      _bringWindowToFront, v, state.copyWith(bringWindowToFrontOnReminder: v));
+    _bringWindowToFront,
+    v,
+    state.copyWith(bringWindowToFrontOnReminder: v),
+  );
 
   void setReminderSoundEnabled(bool v) => _setBool(
-      _reminderSoundEnabled, v, state.copyWith(reminderSoundEnabled: v));
+    _reminderSoundEnabled,
+    v,
+    state.copyWith(reminderSoundEnabled: v),
+  );
 
   void setReminderSound(String v) =>
       _setString(_reminderSound, v, state.copyWith(reminderSound: v));
@@ -151,33 +182,58 @@ class SettingsNotifier extends Notifier<Settings> {
 
   void setLocation(double latitude, double longitude) {
     state = state.copyWith(
-        latitude: latitude, longitude: longitude, hasChosenLocation: true);
+      latitude: latitude,
+      longitude: longitude,
+      hasChosenLocation: true,
+    );
     _prefs.setDouble(_latitude, latitude);
     _prefs.setDouble(_longitude, longitude);
+  }
+
+  /// Goes back to the location implied by the device's time zone.
+  void useAutomaticLocation() {
+    final (lat, lon) = defaultLocationFor(ref.read(deviceTimeZoneProvider));
+    state = state.copyWith(
+      latitude: lat,
+      longitude: lon,
+      hasChosenLocation: false,
+    );
+    _prefs.remove(_latitude);
+    _prefs.remove(_longitude);
   }
 
   void setShowSunTimes(bool v) =>
       _setBool(_showSunTimes, v, state.copyWith(showSunTimes: v));
 
   void setWatermarkShowWeekNumber(bool v) => _setBool(
-      _watermarkWeekNumber, v, state.copyWith(watermarkShowWeekNumber: v));
+    _watermarkWeekNumber,
+    v,
+    state.copyWith(watermarkShowWeekNumber: v),
+  );
 
   void setWatermarkShowDayOfYear(bool v) => _setBool(
-      _watermarkDayOfYear, v, state.copyWith(watermarkShowDayOfYear: v));
+    _watermarkDayOfYear,
+    v,
+    state.copyWith(watermarkShowDayOfYear: v),
+  );
 
   void setWatermarkShowHolidays(bool v) =>
       _setBool(_watermarkHolidays, v, state.copyWith(watermarkShowHolidays: v));
 
   void setWatermarkShowMoonPhase(bool v) => _setBool(
-      _watermarkMoonPhase, v, state.copyWith(watermarkShowMoonPhase: v));
+    _watermarkMoonPhase,
+    v,
+    state.copyWith(watermarkShowMoonPhase: v),
+  );
 
   void setWatermarkShowQuarter(bool v) =>
       _setBool(_watermarkQuarter, v, state.copyWith(watermarkShowQuarter: v));
 
   void setWatermarkShowDaysRemaining(bool v) => _setBool(
-      _watermarkDaysRemaining,
-      v,
-      state.copyWith(watermarkShowDaysRemaining: v));
+    _watermarkDaysRemaining,
+    v,
+    state.copyWith(watermarkShowDaysRemaining: v),
+  );
 
   void setHolidayRegion(String v) =>
       _setString(_holidayRegion, v, state.copyWith(holidayRegion: v));
@@ -185,17 +241,26 @@ class SettingsNotifier extends Notifier<Settings> {
   /// Fraction of the screen height from the top, clamped to 0.1..0.9.
   void setNowLineViewportPosition(double v) {
     final clamped = v.clamp(0.1, 0.9);
-    _setDouble(_nowLinePosition, clamped,
-        state.copyWith(nowLineViewportPosition: clamped));
+    _setDouble(
+      _nowLinePosition,
+      clamped,
+      state.copyWith(nowLineViewportPosition: clamped),
+    );
   }
 
-  void setLongPressDefaultDuration(int v) => _setInt(_longPressDuration, v,
-      state.copyWith(longPressDefaultDurationMinutes: v));
+  void setLongPressDefaultDuration(int v) => _setInt(
+    _longPressDuration,
+    v,
+    state.copyWith(longPressDefaultDurationMinutes: v),
+  );
 
   void setLongPressSnapInterval(int v) {
     final valid = const [5, 15, 30].contains(v) ? v : 15;
-    _setInt(_longPressSnap, valid,
-        state.copyWith(longPressSnapIntervalMinutes: valid));
+    _setInt(
+      _longPressSnap,
+      valid,
+      state.copyWith(longPressSnapIntervalMinutes: valid),
+    );
   }
 
   void setHasSeenLongPressHint(bool v) =>
@@ -205,5 +270,6 @@ class SettingsNotifier extends Notifier<Settings> {
       _setDouble(_timelineZoom, v, state.copyWith(timelineZoom: v));
 }
 
-final settingsProvider =
-    NotifierProvider<SettingsNotifier, Settings>(SettingsNotifier.new);
+final settingsProvider = NotifierProvider<SettingsNotifier, Settings>(
+  SettingsNotifier.new,
+);

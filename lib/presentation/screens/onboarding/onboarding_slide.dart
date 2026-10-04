@@ -33,8 +33,9 @@ class OnboardingSlide extends StatelessWidget {
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color:
-                  isDark ? AppColors.textLightPrimary : AppColors.textPrimary,
+              color: isDark
+                  ? AppColors.textLightPrimary
+                  : AppColors.textPrimary,
             ),
             textAlign: TextAlign.center,
           ),
@@ -131,8 +132,10 @@ class OnboardingNavigation extends StatelessWidget {
                 onPressed: onNext,
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primaryBlue,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 12,
+                  ),
                 ),
                 child: Text(
                   isLastPage ? 'Get Started' : 'Next',

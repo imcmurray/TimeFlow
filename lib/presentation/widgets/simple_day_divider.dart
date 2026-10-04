@@ -20,19 +20,20 @@ class SimpleDayDivider extends StatelessWidget {
     // Gradient colors for the band
     final bandColor = isToday
         ? (isDark
-            ? colorScheme.primary.withValues(alpha: 0.15)
-            : colorScheme.primary.withValues(alpha: 0.08))
+              ? colorScheme.primary.withValues(alpha: 0.15)
+              : colorScheme.primary.withValues(alpha: 0.08))
         : (isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.black.withValues(alpha: 0.03));
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.black.withValues(alpha: 0.03));
 
     final lineColor = isToday
         ? colorScheme.primary.withValues(alpha: 0.6)
         : colorScheme.outlineVariant.withValues(alpha: 0.5);
 
     final icon = Icons.wb_twilight;
-    final iconColor =
-        isDark ? const Color(0xFFFFB74D) : const Color(0xFFFF9800);
+    final iconColor = isDark
+        ? const Color(0xFFFFB74D)
+        : const Color(0xFFFF9800);
 
     return Container(
       height: 32,
@@ -57,10 +58,7 @@ class SimpleDayDivider extends StatelessWidget {
               height: 2,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    lineColor.withValues(alpha: 0),
-                    lineColor,
-                  ],
+                  colors: [lineColor.withValues(alpha: 0), lineColor],
                 ),
                 boxShadow: isToday
                     ? [
@@ -81,11 +79,11 @@ class SimpleDayDivider extends StatelessWidget {
             decoration: BoxDecoration(
               color: isDark
                   ? (isToday
-                      ? colorScheme.primary.withValues(alpha: 0.2)
-                      : Colors.grey[900]!.withValues(alpha: 0.8))
+                        ? colorScheme.primary.withValues(alpha: 0.2)
+                        : Colors.grey[900]!.withValues(alpha: 0.8))
                   : (isToday
-                      ? colorScheme.primary.withValues(alpha: 0.1)
-                      : Colors.white.withValues(alpha: 0.9)),
+                        ? colorScheme.primary.withValues(alpha: 0.1)
+                        : Colors.white.withValues(alpha: 0.9)),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isToday
@@ -104,19 +102,16 @@ class SimpleDayDivider extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  icon,
-                  size: 14,
-                  color: iconColor,
-                ),
+                Icon(icon, size: 14, color: iconColor),
                 const SizedBox(width: 6),
                 Text(
                   DayLabelFormatter.compact(date),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: isToday ? FontWeight.bold : FontWeight.w600,
-                    color:
-                        isToday ? colorScheme.primary : colorScheme.onSurface,
+                    color: isToday
+                        ? colorScheme.primary
+                        : colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -129,10 +124,7 @@ class SimpleDayDivider extends StatelessWidget {
               height: 2,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    lineColor,
-                    lineColor.withValues(alpha: 0),
-                  ],
+                  colors: [lineColor, lineColor.withValues(alpha: 0)],
                 ),
                 boxShadow: isToday
                     ? [

@@ -11,6 +11,7 @@ import 'package:timeflow/presentation/providers/task_provider.dart';
 import 'package:timeflow/presentation/utils/time_formatter.dart';
 import 'package:timeflow/presentation/widgets/edit_scope_dialog.dart';
 import 'package:timeflow/presentation/widgets/recurrence_picker.dart';
+import 'package:timeflow/services/reminder_coordinator.dart';
 import 'package:timeflow/services/task_service.dart';
 
 /// Creates or edits a task.
@@ -108,7 +109,8 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   /// The task as currently entered.
   Task _draft() {
     final now = DateTime.now();
-    final base = widget.task ??
+    final base =
+        widget.task ??
         Task(
           id: 'new',
           title: '',
@@ -217,6 +219,12 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     final service = ref.read(taskServiceProvider);
     final original = widget.task;
     setState(() => _saving = true);
+    if (draft.reminderMinutes != null &&
+        ref.read(settingsProvider).notificationsEnabled) {
+      // First reminder: this is when the system asks for permission.
+      await ref.read(reminderCoordinatorProvider).ensurePermission();
+      if (!mounted) return;
+    }
     try {
       if (original == null) {
         await service.create(draft);
@@ -224,8 +232,11 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
         var scope = EditScope.all;
         if (original.isOccurrence) {
           final ruleChanged = draft.recurrence != original.recurrence;
-          final chosen = await showEditScopeDialog(context,
-              verb: 'change', allowAll: true);
+          final chosen = await showEditScopeDialog(
+            context,
+            verb: 'change',
+            allowAll: true,
+          );
           if (chosen == null) return;
           scope = chosen;
           if (scope == EditScope.thisOnly && ruleChanged) {
@@ -268,22 +279,20 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   }
 
   String _reminderLabel(int minutes) => switch (minutes) {
-        0 => 'At start time',
-        60 => '1 hour before',
-        120 => '2 hours before',
-        1440 => '1 day before',
-        _ => '$minutes minutes before',
-      };
+    0 => 'At start time',
+    60 => '1 hour before',
+    120 => '2 hours before',
+    1440 => '1 day before',
+    _ => '$minutes minutes before',
+  };
 
   @override
   Widget build(BuildContext context) {
-    final use24Hour =
-        ref.watch(settingsProvider.select((s) => s.use24HourFormat));
+    final use24Hour = ref.watch(
+      settingsProvider.select((s) => s.use24HourFormat),
+    );
     final occurrence = widget.task?.isOccurrence ?? false;
-    final reminderChoices = {
-      ..._reminderOptions,
-      if (_reminderMinutes != null) _reminderMinutes!,
-    }.toList()
+    final reminderChoices = {..._reminderOptions, ?_reminderMinutes}.toList()
       ..sort();
 
     return PopScope(
@@ -369,7 +378,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                 ),
                 items: [
                   const DropdownMenuItem(
-                      value: null, child: Text('No reminder')),
+                    value: null,
+                    child: Text('No reminder'),
+                  ),
                   for (final m in reminderChoices)
                     DropdownMenuItem(value: m, child: Text(_reminderLabel(m))),
                 ],
@@ -398,9 +409,11 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                   title: const Text('Done'),
                   value: _completed,
                   onChanged: (v) => setState(() => _completed = v),
-                  secondary: Icon(_completed
-                      ? Icons.check_circle
-                      : Icons.radio_button_unchecked),
+                  secondary: Icon(
+                    _completed
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
+                  ),
                 ),
               const SizedBox(height: 8),
               TextField(
@@ -509,9 +522,11 @@ class _DateTimeGroup extends StatelessWidget {
                           const Icon(Icons.calendar_today, size: 18),
                           const SizedBox(width: 8),
                           Flexible(
-                            child: Text(date,
-                                style: theme.textTheme.titleMedium,
-                                overflow: TextOverflow.ellipsis),
+                            child: Text(
+                              date,
+                              style: theme.textTheme.titleMedium,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),
@@ -542,9 +557,11 @@ class _DateTimeGroup extends StatelessWidget {
                           const Icon(Icons.access_time, size: 18),
                           const SizedBox(width: 8),
                           Flexible(
-                            child: Text(clock,
-                                style: theme.textTheme.titleMedium,
-                                overflow: TextOverflow.ellipsis),
+                            child: Text(
+                              clock,
+                              style: theme.textTheme.titleMedium,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),

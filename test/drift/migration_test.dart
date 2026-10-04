@@ -37,19 +37,18 @@ void main() {
       bool completed = false,
       String? pattern,
       String? template,
-    }) =>
-        v2.TasksCompanion.insert(
-          id: id,
-          title: title,
-          startTime: _epoch(start),
-          endTime: _epoch(start.add(Duration(minutes: minutes))),
-          isCompleted: Value(completed ? 1 : 0),
-          recurringPattern: Value(pattern),
-          recurringTemplateId: Value(template),
-          reminderMinutes: const Value(10),
-          createdAt: _epoch(created),
-          updatedAt: _epoch(created),
-        );
+    }) => v2.TasksCompanion.insert(
+      id: id,
+      title: title,
+      startTime: _epoch(start),
+      endTime: _epoch(start.add(Duration(minutes: minutes))),
+      isCompleted: Value(completed ? 1 : 0),
+      recurringPattern: Value(pattern),
+      recurringTemplateId: Value(template),
+      reminderMinutes: const Value(10),
+      createdAt: _epoch(created),
+      updatedAt: _epoch(created),
+    );
 
     Future<TaskRepository> migrate(List<v2.TasksCompanion> rows) async {
       final schema = await verifier.schemaAt(2);
@@ -65,8 +64,10 @@ void main() {
       final repo = await migrate([
         legacy('a', 'Dentist', DateTime(2026, 6, 3, 14, 15)),
       ]);
-      final tasks =
-          await repo.getRange(DateTime(2026, 6, 3), DateTime(2026, 6, 4));
+      final tasks = await repo.getRange(
+        DateTime(2026, 6, 3),
+        DateTime(2026, 6, 4),
+      );
       expect(tasks.single.title, 'Dentist');
       expect(tasks.single.startTime, DateTime(2026, 6, 3, 14, 15));
       expect(tasks.single.reminderMinutes, 10);
@@ -79,9 +80,16 @@ void main() {
       final rows = <v2.TasksCompanion>[];
       for (var d = 1; d <= 10; d++) {
         if (d == 4) continue;
-        rows.add(legacy(
-            'i$d', d == 6 ? 'Vet' : 'Walk dogs', DateTime(2026, 6, d, 7),
-            completed: d == 2, pattern: 'daily', template: 'tpl'));
+        rows.add(
+          legacy(
+            'i$d',
+            d == 6 ? 'Vet' : 'Walk dogs',
+            DateTime(2026, 6, d, 7),
+            completed: d == 2,
+            pattern: 'daily',
+            template: 'tpl',
+          ),
+        );
       }
       final repo = await migrate(rows);
 
@@ -90,8 +98,10 @@ void main() {
       expect(series!.recurrence, RecurrenceRule.daily);
       expect(series.startTime, DateTime(2026, 6, 1, 7));
 
-      final june =
-          await repo.getRange(DateTime(2026, 6, 1), DateTime(2026, 6, 11));
+      final june = await repo.getRange(
+        DateTime(2026, 6, 1),
+        DateTime(2026, 6, 11),
+      );
       expect(june.map((t) => t.startTime.day), [1, 2, 3, 5, 6, 7, 8, 9, 10]);
       expect(june[1].isCompleted, isTrue);
       expect(june.firstWhere((t) => t.startTime.day == 6).title, 'Vet');
@@ -104,8 +114,10 @@ void main() {
       });
 
       // It no longer stops after the last pre-generated copy.
-      final later =
-          await repo.getRange(DateTime(2026, 9, 1), DateTime(2026, 9, 2));
+      final later = await repo.getRange(
+        DateTime(2026, 9, 1),
+        DateTime(2026, 9, 2),
+      );
       expect(later.single.title, 'Walk dogs');
     });
 
@@ -119,8 +131,10 @@ void main() {
         t = t.add(const Duration(days: 1));
       }
       final repo = await migrate(rows);
-      final days =
-          await repo.getRange(DateTime(2026, 3, 5), DateTime(2026, 3, 13));
+      final days = await repo.getRange(
+        DateTime(2026, 3, 5),
+        DateTime(2026, 3, 13),
+      );
       expect(days.map((d) => d.startTime.hour), everyElement(7));
       expect(await repo.overridesOf('m'), isEmpty);
     }, skip: skipWithoutDst);

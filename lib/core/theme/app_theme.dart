@@ -36,17 +36,13 @@ class AppTheme {
         color: Colors.white,
         elevation: 2,
         shadowColor: AppColors.primaryBlue.withValues(alpha: 0.1),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppColors.primaryBlue,
         foregroundColor: Colors.white,
         elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       textTheme: const TextTheme(
         headlineLarge: TextStyle(
@@ -57,12 +53,8 @@ class AppTheme {
           color: AppColors.textPrimary,
           fontWeight: FontWeight.w600,
         ),
-        bodyLarge: TextStyle(
-          color: AppColors.textPrimary,
-        ),
-        bodyMedium: TextStyle(
-          color: AppColors.textSecondary,
-        ),
+        bodyLarge: TextStyle(color: AppColors.textPrimary),
+        bodyMedium: TextStyle(color: AppColors.textSecondary),
         labelLarge: TextStyle(
           color: AppColors.textPrimary,
           fontWeight: FontWeight.w500,
@@ -99,17 +91,13 @@ class AppTheme {
         color: AppColors.cardDark,
         elevation: 2,
         shadowColor: Colors.black26,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppColors.primaryBlue,
         foregroundColor: Colors.white,
         elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       textTheme: const TextTheme(
         headlineLarge: TextStyle(
@@ -120,12 +108,8 @@ class AppTheme {
           color: AppColors.textLightPrimary,
           fontWeight: FontWeight.w600,
         ),
-        bodyLarge: TextStyle(
-          color: AppColors.textLightPrimary,
-        ),
-        bodyMedium: TextStyle(
-          color: AppColors.textLightSecondary,
-        ),
+        bodyLarge: TextStyle(color: AppColors.textLightPrimary),
+        bodyMedium: TextStyle(color: AppColors.textLightSecondary),
         labelLarge: TextStyle(
           color: AppColors.textLightPrimary,
           fontWeight: FontWeight.w500,

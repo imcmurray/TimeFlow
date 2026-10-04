@@ -16,15 +16,21 @@ class SettingsTaskCreationSection extends ConsumerWidget {
         ListTile(
           leading: const Icon(Icons.touch_app_outlined),
           title: const Text('Default Duration'),
-          subtitle: Text(_formatDurationMinutes(
-              ref.watch(settingsProvider).longPressDefaultDurationMinutes)),
+          subtitle: Text(
+            _formatDurationMinutes(
+              ref.watch(settingsProvider).longPressDefaultDurationMinutes,
+            ),
+          ),
           onTap: () => _showDurationDialog(context, ref),
         ),
         ListTile(
           leading: const Icon(Icons.straighten_outlined),
           title: const Text('Snap Interval'),
-          subtitle: Text(_formatSnapInterval(
-              ref.watch(settingsProvider).longPressSnapIntervalMinutes)),
+          subtitle: Text(
+            _formatSnapInterval(
+              ref.watch(settingsProvider).longPressSnapIntervalMinutes,
+            ),
+          ),
           onTap: () => _showSnapIntervalDialog(context, ref),
         ),
       ],
@@ -64,7 +70,9 @@ class SettingsTaskCreationSection extends ConsumerWidget {
   }
 
   Future<void> _showSnapIntervalDialog(
-      BuildContext context, WidgetRef ref) async {
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     final minutes = await showChoiceDialog<int>(
       context: context,
       title: 'Time Snap Interval',
@@ -72,8 +80,11 @@ class SettingsTaskCreationSection extends ConsumerWidget {
       current: ref.read(settingsProvider).longPressSnapIntervalMinutes,
       options: [
         for (final m in [5, 15, 30])
-          ChoiceOption(m, '$m minutes',
-              subtitle: m == 15 ? 'Recommended' : null),
+          ChoiceOption(
+            m,
+            '$m minutes',
+            subtitle: m == 15 ? 'Recommended' : null,
+          ),
       ],
     );
     if (minutes != null) {

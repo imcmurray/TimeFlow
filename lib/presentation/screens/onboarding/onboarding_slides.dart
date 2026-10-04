@@ -116,11 +116,7 @@ class TasksSlide extends StatelessWidget {
   Widget build(BuildContext context) {
     return OnboardingSlide(
       isDark: isDark,
-      icon: Icon(
-        Icons.calendar_today,
-        size: 80,
-        color: AppColors.primaryBlue,
-      ),
+      icon: Icon(Icons.calendar_today, size: 80, color: AppColors.primaryBlue),
       title: 'Plan Your Day',
       tagline: 'Add tasks with a simple tap.',
       description:
@@ -140,11 +136,7 @@ class ConfluentMergeSlide extends StatelessWidget {
       isDark: isDark,
       icon: Transform.rotate(
         angle: 3.14159265 / 2, // 90 degrees - pointing down
-        child: Icon(
-          Icons.merge_type,
-          size: 80,
-          color: AppColors.primaryBlue,
-        ),
+        child: Icon(Icons.merge_type, size: 80, color: AppColors.primaryBlue),
       ),
       title: 'Confluent Merge',
       tagline: 'Rivers converging into one.',

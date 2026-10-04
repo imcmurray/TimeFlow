@@ -95,19 +95,16 @@ class DayBoundaryMarker extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  icon,
-                  size: 18,
-                  color: iconColor,
-                ),
+                Icon(icon, size: 18, color: iconColor),
                 const SizedBox(width: 8),
                 Text(
                   _formatDayLabel(),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: isToday ? FontWeight.bold : FontWeight.w600,
-                    color:
-                        isToday ? colorScheme.primary : colorScheme.onSurface,
+                    color: isToday
+                        ? colorScheme.primary
+                        : colorScheme.onSurface,
                   ),
                 ),
               ],

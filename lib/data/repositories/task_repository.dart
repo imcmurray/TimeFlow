@@ -38,36 +38,42 @@ class TaskRepository {
     final fromS = formatWallClock(from);
     final toS = formatWallClock(to);
 
-    final seriesRows = await (_db.select(_tasks)
-          ..where((t) => t.recurrence.isNotNull()))
-        .get();
+    final seriesRows = await (_db.select(
+      _tasks,
+    )..where((t) => t.recurrence.isNotNull())).get();
     final rules = {
-      for (final s in seriesRows) s.id: RecurrenceRule.parse(s.recurrence!)
+      for (final s in seriesRows) s.id: RecurrenceRule.parse(s.recurrence!),
     };
 
-    final concrete = await (_db.select(_tasks)
-          ..where((t) =>
-              t.recurrence.isNull() &
-              t.isCancelled.equals(false) &
-              t.startAt.isSmallerThanValue(toS) &
-              t.endAt.isBiggerThanValue(fromS)))
-        .get();
+    final concrete =
+        await (_db.select(_tasks)..where(
+              (t) =>
+                  t.recurrence.isNull() &
+                  t.isCancelled.equals(false) &
+                  t.startAt.isSmallerThanValue(toS) &
+                  t.endAt.isBiggerThanValue(fromS),
+            ))
+            .get();
 
     final result = [
       for (final row in concrete)
         row.toTask(
-            seriesRule: row.seriesId != null ? rules[row.seriesId] : null)
+          seriesRule: row.seriesId != null ? rules[row.seriesId] : null,
+        ),
     ];
 
     if (seriesRows.isNotEmpty) {
       final windowStart = LocalDate.of(from).addDays(-_maxSpanDays).toIso();
       final windowEnd = LocalDate.of(to).toIso();
-      final overridden = await (_db.selectOnly(_tasks)
-            ..addColumns([_tasks.seriesId, _tasks.occurrenceDate])
-            ..where(_tasks.seriesId.isNotNull() &
-                _tasks.occurrenceDate.isBiggerOrEqualValue(windowStart) &
-                _tasks.occurrenceDate.isSmallerOrEqualValue(windowEnd)))
-          .get();
+      final overridden =
+          await (_db.selectOnly(_tasks)
+                ..addColumns([_tasks.seriesId, _tasks.occurrenceDate])
+                ..where(
+                  _tasks.seriesId.isNotNull() &
+                      _tasks.occurrenceDate.isBiggerOrEqualValue(windowStart) &
+                      _tasks.occurrenceDate.isSmallerOrEqualValue(windowEnd),
+                ))
+              .get();
       final skip = <String, Set<LocalDate>>{};
       for (final r in overridden) {
         skip
@@ -76,12 +82,14 @@ class TaskRepository {
       }
       for (final s in seriesRows) {
         if (s.startAt.isAfter(to)) continue;
-        result.addAll(SeriesExpander.occurrencesOf(
-          s.toTask(),
-          from: from,
-          to: to,
-          skip: skip[s.id] ?? const {},
-        ));
+        result.addAll(
+          SeriesExpander.occurrencesOf(
+            s.toTask(),
+            from: from,
+            to: to,
+            skip: skip[s.id] ?? const {},
+          ),
+        );
       }
     }
 
@@ -104,8 +112,9 @@ class TaskRepository {
 
   /// A stored task, series or override by id.
   Future<Task?> getStored(String id) async {
-    final row = await (_db.select(_tasks)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _tasks,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (row == null) return null;
     final rule = row.seriesId == null
         ? null
@@ -114,16 +123,19 @@ class TaskRepository {
   }
 
   Future<Task?> getSeries(String seriesId) async {
-    final row = await (_db.select(_tasks)
-          ..where((t) => t.id.equals(seriesId) & t.recurrence.isNotNull()))
-        .getSingleOrNull();
+    final row =
+        await (_db.select(_tasks)
+              ..where((t) => t.id.equals(seriesId) & t.recurrence.isNotNull()))
+            .getSingleOrNull();
     return row?.toTask();
   }
 
   /// Stored overrides of a series (including cancelled ones), optionally only
   /// those on or after [from].
-  Future<List<StoredTask>> overridesOf(String seriesId,
-      {LocalDate? from}) async {
+  Future<List<StoredTask>> overridesOf(
+    String seriesId, {
+    LocalDate? from,
+  }) async {
     final query = _db.select(_tasks)
       ..where((t) {
         var e = t.seriesId.equals(seriesId);
@@ -135,17 +147,18 @@ class TaskRepository {
     final rule = (await getSeries(seriesId))?.recurrence;
     return [
       for (final row in await query.get())
-        StoredTask(row.toTask(seriesRule: rule), isCancelled: row.isCancelled)
+        StoredTask(row.toTask(seriesRule: rule), isCancelled: row.isCancelled),
     ];
   }
 
   /// Number of things the user created: standalone tasks and series.
   Future<int> count() async {
     final c = _tasks.id.count();
-    final row = await (_db.selectOnly(_tasks)
-          ..addColumns([c])
-          ..where(_tasks.seriesId.isNull()))
-        .getSingle();
+    final row =
+        await (_db.selectOnly(_tasks)
+              ..addColumns([c])
+              ..where(_tasks.seriesId.isNull()))
+            .getSingle();
     return row.read(c) ?? 0;
   }
 
@@ -156,37 +169,46 @@ class TaskRepository {
   Future<void> upsert(Task task, {bool isCancelled = false}) {
     return _db.transaction(() async {
       if (task.seriesId != null && task.occurrenceDate != null) {
-        await (_db.delete(_tasks)
-              ..where((t) =>
+        await (_db.delete(_tasks)..where(
+              (t) =>
                   t.seriesId.equals(task.seriesId!) &
                   t.occurrenceDate.equals(task.occurrenceDate!.toIso()) &
-                  t.id.equals(task.id).not()))
+                  t.id.equals(task.id).not(),
+            ))
             .go();
       }
-      await _db.into(_tasks).insertOnConflictUpdate(
-          taskToCompanion(task, isCancelled: isCancelled));
+      await _db
+          .into(_tasks)
+          .insertOnConflictUpdate(
+            taskToCompanion(task, isCancelled: isCancelled),
+          );
     });
   }
 
   Future<void> upsertAll(Iterable<StoredTask> rows) {
-    return _db.batch((b) => b.insertAllOnConflictUpdate(
-        _tasks, rows.map(storedToCompanion).toList()));
+    return _db.batch(
+      (b) => b.insertAllOnConflictUpdate(
+        _tasks,
+        rows.map(storedToCompanion).toList(),
+      ),
+    );
   }
 
   Future<void> delete(String id) =>
       (_db.delete(_tasks)..where((t) => t.id.equals(id))).go();
 
   /// Deletes a series and all its overrides.
-  Future<void> deleteSeries(String seriesId) => (_db.delete(_tasks)
-        ..where((t) => t.id.equals(seriesId) | t.seriesId.equals(seriesId)))
-      .go();
+  Future<void> deleteSeries(String seriesId) => (_db.delete(
+    _tasks,
+  )..where((t) => t.id.equals(seriesId) | t.seriesId.equals(seriesId))).go();
 
   /// Deletes a series' overrides dated on or after [from].
   Future<void> deleteOverridesFrom(String seriesId, LocalDate from) =>
-      (_db.delete(_tasks)
-            ..where((t) =>
+      (_db.delete(_tasks)..where(
+            (t) =>
                 t.seriesId.equals(seriesId) &
-                t.occurrenceDate.isBiggerOrEqualValue(from.toIso())))
+                t.occurrenceDate.isBiggerOrEqualValue(from.toIso()),
+          ))
           .go();
 
   Future<T> transaction<T>(Future<T> Function() action) =>
@@ -199,7 +221,7 @@ class TaskRepository {
   Future<String> exportToJson() async {
     final rows = await _db.select(_tasks).get();
     return BackupCodec.encode([
-      for (final r in rows) StoredTask(r.toTask(), isCancelled: r.isCancelled)
+      for (final r in rows) StoredTask(r.toTask(), isCancelled: r.isCancelled),
     ]);
   }
 

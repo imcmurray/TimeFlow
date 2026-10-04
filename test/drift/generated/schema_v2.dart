@@ -10,107 +10,156 @@ class Tasks extends Table with TableInfo<Tasks, TasksData> {
   final String? _alias;
   Tasks(this.attachedDatabase, [this._alias]);
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
-      'id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
-      'title', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   late final GeneratedColumn<String> description = GeneratedColumn<String>(
-      'description', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: 'NULL');
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'NULL',
+  );
   late final GeneratedColumn<int> startTime = GeneratedColumn<int>(
-      'start_time', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'start_time',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   late final GeneratedColumn<int> endTime = GeneratedColumn<int>(
-      'end_time', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'end_time',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   late final GeneratedColumn<int> isImportant = GeneratedColumn<int>(
-      'is_important', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT 0 CHECK (is_important IN (0, 1))',
-      defaultValue: const CustomExpression('0'));
+    'is_important',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0 CHECK (is_important IN (0, 1))',
+    defaultValue: const CustomExpression('0'),
+  );
   late final GeneratedColumn<int> isCompleted = GeneratedColumn<int>(
-      'is_completed', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT 0 CHECK (is_completed IN (0, 1))',
-      defaultValue: const CustomExpression('0'));
+    'is_completed',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0 CHECK (is_completed IN (0, 1))',
+    defaultValue: const CustomExpression('0'),
+  );
   late final GeneratedColumn<int> reminderMinutes = GeneratedColumn<int>(
-      'reminder_minutes', aliasedName, true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      $customConstraints: 'NULL');
+    'reminder_minutes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: 'NULL',
+  );
   late final GeneratedColumn<String> recurringPattern = GeneratedColumn<String>(
-      'recurring_pattern', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: 'NULL');
+    'recurring_pattern',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'NULL',
+  );
   late final GeneratedColumn<String> recurringTemplateId =
-      GeneratedColumn<String>('recurring_template_id', aliasedName, true,
-          type: DriftSqlType.string,
-          requiredDuringInsert: false,
-          $customConstraints: 'NULL');
+      GeneratedColumn<String>(
+        'recurring_template_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        $customConstraints: 'NULL',
+      );
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
-      'notes', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: 'NULL');
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'NULL',
+  );
   late final GeneratedColumn<String> attachmentPath = GeneratedColumn<String>(
-      'attachment_path', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: 'NULL');
+    'attachment_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'NULL',
+  );
   late final GeneratedColumn<String> color = GeneratedColumn<String>(
-      'color', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: 'NULL');
+    'color',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'NULL',
+  );
   late final GeneratedColumn<String> category = GeneratedColumn<String>(
-      'category', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT \'none\'',
-      defaultValue: const CustomExpression('\'none\''));
+    'category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'none\'',
+    defaultValue: const CustomExpression('\'none\''),
+  );
   late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
-      'created_at', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
-      'updated_at', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   @override
   List<GeneratedColumn> get $columns => [
-        id,
-        title,
-        description,
-        startTime,
-        endTime,
-        isImportant,
-        isCompleted,
-        reminderMinutes,
-        recurringPattern,
-        recurringTemplateId,
-        notes,
-        attachmentPath,
-        color,
-        category,
-        createdAt,
-        updatedAt
-      ];
+    id,
+    title,
+    description,
+    startTime,
+    endTime,
+    isImportant,
+    isCompleted,
+    reminderMinutes,
+    recurringPattern,
+    recurringTemplateId,
+    notes,
+    attachmentPath,
+    color,
+    category,
+    createdAt,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -122,38 +171,70 @@ class Tasks extends Table with TableInfo<Tasks, TasksData> {
   TasksData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return TasksData(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
-      title: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
-      description: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}description']),
-      startTime: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}start_time'])!,
-      endTime: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}end_time'])!,
-      isImportant: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}is_important'])!,
-      isCompleted: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}is_completed'])!,
-      reminderMinutes: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}reminder_minutes']),
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      startTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}start_time'],
+      )!,
+      endTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}end_time'],
+      )!,
+      isImportant: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}is_important'],
+      )!,
+      isCompleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}is_completed'],
+      )!,
+      reminderMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reminder_minutes'],
+      ),
       recurringPattern: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}recurring_pattern']),
+        DriftSqlType.string,
+        data['${effectivePrefix}recurring_pattern'],
+      ),
       recurringTemplateId: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}recurring_template_id']),
-      notes: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
-      attachmentPath: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}attachment_path']),
-      color: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}color']),
-      category: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
-      createdAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}created_at'])!,
-      updatedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}updated_at'])!,
+        DriftSqlType.string,
+        data['${effectivePrefix}recurring_template_id'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      attachmentPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}attachment_path'],
+      ),
+      color: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}color'],
+      ),
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -185,23 +266,24 @@ class TasksData extends DataClass implements Insertable<TasksData> {
   final String category;
   final int createdAt;
   final int updatedAt;
-  const TasksData(
-      {required this.id,
-      required this.title,
-      this.description,
-      required this.startTime,
-      required this.endTime,
-      required this.isImportant,
-      required this.isCompleted,
-      this.reminderMinutes,
-      this.recurringPattern,
-      this.recurringTemplateId,
-      this.notes,
-      this.attachmentPath,
-      this.color,
-      required this.category,
-      required this.createdAt,
-      required this.updatedAt});
+  const TasksData({
+    required this.id,
+    required this.title,
+    this.description,
+    required this.startTime,
+    required this.endTime,
+    required this.isImportant,
+    required this.isCompleted,
+    this.reminderMinutes,
+    this.recurringPattern,
+    this.recurringTemplateId,
+    this.notes,
+    this.attachmentPath,
+    this.color,
+    required this.category,
+    required this.createdAt,
+    required this.updatedAt,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -258,21 +340,25 @@ class TasksData extends DataClass implements Insertable<TasksData> {
       recurringTemplateId: recurringTemplateId == null && nullToAbsent
           ? const Value.absent()
           : Value(recurringTemplateId),
-      notes:
-          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
       attachmentPath: attachmentPath == null && nullToAbsent
           ? const Value.absent()
           : Value(attachmentPath),
-      color:
-          color == null && nullToAbsent ? const Value.absent() : Value(color),
+      color: color == null && nullToAbsent
+          ? const Value.absent()
+          : Value(color),
       category: Value(category),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
   }
 
-  factory TasksData.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory TasksData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return TasksData(
       id: serializer.fromJson<String>(json['id']),
@@ -284,8 +370,9 @@ class TasksData extends DataClass implements Insertable<TasksData> {
       isCompleted: serializer.fromJson<int>(json['isCompleted']),
       reminderMinutes: serializer.fromJson<int?>(json['reminderMinutes']),
       recurringPattern: serializer.fromJson<String?>(json['recurringPattern']),
-      recurringTemplateId:
-          serializer.fromJson<String?>(json['recurringTemplateId']),
+      recurringTemplateId: serializer.fromJson<String?>(
+        json['recurringTemplateId'],
+      ),
       notes: serializer.fromJson<String?>(json['notes']),
       attachmentPath: serializer.fromJson<String?>(json['attachmentPath']),
       color: serializer.fromJson<String?>(json['color']),
@@ -317,60 +404,64 @@ class TasksData extends DataClass implements Insertable<TasksData> {
     };
   }
 
-  TasksData copyWith(
-          {String? id,
-          String? title,
-          Value<String?> description = const Value.absent(),
-          int? startTime,
-          int? endTime,
-          int? isImportant,
-          int? isCompleted,
-          Value<int?> reminderMinutes = const Value.absent(),
-          Value<String?> recurringPattern = const Value.absent(),
-          Value<String?> recurringTemplateId = const Value.absent(),
-          Value<String?> notes = const Value.absent(),
-          Value<String?> attachmentPath = const Value.absent(),
-          Value<String?> color = const Value.absent(),
-          String? category,
-          int? createdAt,
-          int? updatedAt}) =>
-      TasksData(
-        id: id ?? this.id,
-        title: title ?? this.title,
-        description: description.present ? description.value : this.description,
-        startTime: startTime ?? this.startTime,
-        endTime: endTime ?? this.endTime,
-        isImportant: isImportant ?? this.isImportant,
-        isCompleted: isCompleted ?? this.isCompleted,
-        reminderMinutes: reminderMinutes.present
-            ? reminderMinutes.value
-            : this.reminderMinutes,
-        recurringPattern: recurringPattern.present
-            ? recurringPattern.value
-            : this.recurringPattern,
-        recurringTemplateId: recurringTemplateId.present
-            ? recurringTemplateId.value
-            : this.recurringTemplateId,
-        notes: notes.present ? notes.value : this.notes,
-        attachmentPath:
-            attachmentPath.present ? attachmentPath.value : this.attachmentPath,
-        color: color.present ? color.value : this.color,
-        category: category ?? this.category,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-      );
+  TasksData copyWith({
+    String? id,
+    String? title,
+    Value<String?> description = const Value.absent(),
+    int? startTime,
+    int? endTime,
+    int? isImportant,
+    int? isCompleted,
+    Value<int?> reminderMinutes = const Value.absent(),
+    Value<String?> recurringPattern = const Value.absent(),
+    Value<String?> recurringTemplateId = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
+    Value<String?> attachmentPath = const Value.absent(),
+    Value<String?> color = const Value.absent(),
+    String? category,
+    int? createdAt,
+    int? updatedAt,
+  }) => TasksData(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    description: description.present ? description.value : this.description,
+    startTime: startTime ?? this.startTime,
+    endTime: endTime ?? this.endTime,
+    isImportant: isImportant ?? this.isImportant,
+    isCompleted: isCompleted ?? this.isCompleted,
+    reminderMinutes: reminderMinutes.present
+        ? reminderMinutes.value
+        : this.reminderMinutes,
+    recurringPattern: recurringPattern.present
+        ? recurringPattern.value
+        : this.recurringPattern,
+    recurringTemplateId: recurringTemplateId.present
+        ? recurringTemplateId.value
+        : this.recurringTemplateId,
+    notes: notes.present ? notes.value : this.notes,
+    attachmentPath: attachmentPath.present
+        ? attachmentPath.value
+        : this.attachmentPath,
+    color: color.present ? color.value : this.color,
+    category: category ?? this.category,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
   TasksData copyWithCompanion(TasksCompanion data) {
     return TasksData(
       id: data.id.present ? data.id.value : this.id,
       title: data.title.present ? data.title.value : this.title,
-      description:
-          data.description.present ? data.description.value : this.description,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
       startTime: data.startTime.present ? data.startTime.value : this.startTime,
       endTime: data.endTime.present ? data.endTime.value : this.endTime,
-      isImportant:
-          data.isImportant.present ? data.isImportant.value : this.isImportant,
-      isCompleted:
-          data.isCompleted.present ? data.isCompleted.value : this.isCompleted,
+      isImportant: data.isImportant.present
+          ? data.isImportant.value
+          : this.isImportant,
+      isCompleted: data.isCompleted.present
+          ? data.isCompleted.value
+          : this.isCompleted,
       reminderMinutes: data.reminderMinutes.present
           ? data.reminderMinutes.value
           : this.reminderMinutes,
@@ -416,22 +507,23 @@ class TasksData extends DataClass implements Insertable<TasksData> {
 
   @override
   int get hashCode => Object.hash(
-      id,
-      title,
-      description,
-      startTime,
-      endTime,
-      isImportant,
-      isCompleted,
-      reminderMinutes,
-      recurringPattern,
-      recurringTemplateId,
-      notes,
-      attachmentPath,
-      color,
-      category,
-      createdAt,
-      updatedAt);
+    id,
+    title,
+    description,
+    startTime,
+    endTime,
+    isImportant,
+    isCompleted,
+    reminderMinutes,
+    recurringPattern,
+    recurringTemplateId,
+    notes,
+    attachmentPath,
+    color,
+    category,
+    createdAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -509,12 +601,12 @@ class TasksCompanion extends UpdateCompanion<TasksData> {
     required int createdAt,
     required int updatedAt,
     this.rowid = const Value.absent(),
-  })  : id = Value(id),
-        title = Value(title),
-        startTime = Value(startTime),
-        endTime = Value(endTime),
-        createdAt = Value(createdAt),
-        updatedAt = Value(updatedAt);
+  }) : id = Value(id),
+       title = Value(title),
+       startTime = Value(startTime),
+       endTime = Value(endTime),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
   static Insertable<TasksData> custom({
     Expression<String>? id,
     Expression<String>? title,
@@ -556,24 +648,25 @@ class TasksCompanion extends UpdateCompanion<TasksData> {
     });
   }
 
-  TasksCompanion copyWith(
-      {Value<String>? id,
-      Value<String>? title,
-      Value<String?>? description,
-      Value<int>? startTime,
-      Value<int>? endTime,
-      Value<int>? isImportant,
-      Value<int>? isCompleted,
-      Value<int?>? reminderMinutes,
-      Value<String?>? recurringPattern,
-      Value<String?>? recurringTemplateId,
-      Value<String?>? notes,
-      Value<String?>? attachmentPath,
-      Value<String?>? color,
-      Value<String>? category,
-      Value<int>? createdAt,
-      Value<int>? updatedAt,
-      Value<int>? rowid}) {
+  TasksCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<String?>? description,
+    Value<int>? startTime,
+    Value<int>? endTime,
+    Value<int>? isImportant,
+    Value<int>? isCompleted,
+    Value<int?>? reminderMinutes,
+    Value<String?>? recurringPattern,
+    Value<String?>? recurringTemplateId,
+    Value<String?>? notes,
+    Value<String?>? attachmentPath,
+    Value<String?>? color,
+    Value<String>? category,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int>? rowid,
+  }) {
     return TasksCompanion(
       id: id ?? this.id,
       title: title ?? this.title,
@@ -626,8 +719,9 @@ class TasksCompanion extends UpdateCompanion<TasksData> {
       map['recurring_pattern'] = Variable<String>(recurringPattern.value);
     }
     if (recurringTemplateId.present) {
-      map['recurring_template_id'] =
-          Variable<String>(recurringTemplateId.value);
+      map['recurring_template_id'] = Variable<String>(
+        recurringTemplateId.value,
+      );
     }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);

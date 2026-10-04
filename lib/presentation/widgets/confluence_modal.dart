@@ -149,10 +149,12 @@ class _ConfluenceModalState extends State<ConfluenceModal>
       });
 
     // Calculate the time span for header
-    final earliestStart =
-        _tasks.map((t) => t.startTime).reduce((a, b) => a.isBefore(b) ? a : b);
-    final latestEnd =
-        _tasks.map((t) => t.endTime).reduce((a, b) => a.isAfter(b) ? a : b);
+    final earliestStart = _tasks
+        .map((t) => t.startTime)
+        .reduce((a, b) => a.isBefore(b) ? a : b);
+    final latestEnd = _tasks
+        .map((t) => t.endTime)
+        .reduce((a, b) => a.isAfter(b) ? a : b);
 
     return GestureDetector(
       onTap: _close,
@@ -218,10 +220,7 @@ class _ConfluenceModalState extends State<ConfluenceModal>
           ? _fadeAnimations.first
           : _divergeController,
       builder: (context, child) {
-        return Opacity(
-          opacity: _divergeController.value,
-          child: child,
-        );
+        return Opacity(opacity: _divergeController.value, child: child);
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -231,10 +230,9 @@ class _ConfluenceModalState extends State<ConfluenceModal>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .surface
-                    .withValues(alpha: 0.9),
+                color: Theme.of(
+                  context,
+                ).colorScheme.surface.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
@@ -267,10 +265,9 @@ class _ConfluenceModalState extends State<ConfluenceModal>
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.1),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -290,8 +287,9 @@ class _ConfluenceModalState extends State<ConfluenceModal>
 
             // Close button
             Material(
-              color:
-                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+              color: Theme.of(
+                context,
+              ).colorScheme.surface.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(20),
               child: InkWell(
                 onTap: _close,
@@ -301,10 +299,9 @@ class _ConfluenceModalState extends State<ConfluenceModal>
                   child: Icon(
                     Icons.close,
                     size: 24,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.6),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ),
@@ -328,10 +325,7 @@ class _ConfluenceModalState extends State<ConfluenceModal>
       builder: (context, child) {
         return Transform.translate(
           offset: Offset(0, slideAnimation.value),
-          child: Opacity(
-            opacity: fadeAnimation.value,
-            child: child,
-          ),
+          child: Opacity(opacity: fadeAnimation.value, child: child),
         );
       },
       child: Padding(

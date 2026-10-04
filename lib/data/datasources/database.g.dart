@@ -11,148 +11,233 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
-      'id', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
-      'title', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _descriptionMeta =
-      const VerificationMeta('description');
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
   @override
   late final GeneratedColumn<String> description = GeneratedColumn<String>(
-      'description', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
-      'notes', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   late final GeneratedColumnWithTypeConverter<DateTime, String> startAt =
-      GeneratedColumn<String>('start_at', aliasedName, false,
-              type: DriftSqlType.string, requiredDuringInsert: true)
-          .withConverter<DateTime>($TasksTable.$converterstartAt);
+      GeneratedColumn<String>(
+        'start_at',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<DateTime>($TasksTable.$converterstartAt);
   @override
   late final GeneratedColumnWithTypeConverter<DateTime, String> endAt =
-      GeneratedColumn<String>('end_at', aliasedName, false,
-              type: DriftSqlType.string, requiredDuringInsert: true)
-          .withConverter<DateTime>($TasksTable.$converterendAt);
-  static const VerificationMeta _isImportantMeta =
-      const VerificationMeta('isImportant');
+      GeneratedColumn<String>(
+        'end_at',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<DateTime>($TasksTable.$converterendAt);
+  static const VerificationMeta _isImportantMeta = const VerificationMeta(
+    'isImportant',
+  );
   @override
   late final GeneratedColumn<bool> isImportant = GeneratedColumn<bool>(
-      'is_important', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      defaultConstraints: GeneratedColumn.constraintIsAlways(
-          'CHECK ("is_important" IN (0, 1))'),
-      defaultValue: const Constant(false));
-  static const VerificationMeta _isCompletedMeta =
-      const VerificationMeta('isCompleted');
+    'is_important',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_important" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isCompletedMeta = const VerificationMeta(
+    'isCompleted',
+  );
   @override
   late final GeneratedColumn<bool> isCompleted = GeneratedColumn<bool>(
-      'is_completed', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      defaultConstraints: GeneratedColumn.constraintIsAlways(
-          'CHECK ("is_completed" IN (0, 1))'),
-      defaultValue: const Constant(false));
-  static const VerificationMeta _reminderMinutesMeta =
-      const VerificationMeta('reminderMinutes');
+    'is_completed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_completed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _reminderMinutesMeta = const VerificationMeta(
+    'reminderMinutes',
+  );
   @override
   late final GeneratedColumn<int> reminderMinutes = GeneratedColumn<int>(
-      'reminder_minutes', aliasedName, true,
-      type: DriftSqlType.int, requiredDuringInsert: false);
-  static const VerificationMeta _attachmentPathMeta =
-      const VerificationMeta('attachmentPath');
+    'reminder_minutes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _attachmentPathMeta = const VerificationMeta(
+    'attachmentPath',
+  );
   @override
   late final GeneratedColumn<String> attachmentPath = GeneratedColumn<String>(
-      'attachment_path', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
+    'attachment_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _colorMeta = const VerificationMeta('color');
   @override
   late final GeneratedColumn<String> color = GeneratedColumn<String>(
-      'color', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _categoryMeta =
-      const VerificationMeta('category');
+    'color',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
   @override
   late final GeneratedColumn<String> category = GeneratedColumn<String>(
-      'category', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      defaultValue: const Constant('none'));
-  static const VerificationMeta _recurrenceMeta =
-      const VerificationMeta('recurrence');
+    'category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('none'),
+  );
+  static const VerificationMeta _recurrenceMeta = const VerificationMeta(
+    'recurrence',
+  );
   @override
   late final GeneratedColumn<String> recurrence = GeneratedColumn<String>(
-      'recurrence', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _seriesIdMeta =
-      const VerificationMeta('seriesId');
+    'recurrence',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _seriesIdMeta = const VerificationMeta(
+    'seriesId',
+  );
   @override
   late final GeneratedColumn<String> seriesId = GeneratedColumn<String>(
-      'series_id', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _occurrenceDateMeta =
-      const VerificationMeta('occurrenceDate');
+    'series_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _occurrenceDateMeta = const VerificationMeta(
+    'occurrenceDate',
+  );
   @override
   late final GeneratedColumn<String> occurrenceDate = GeneratedColumn<String>(
-      'occurrence_date', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _isCancelledMeta =
-      const VerificationMeta('isCancelled');
+    'occurrence_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isCancelledMeta = const VerificationMeta(
+    'isCancelled',
+  );
   @override
   late final GeneratedColumn<bool> isCancelled = GeneratedColumn<bool>(
-      'is_cancelled', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      defaultConstraints: GeneratedColumn.constraintIsAlways(
-          'CHECK ("is_cancelled" IN (0, 1))'),
-      defaultValue: const Constant(false));
-  static const VerificationMeta _createdAtMeta =
-      const VerificationMeta('createdAt');
+    'is_cancelled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_cancelled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
   @override
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-      'created_at', aliasedName, false,
-      type: DriftSqlType.dateTime, requiredDuringInsert: true);
-  static const VerificationMeta _updatedAtMeta =
-      const VerificationMeta('updatedAt');
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   @override
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-      'updated_at', aliasedName, false,
-      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
   @override
   List<GeneratedColumn> get $columns => [
-        id,
-        title,
-        description,
-        notes,
-        startAt,
-        endAt,
-        isImportant,
-        isCompleted,
-        reminderMinutes,
-        attachmentPath,
-        color,
-        category,
-        recurrence,
-        seriesId,
-        occurrenceDate,
-        isCancelled,
-        createdAt,
-        updatedAt
-      ];
+    id,
+    title,
+    description,
+    notes,
+    startAt,
+    endAt,
+    isImportant,
+    isCompleted,
+    reminderMinutes,
+    attachmentPath,
+    color,
+    category,
+    recurrence,
+    seriesId,
+    occurrenceDate,
+    isCancelled,
+    createdAt,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'tasks';
   @override
-  VerificationContext validateIntegrity(Insertable<TaskRow> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<TaskRow> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -162,83 +247,118 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     }
     if (data.containsKey('title')) {
       context.handle(
-          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
     } else if (isInserting) {
       context.missing(_titleMeta);
     }
     if (data.containsKey('description')) {
       context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
           _descriptionMeta,
-          description.isAcceptableOrUnknown(
-              data['description']!, _descriptionMeta));
+        ),
+      );
     }
     if (data.containsKey('notes')) {
       context.handle(
-          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
     }
     if (data.containsKey('is_important')) {
       context.handle(
+        _isImportantMeta,
+        isImportant.isAcceptableOrUnknown(
+          data['is_important']!,
           _isImportantMeta,
-          isImportant.isAcceptableOrUnknown(
-              data['is_important']!, _isImportantMeta));
+        ),
+      );
     }
     if (data.containsKey('is_completed')) {
       context.handle(
+        _isCompletedMeta,
+        isCompleted.isAcceptableOrUnknown(
+          data['is_completed']!,
           _isCompletedMeta,
-          isCompleted.isAcceptableOrUnknown(
-              data['is_completed']!, _isCompletedMeta));
+        ),
+      );
     }
     if (data.containsKey('reminder_minutes')) {
       context.handle(
+        _reminderMinutesMeta,
+        reminderMinutes.isAcceptableOrUnknown(
+          data['reminder_minutes']!,
           _reminderMinutesMeta,
-          reminderMinutes.isAcceptableOrUnknown(
-              data['reminder_minutes']!, _reminderMinutesMeta));
+        ),
+      );
     }
     if (data.containsKey('attachment_path')) {
       context.handle(
+        _attachmentPathMeta,
+        attachmentPath.isAcceptableOrUnknown(
+          data['attachment_path']!,
           _attachmentPathMeta,
-          attachmentPath.isAcceptableOrUnknown(
-              data['attachment_path']!, _attachmentPathMeta));
+        ),
+      );
     }
     if (data.containsKey('color')) {
       context.handle(
-          _colorMeta, color.isAcceptableOrUnknown(data['color']!, _colorMeta));
+        _colorMeta,
+        color.isAcceptableOrUnknown(data['color']!, _colorMeta),
+      );
     }
     if (data.containsKey('category')) {
-      context.handle(_categoryMeta,
-          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
     }
     if (data.containsKey('recurrence')) {
       context.handle(
-          _recurrenceMeta,
-          recurrence.isAcceptableOrUnknown(
-              data['recurrence']!, _recurrenceMeta));
+        _recurrenceMeta,
+        recurrence.isAcceptableOrUnknown(data['recurrence']!, _recurrenceMeta),
+      );
     }
     if (data.containsKey('series_id')) {
-      context.handle(_seriesIdMeta,
-          seriesId.isAcceptableOrUnknown(data['series_id']!, _seriesIdMeta));
+      context.handle(
+        _seriesIdMeta,
+        seriesId.isAcceptableOrUnknown(data['series_id']!, _seriesIdMeta),
+      );
     }
     if (data.containsKey('occurrence_date')) {
       context.handle(
+        _occurrenceDateMeta,
+        occurrenceDate.isAcceptableOrUnknown(
+          data['occurrence_date']!,
           _occurrenceDateMeta,
-          occurrenceDate.isAcceptableOrUnknown(
-              data['occurrence_date']!, _occurrenceDateMeta));
+        ),
+      );
     }
     if (data.containsKey('is_cancelled')) {
       context.handle(
+        _isCancelledMeta,
+        isCancelled.isAcceptableOrUnknown(
+          data['is_cancelled']!,
           _isCancelledMeta,
-          isCancelled.isAcceptableOrUnknown(
-              data['is_cancelled']!, _isCancelledMeta));
+        ),
+      );
     }
     if (data.containsKey('created_at')) {
-      context.handle(_createdAtMeta,
-          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
-      context.handle(_updatedAtMeta,
-          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
@@ -251,43 +371,82 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
   TaskRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return TaskRow(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
-      title: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
-      description: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}description']),
-      notes: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
-      startAt: $TasksTable.$converterstartAt.fromSql(attachedDatabase
-          .typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}start_at'])!),
-      endAt: $TasksTable.$converterendAt.fromSql(attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}end_at'])!),
-      isImportant: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}is_important'])!,
-      isCompleted: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}is_completed'])!,
-      reminderMinutes: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}reminder_minutes']),
-      attachmentPath: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}attachment_path']),
-      color: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}color']),
-      category: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
-      recurrence: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}recurrence']),
-      seriesId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}series_id']),
-      occurrenceDate: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}occurrence_date']),
-      isCancelled: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}is_cancelled'])!,
-      createdAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
-      updatedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      startAt: $TasksTable.$converterstartAt.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}start_at'],
+        )!,
+      ),
+      endAt: $TasksTable.$converterendAt.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}end_at'],
+        )!,
+      ),
+      isImportant: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_important'],
+      )!,
+      isCompleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_completed'],
+      )!,
+      reminderMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reminder_minutes'],
+      ),
+      attachmentPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}attachment_path'],
+      ),
+      color: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}color'],
+      ),
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      )!,
+      recurrence: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recurrence'],
+      ),
+      seriesId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}series_id'],
+      ),
+      occurrenceDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}occurrence_date'],
+      ),
+      isCancelled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_cancelled'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -323,25 +482,26 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   final bool isCancelled;
   final DateTime createdAt;
   final DateTime updatedAt;
-  const TaskRow(
-      {required this.id,
-      required this.title,
-      this.description,
-      this.notes,
-      required this.startAt,
-      required this.endAt,
-      required this.isImportant,
-      required this.isCompleted,
-      this.reminderMinutes,
-      this.attachmentPath,
-      this.color,
-      required this.category,
-      this.recurrence,
-      this.seriesId,
-      this.occurrenceDate,
-      required this.isCancelled,
-      required this.createdAt,
-      required this.updatedAt});
+  const TaskRow({
+    required this.id,
+    required this.title,
+    this.description,
+    this.notes,
+    required this.startAt,
+    required this.endAt,
+    required this.isImportant,
+    required this.isCompleted,
+    this.reminderMinutes,
+    this.attachmentPath,
+    this.color,
+    required this.category,
+    this.recurrence,
+    this.seriesId,
+    this.occurrenceDate,
+    required this.isCancelled,
+    required this.createdAt,
+    required this.updatedAt,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -354,12 +514,14 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       map['notes'] = Variable<String>(notes);
     }
     {
-      map['start_at'] =
-          Variable<String>($TasksTable.$converterstartAt.toSql(startAt));
+      map['start_at'] = Variable<String>(
+        $TasksTable.$converterstartAt.toSql(startAt),
+      );
     }
     {
-      map['end_at'] =
-          Variable<String>($TasksTable.$converterendAt.toSql(endAt));
+      map['end_at'] = Variable<String>(
+        $TasksTable.$converterendAt.toSql(endAt),
+      );
     }
     map['is_important'] = Variable<bool>(isImportant);
     map['is_completed'] = Variable<bool>(isCompleted);
@@ -395,8 +557,9 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       description: description == null && nullToAbsent
           ? const Value.absent()
           : Value(description),
-      notes:
-          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
       startAt: Value(startAt),
       endAt: Value(endAt),
       isImportant: Value(isImportant),
@@ -407,8 +570,9 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       attachmentPath: attachmentPath == null && nullToAbsent
           ? const Value.absent()
           : Value(attachmentPath),
-      color:
-          color == null && nullToAbsent ? const Value.absent() : Value(color),
+      color: color == null && nullToAbsent
+          ? const Value.absent()
+          : Value(color),
       category: Value(category),
       recurrence: recurrence == null && nullToAbsent
           ? const Value.absent()
@@ -425,8 +589,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     );
   }
 
-  factory TaskRow.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory TaskRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return TaskRow(
       id: serializer.fromJson<String>(json['id']),
@@ -474,62 +640,67 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     };
   }
 
-  TaskRow copyWith(
-          {String? id,
-          String? title,
-          Value<String?> description = const Value.absent(),
-          Value<String?> notes = const Value.absent(),
-          DateTime? startAt,
-          DateTime? endAt,
-          bool? isImportant,
-          bool? isCompleted,
-          Value<int?> reminderMinutes = const Value.absent(),
-          Value<String?> attachmentPath = const Value.absent(),
-          Value<String?> color = const Value.absent(),
-          String? category,
-          Value<String?> recurrence = const Value.absent(),
-          Value<String?> seriesId = const Value.absent(),
-          Value<String?> occurrenceDate = const Value.absent(),
-          bool? isCancelled,
-          DateTime? createdAt,
-          DateTime? updatedAt}) =>
-      TaskRow(
-        id: id ?? this.id,
-        title: title ?? this.title,
-        description: description.present ? description.value : this.description,
-        notes: notes.present ? notes.value : this.notes,
-        startAt: startAt ?? this.startAt,
-        endAt: endAt ?? this.endAt,
-        isImportant: isImportant ?? this.isImportant,
-        isCompleted: isCompleted ?? this.isCompleted,
-        reminderMinutes: reminderMinutes.present
-            ? reminderMinutes.value
-            : this.reminderMinutes,
-        attachmentPath:
-            attachmentPath.present ? attachmentPath.value : this.attachmentPath,
-        color: color.present ? color.value : this.color,
-        category: category ?? this.category,
-        recurrence: recurrence.present ? recurrence.value : this.recurrence,
-        seriesId: seriesId.present ? seriesId.value : this.seriesId,
-        occurrenceDate:
-            occurrenceDate.present ? occurrenceDate.value : this.occurrenceDate,
-        isCancelled: isCancelled ?? this.isCancelled,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-      );
+  TaskRow copyWith({
+    String? id,
+    String? title,
+    Value<String?> description = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
+    DateTime? startAt,
+    DateTime? endAt,
+    bool? isImportant,
+    bool? isCompleted,
+    Value<int?> reminderMinutes = const Value.absent(),
+    Value<String?> attachmentPath = const Value.absent(),
+    Value<String?> color = const Value.absent(),
+    String? category,
+    Value<String?> recurrence = const Value.absent(),
+    Value<String?> seriesId = const Value.absent(),
+    Value<String?> occurrenceDate = const Value.absent(),
+    bool? isCancelled,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => TaskRow(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    description: description.present ? description.value : this.description,
+    notes: notes.present ? notes.value : this.notes,
+    startAt: startAt ?? this.startAt,
+    endAt: endAt ?? this.endAt,
+    isImportant: isImportant ?? this.isImportant,
+    isCompleted: isCompleted ?? this.isCompleted,
+    reminderMinutes: reminderMinutes.present
+        ? reminderMinutes.value
+        : this.reminderMinutes,
+    attachmentPath: attachmentPath.present
+        ? attachmentPath.value
+        : this.attachmentPath,
+    color: color.present ? color.value : this.color,
+    category: category ?? this.category,
+    recurrence: recurrence.present ? recurrence.value : this.recurrence,
+    seriesId: seriesId.present ? seriesId.value : this.seriesId,
+    occurrenceDate: occurrenceDate.present
+        ? occurrenceDate.value
+        : this.occurrenceDate,
+    isCancelled: isCancelled ?? this.isCancelled,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
   TaskRow copyWithCompanion(TasksCompanion data) {
     return TaskRow(
       id: data.id.present ? data.id.value : this.id,
       title: data.title.present ? data.title.value : this.title,
-      description:
-          data.description.present ? data.description.value : this.description,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
       notes: data.notes.present ? data.notes.value : this.notes,
       startAt: data.startAt.present ? data.startAt.value : this.startAt,
       endAt: data.endAt.present ? data.endAt.value : this.endAt,
-      isImportant:
-          data.isImportant.present ? data.isImportant.value : this.isImportant,
-      isCompleted:
-          data.isCompleted.present ? data.isCompleted.value : this.isCompleted,
+      isImportant: data.isImportant.present
+          ? data.isImportant.value
+          : this.isImportant,
+      isCompleted: data.isCompleted.present
+          ? data.isCompleted.value
+          : this.isCompleted,
       reminderMinutes: data.reminderMinutes.present
           ? data.reminderMinutes.value
           : this.reminderMinutes,
@@ -538,14 +709,16 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           : this.attachmentPath,
       color: data.color.present ? data.color.value : this.color,
       category: data.category.present ? data.category.value : this.category,
-      recurrence:
-          data.recurrence.present ? data.recurrence.value : this.recurrence,
+      recurrence: data.recurrence.present
+          ? data.recurrence.value
+          : this.recurrence,
       seriesId: data.seriesId.present ? data.seriesId.value : this.seriesId,
       occurrenceDate: data.occurrenceDate.present
           ? data.occurrenceDate.value
           : this.occurrenceDate,
-      isCancelled:
-          data.isCancelled.present ? data.isCancelled.value : this.isCancelled,
+      isCancelled: data.isCancelled.present
+          ? data.isCancelled.value
+          : this.isCancelled,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -578,24 +751,25 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
 
   @override
   int get hashCode => Object.hash(
-      id,
-      title,
-      description,
-      notes,
-      startAt,
-      endAt,
-      isImportant,
-      isCompleted,
-      reminderMinutes,
-      attachmentPath,
-      color,
-      category,
-      recurrence,
-      seriesId,
-      occurrenceDate,
-      isCancelled,
-      createdAt,
-      updatedAt);
+    id,
+    title,
+    description,
+    notes,
+    startAt,
+    endAt,
+    isImportant,
+    isCompleted,
+    reminderMinutes,
+    attachmentPath,
+    color,
+    category,
+    recurrence,
+    seriesId,
+    occurrenceDate,
+    isCancelled,
+    createdAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -681,12 +855,12 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
-  })  : id = Value(id),
-        title = Value(title),
-        startAt = Value(startAt),
-        endAt = Value(endAt),
-        createdAt = Value(createdAt),
-        updatedAt = Value(updatedAt);
+  }) : id = Value(id),
+       title = Value(title),
+       startAt = Value(startAt),
+       endAt = Value(endAt),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
   static Insertable<TaskRow> custom({
     Expression<String>? id,
     Expression<String>? title,
@@ -731,26 +905,27 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     });
   }
 
-  TasksCompanion copyWith(
-      {Value<String>? id,
-      Value<String>? title,
-      Value<String?>? description,
-      Value<String?>? notes,
-      Value<DateTime>? startAt,
-      Value<DateTime>? endAt,
-      Value<bool>? isImportant,
-      Value<bool>? isCompleted,
-      Value<int?>? reminderMinutes,
-      Value<String?>? attachmentPath,
-      Value<String?>? color,
-      Value<String>? category,
-      Value<String?>? recurrence,
-      Value<String?>? seriesId,
-      Value<String?>? occurrenceDate,
-      Value<bool>? isCancelled,
-      Value<DateTime>? createdAt,
-      Value<DateTime>? updatedAt,
-      Value<int>? rowid}) {
+  TasksCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<String?>? description,
+    Value<String?>? notes,
+    Value<DateTime>? startAt,
+    Value<DateTime>? endAt,
+    Value<bool>? isImportant,
+    Value<bool>? isCompleted,
+    Value<int?>? reminderMinutes,
+    Value<String?>? attachmentPath,
+    Value<String?>? color,
+    Value<String>? category,
+    Value<String?>? recurrence,
+    Value<String?>? seriesId,
+    Value<String?>? occurrenceDate,
+    Value<bool>? isCancelled,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
     return TasksCompanion(
       id: id ?? this.id,
       title: title ?? this.title,
@@ -790,12 +965,14 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       map['notes'] = Variable<String>(notes.value);
     }
     if (startAt.present) {
-      map['start_at'] =
-          Variable<String>($TasksTable.$converterstartAt.toSql(startAt.value));
+      map['start_at'] = Variable<String>(
+        $TasksTable.$converterstartAt.toSql(startAt.value),
+      );
     }
     if (endAt.present) {
-      map['end_at'] =
-          Variable<String>($TasksTable.$converterendAt.toSql(endAt.value));
+      map['end_at'] = Variable<String>(
+        $TasksTable.$converterendAt.toSql(endAt.value),
+      );
     }
     if (isImportant.present) {
       map['is_important'] = Variable<bool>(isImportant.value);
@@ -871,59 +1048,68 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $TasksTable tasks = $TasksTable(this);
   late final Index tasksStartAt = Index(
-      'tasks_start_at', 'CREATE INDEX tasks_start_at ON tasks (start_at)');
-  late final Index tasksSeriesOccurrence = Index('tasks_series_occurrence',
-      'CREATE UNIQUE INDEX tasks_series_occurrence ON tasks (series_id, occurrence_date)');
+    'tasks_start_at',
+    'CREATE INDEX tasks_start_at ON tasks (start_at)',
+  );
+  late final Index tasksSeriesOccurrence = Index(
+    'tasks_series_occurrence',
+    'CREATE UNIQUE INDEX tasks_series_occurrence ON tasks (series_id, occurrence_date)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [tasks, tasksStartAt, tasksSeriesOccurrence];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    tasks,
+    tasksStartAt,
+    tasksSeriesOccurrence,
+  ];
 }
 
-typedef $$TasksTableCreateCompanionBuilder = TasksCompanion Function({
-  required String id,
-  required String title,
-  Value<String?> description,
-  Value<String?> notes,
-  required DateTime startAt,
-  required DateTime endAt,
-  Value<bool> isImportant,
-  Value<bool> isCompleted,
-  Value<int?> reminderMinutes,
-  Value<String?> attachmentPath,
-  Value<String?> color,
-  Value<String> category,
-  Value<String?> recurrence,
-  Value<String?> seriesId,
-  Value<String?> occurrenceDate,
-  Value<bool> isCancelled,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  Value<int> rowid,
-});
-typedef $$TasksTableUpdateCompanionBuilder = TasksCompanion Function({
-  Value<String> id,
-  Value<String> title,
-  Value<String?> description,
-  Value<String?> notes,
-  Value<DateTime> startAt,
-  Value<DateTime> endAt,
-  Value<bool> isImportant,
-  Value<bool> isCompleted,
-  Value<int?> reminderMinutes,
-  Value<String?> attachmentPath,
-  Value<String?> color,
-  Value<String> category,
-  Value<String?> recurrence,
-  Value<String?> seriesId,
-  Value<String?> occurrenceDate,
-  Value<bool> isCancelled,
-  Value<DateTime> createdAt,
-  Value<DateTime> updatedAt,
-  Value<int> rowid,
-});
+typedef $$TasksTableCreateCompanionBuilder =
+    TasksCompanion Function({
+      required String id,
+      required String title,
+      Value<String?> description,
+      Value<String?> notes,
+      required DateTime startAt,
+      required DateTime endAt,
+      Value<bool> isImportant,
+      Value<bool> isCompleted,
+      Value<int?> reminderMinutes,
+      Value<String?> attachmentPath,
+      Value<String?> color,
+      Value<String> category,
+      Value<String?> recurrence,
+      Value<String?> seriesId,
+      Value<String?> occurrenceDate,
+      Value<bool> isCancelled,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$TasksTableUpdateCompanionBuilder =
+    TasksCompanion Function({
+      Value<String> id,
+      Value<String> title,
+      Value<String?> description,
+      Value<String?> notes,
+      Value<DateTime> startAt,
+      Value<DateTime> endAt,
+      Value<bool> isImportant,
+      Value<bool> isCompleted,
+      Value<int?> reminderMinutes,
+      Value<String?> attachmentPath,
+      Value<String?> color,
+      Value<String> category,
+      Value<String?> recurrence,
+      Value<String?> seriesId,
+      Value<String?> occurrenceDate,
+      Value<bool> isCancelled,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
 
 class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
   $$TasksTableFilterComposer({
@@ -934,65 +1120,96 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get title => $composableBuilder(
-      column: $table.title, builder: (column) => ColumnFilters(column));
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get description => $composableBuilder(
-      column: $table.description, builder: (column) => ColumnFilters(column));
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get notes => $composableBuilder(
-      column: $table.notes, builder: (column) => ColumnFilters(column));
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnWithTypeConverterFilters<DateTime, DateTime, String> get startAt =>
       $composableBuilder(
-          column: $table.startAt,
-          builder: (column) => ColumnWithTypeConverterFilters(column));
+        column: $table.startAt,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
 
   ColumnWithTypeConverterFilters<DateTime, DateTime, String> get endAt =>
       $composableBuilder(
-          column: $table.endAt,
-          builder: (column) => ColumnWithTypeConverterFilters(column));
+        column: $table.endAt,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
 
   ColumnFilters<bool> get isImportant => $composableBuilder(
-      column: $table.isImportant, builder: (column) => ColumnFilters(column));
+    column: $table.isImportant,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get isCompleted => $composableBuilder(
-      column: $table.isCompleted, builder: (column) => ColumnFilters(column));
+    column: $table.isCompleted,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get reminderMinutes => $composableBuilder(
-      column: $table.reminderMinutes,
-      builder: (column) => ColumnFilters(column));
+    column: $table.reminderMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get attachmentPath => $composableBuilder(
-      column: $table.attachmentPath,
-      builder: (column) => ColumnFilters(column));
+    column: $table.attachmentPath,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get color => $composableBuilder(
-      column: $table.color, builder: (column) => ColumnFilters(column));
+    column: $table.color,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get category => $composableBuilder(
-      column: $table.category, builder: (column) => ColumnFilters(column));
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get recurrence => $composableBuilder(
-      column: $table.recurrence, builder: (column) => ColumnFilters(column));
+    column: $table.recurrence,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get seriesId => $composableBuilder(
-      column: $table.seriesId, builder: (column) => ColumnFilters(column));
+    column: $table.seriesId,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get occurrenceDate => $composableBuilder(
-      column: $table.occurrenceDate,
-      builder: (column) => ColumnFilters(column));
+    column: $table.occurrenceDate,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get isCancelled => $composableBuilder(
-      column: $table.isCancelled, builder: (column) => ColumnFilters(column));
+    column: $table.isCancelled,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$TasksTableOrderingComposer
@@ -1005,61 +1222,94 @@ class $$TasksTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get title => $composableBuilder(
-      column: $table.title, builder: (column) => ColumnOrderings(column));
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get description => $composableBuilder(
-      column: $table.description, builder: (column) => ColumnOrderings(column));
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get notes => $composableBuilder(
-      column: $table.notes, builder: (column) => ColumnOrderings(column));
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get startAt => $composableBuilder(
-      column: $table.startAt, builder: (column) => ColumnOrderings(column));
+    column: $table.startAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get endAt => $composableBuilder(
-      column: $table.endAt, builder: (column) => ColumnOrderings(column));
+    column: $table.endAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get isImportant => $composableBuilder(
-      column: $table.isImportant, builder: (column) => ColumnOrderings(column));
+    column: $table.isImportant,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get isCompleted => $composableBuilder(
-      column: $table.isCompleted, builder: (column) => ColumnOrderings(column));
+    column: $table.isCompleted,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get reminderMinutes => $composableBuilder(
-      column: $table.reminderMinutes,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.reminderMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get attachmentPath => $composableBuilder(
-      column: $table.attachmentPath,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.attachmentPath,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get color => $composableBuilder(
-      column: $table.color, builder: (column) => ColumnOrderings(column));
+    column: $table.color,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get category => $composableBuilder(
-      column: $table.category, builder: (column) => ColumnOrderings(column));
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get recurrence => $composableBuilder(
-      column: $table.recurrence, builder: (column) => ColumnOrderings(column));
+    column: $table.recurrence,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get seriesId => $composableBuilder(
-      column: $table.seriesId, builder: (column) => ColumnOrderings(column));
+    column: $table.seriesId,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get occurrenceDate => $composableBuilder(
-      column: $table.occurrenceDate,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.occurrenceDate,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get isCancelled => $composableBuilder(
-      column: $table.isCancelled, builder: (column) => ColumnOrderings(column));
+    column: $table.isCancelled,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TasksTableAnnotationComposer
@@ -1078,7 +1328,9 @@ class $$TasksTableAnnotationComposer
       $composableBuilder(column: $table.title, builder: (column) => column);
 
   GeneratedColumn<String> get description => $composableBuilder(
-      column: $table.description, builder: (column) => column);
+    column: $table.description,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
@@ -1090,16 +1342,24 @@ class $$TasksTableAnnotationComposer
       $composableBuilder(column: $table.endAt, builder: (column) => column);
 
   GeneratedColumn<bool> get isImportant => $composableBuilder(
-      column: $table.isImportant, builder: (column) => column);
+    column: $table.isImportant,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<bool> get isCompleted => $composableBuilder(
-      column: $table.isCompleted, builder: (column) => column);
+    column: $table.isCompleted,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get reminderMinutes => $composableBuilder(
-      column: $table.reminderMinutes, builder: (column) => column);
+    column: $table.reminderMinutes,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get attachmentPath => $composableBuilder(
-      column: $table.attachmentPath, builder: (column) => column);
+    column: $table.attachmentPath,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get color =>
       $composableBuilder(column: $table.color, builder: (column) => column);
@@ -1108,16 +1368,22 @@ class $$TasksTableAnnotationComposer
       $composableBuilder(column: $table.category, builder: (column) => column);
 
   GeneratedColumn<String> get recurrence => $composableBuilder(
-      column: $table.recurrence, builder: (column) => column);
+    column: $table.recurrence,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get seriesId =>
       $composableBuilder(column: $table.seriesId, builder: (column) => column);
 
   GeneratedColumn<String> get occurrenceDate => $composableBuilder(
-      column: $table.occurrenceDate, builder: (column) => column);
+    column: $table.occurrenceDate,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<bool> get isCancelled => $composableBuilder(
-      column: $table.isCancelled, builder: (column) => column);
+    column: $table.isCancelled,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -1126,20 +1392,24 @@ class $$TasksTableAnnotationComposer
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
-class $$TasksTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $TasksTable,
-    TaskRow,
-    $$TasksTableFilterComposer,
-    $$TasksTableOrderingComposer,
-    $$TasksTableAnnotationComposer,
-    $$TasksTableCreateCompanionBuilder,
-    $$TasksTableUpdateCompanionBuilder,
-    (TaskRow, BaseReferences<_$AppDatabase, $TasksTable, TaskRow>),
-    TaskRow,
-    PrefetchHooks Function()> {
+class $$TasksTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TasksTable,
+          TaskRow,
+          $$TasksTableFilterComposer,
+          $$TasksTableOrderingComposer,
+          $$TasksTableAnnotationComposer,
+          $$TasksTableCreateCompanionBuilder,
+          $$TasksTableUpdateCompanionBuilder,
+          (TaskRow, BaseReferences<_$AppDatabase, $TasksTable, TaskRow>),
+          TaskRow,
+          PrefetchHooks Function()
+        > {
   $$TasksTableTableManager(_$AppDatabase db, $TasksTable table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -1148,113 +1418,121 @@ class $$TasksTableTableManager extends RootTableManager<
               $$TasksTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$TasksTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> title = const Value.absent(),
-            Value<String?> description = const Value.absent(),
-            Value<String?> notes = const Value.absent(),
-            Value<DateTime> startAt = const Value.absent(),
-            Value<DateTime> endAt = const Value.absent(),
-            Value<bool> isImportant = const Value.absent(),
-            Value<bool> isCompleted = const Value.absent(),
-            Value<int?> reminderMinutes = const Value.absent(),
-            Value<String?> attachmentPath = const Value.absent(),
-            Value<String?> color = const Value.absent(),
-            Value<String> category = const Value.absent(),
-            Value<String?> recurrence = const Value.absent(),
-            Value<String?> seriesId = const Value.absent(),
-            Value<String?> occurrenceDate = const Value.absent(),
-            Value<bool> isCancelled = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              TasksCompanion(
-            id: id,
-            title: title,
-            description: description,
-            notes: notes,
-            startAt: startAt,
-            endAt: endAt,
-            isImportant: isImportant,
-            isCompleted: isCompleted,
-            reminderMinutes: reminderMinutes,
-            attachmentPath: attachmentPath,
-            color: color,
-            category: category,
-            recurrence: recurrence,
-            seriesId: seriesId,
-            occurrenceDate: occurrenceDate,
-            isCancelled: isCancelled,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String title,
-            Value<String?> description = const Value.absent(),
-            Value<String?> notes = const Value.absent(),
-            required DateTime startAt,
-            required DateTime endAt,
-            Value<bool> isImportant = const Value.absent(),
-            Value<bool> isCompleted = const Value.absent(),
-            Value<int?> reminderMinutes = const Value.absent(),
-            Value<String?> attachmentPath = const Value.absent(),
-            Value<String?> color = const Value.absent(),
-            Value<String> category = const Value.absent(),
-            Value<String?> recurrence = const Value.absent(),
-            Value<String?> seriesId = const Value.absent(),
-            Value<String?> occurrenceDate = const Value.absent(),
-            Value<bool> isCancelled = const Value.absent(),
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              TasksCompanion.insert(
-            id: id,
-            title: title,
-            description: description,
-            notes: notes,
-            startAt: startAt,
-            endAt: endAt,
-            isImportant: isImportant,
-            isCompleted: isCompleted,
-            reminderMinutes: reminderMinutes,
-            attachmentPath: attachmentPath,
-            color: color,
-            category: category,
-            recurrence: recurrence,
-            seriesId: seriesId,
-            occurrenceDate: occurrenceDate,
-            isCancelled: isCancelled,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> startAt = const Value.absent(),
+                Value<DateTime> endAt = const Value.absent(),
+                Value<bool> isImportant = const Value.absent(),
+                Value<bool> isCompleted = const Value.absent(),
+                Value<int?> reminderMinutes = const Value.absent(),
+                Value<String?> attachmentPath = const Value.absent(),
+                Value<String?> color = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<String?> recurrence = const Value.absent(),
+                Value<String?> seriesId = const Value.absent(),
+                Value<String?> occurrenceDate = const Value.absent(),
+                Value<bool> isCancelled = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TasksCompanion(
+                id: id,
+                title: title,
+                description: description,
+                notes: notes,
+                startAt: startAt,
+                endAt: endAt,
+                isImportant: isImportant,
+                isCompleted: isCompleted,
+                reminderMinutes: reminderMinutes,
+                attachmentPath: attachmentPath,
+                color: color,
+                category: category,
+                recurrence: recurrence,
+                seriesId: seriesId,
+                occurrenceDate: occurrenceDate,
+                isCancelled: isCancelled,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String title,
+                Value<String?> description = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                required DateTime startAt,
+                required DateTime endAt,
+                Value<bool> isImportant = const Value.absent(),
+                Value<bool> isCompleted = const Value.absent(),
+                Value<int?> reminderMinutes = const Value.absent(),
+                Value<String?> attachmentPath = const Value.absent(),
+                Value<String?> color = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<String?> recurrence = const Value.absent(),
+                Value<String?> seriesId = const Value.absent(),
+                Value<String?> occurrenceDate = const Value.absent(),
+                Value<bool> isCancelled = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => TasksCompanion.insert(
+                id: id,
+                title: title,
+                description: description,
+                notes: notes,
+                startAt: startAt,
+                endAt: endAt,
+                isImportant: isImportant,
+                isCompleted: isCompleted,
+                reminderMinutes: reminderMinutes,
+                attachmentPath: attachmentPath,
+                color: color,
+                category: category,
+                recurrence: recurrence,
+                seriesId: seriesId,
+                occurrenceDate: occurrenceDate,
+                isCancelled: isCancelled,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (
-                    e.readTable<$TasksTable, TaskRow>(table),
-                    BaseReferences<_$AppDatabase, $TasksTable, TaskRow>(
-                        db, table, e)
-                  ))
+              .map(
+                (e) => (
+                  e.readTable<$TasksTable, TaskRow>(table),
+                  BaseReferences<_$AppDatabase, $TasksTable, TaskRow>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $$TasksTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $TasksTable,
-    TaskRow,
-    $$TasksTableFilterComposer,
-    $$TasksTableOrderingComposer,
-    $$TasksTableAnnotationComposer,
-    $$TasksTableCreateCompanionBuilder,
-    $$TasksTableUpdateCompanionBuilder,
-    (TaskRow, BaseReferences<_$AppDatabase, $TasksTable, TaskRow>),
-    TaskRow,
-    PrefetchHooks Function()>;
+typedef $$TasksTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TasksTable,
+      TaskRow,
+      $$TasksTableFilterComposer,
+      $$TasksTableOrderingComposer,
+      $$TasksTableAnnotationComposer,
+      $$TasksTableCreateCompanionBuilder,
+      $$TasksTableUpdateCompanionBuilder,
+      (TaskRow, BaseReferences<_$AppDatabase, $TasksTable, TaskRow>),
+      TaskRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;

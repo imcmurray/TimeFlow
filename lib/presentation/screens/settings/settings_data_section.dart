@@ -28,8 +28,10 @@ class SettingsDataSection extends ConsumerWidget {
           onTap: () => _import(context, ref),
         ),
         ListTile(
-          leading: Icon(Icons.delete_forever,
-              color: Theme.of(context).colorScheme.error),
+          leading: Icon(
+            Icons.delete_forever,
+            color: Theme.of(context).colorScheme.error,
+          ),
           title: const Text('Delete all tasks'),
           subtitle: const Text('Permanently remove every task'),
           onTap: () => _deleteAll(context, ref),
@@ -48,7 +50,9 @@ class SettingsDataSection extends ConsumerWidget {
     try {
       final json = await ref.read(taskRepositoryProvider).exportToJson();
       final saved = await saveBackupFile(
-          json, 'timeflow-backup-${LocalDate.today().toIso()}.json');
+        json,
+        'timeflow-backup-${LocalDate.today().toIso()}.json',
+      );
       if (saved && context.mounted) _snack(context, 'Backup saved');
     } catch (e) {
       if (context.mounted) _snack(context, 'Could not save the backup: $e');
@@ -91,7 +95,9 @@ class SettingsDataSection extends ConsumerWidget {
       final count = await ref.read(taskRepositoryProvider).importFromJson(json);
       if (context.mounted) {
         _snack(
-            context, count == 1 ? 'Restored 1 task' : 'Restored $count tasks');
+          context,
+          count == 1 ? 'Restored 1 task' : 'Restored $count tasks',
+        );
       }
     } on BackupFormatException catch (e) {
       if (context.mounted) _snack(context, e.message);
@@ -109,7 +115,7 @@ class SettingsDataSection extends ConsumerWidget {
           count == 1
               ? 'Your 1 task will be deleted. This can\'t be undone.'
               : 'All $count tasks (including every repeating series) will be '
-                  'deleted. This can\'t be undone.',
+                    'deleted. This can\'t be undone.',
         ),
         actions: [
           TextButton(
@@ -130,9 +136,11 @@ class SettingsDataSection extends ConsumerWidget {
     if (confirmed != true || !context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     await ref.read(taskRepositoryProvider).clear();
-    messenger.showSnackBar(const SnackBar(
-      content: Text('All tasks deleted'),
-      behavior: SnackBarBehavior.floating,
-    ));
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('All tasks deleted'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 }

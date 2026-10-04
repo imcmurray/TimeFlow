@@ -165,7 +165,8 @@ class Settings {
       holidayRegion: holidayRegion ?? this.holidayRegion,
       nowLineViewportPosition:
           nowLineViewportPosition ?? this.nowLineViewportPosition,
-      longPressDefaultDurationMinutes: longPressDefaultDurationMinutes ??
+      longPressDefaultDurationMinutes:
+          longPressDefaultDurationMinutes ??
           this.longPressDefaultDurationMinutes,
       longPressSnapIntervalMinutes:
           longPressSnapIntervalMinutes ?? this.longPressSnapIntervalMinutes,

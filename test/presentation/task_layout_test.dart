@@ -14,8 +14,9 @@ Task t(String id, int startHour, int endHour, {int startMin = 0}) {
   );
 }
 
-Map<String, int> columns(TaskCluster c) =>
-    {for (final p in c.placed) p.task.id: p.column};
+Map<String, int> columns(TaskCluster c) => {
+  for (final p in c.placed) p.task.id: p.column,
+};
 
 void main() {
   test('separate tasks get their own single-column clusters', () {
@@ -26,8 +27,11 @@ void main() {
 
   test('a task bridging two others joins one cluster', () {
     // The old grouping put c in a's group only, letting b and c overlap.
-    final clusters = layoutTasks(
-        [t('a', 9, 10), t('b', 11, 12), t('c', 9, 12, startMin: 30)]);
+    final clusters = layoutTasks([
+      t('a', 9, 10),
+      t('b', 11, 12),
+      t('c', 9, 12, startMin: 30),
+    ]);
     expect(clusters.length, 1);
     final cl = clusters.single;
     expect(cl.columns, 2);
@@ -46,8 +50,11 @@ void main() {
   });
 
   test('three-way overlap needs three columns', () {
-    final cl =
-        layoutTasks([t('a', 9, 12), t('b', 10, 12), t('c', 11, 12)]).single;
+    final cl = layoutTasks([
+      t('a', 9, 12),
+      t('b', 10, 12),
+      t('c', 11, 12),
+    ]).single;
     expect(cl.columns, 3);
   });
 

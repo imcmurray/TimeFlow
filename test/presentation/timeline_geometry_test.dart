@@ -8,11 +8,11 @@ void main() {
   final first = LocalDate(2026, 3, 1);
 
   TimelineGeometry geometry({bool futureAtTop = false}) => TimelineGeometry(
-        firstDay: first,
-        dayCount: 30,
-        hourHeight: 60,
-        futureAtTop: futureAtTop,
-      );
+    firstDay: first,
+    dayCount: 30,
+    hourHeight: 60,
+    futureAtTop: futureAtTop,
+  );
 
   test('positions follow the wall clock', () {
     final g = geometry();
@@ -47,12 +47,16 @@ void main() {
   test('daysIn returns the days a band touches', () {
     final g = geometry();
     final r = g.daysIn(
-        g.yOf(DateTime(2026, 3, 3, 20)), g.yOf(DateTime(2026, 3, 5, 2)));
+      g.yOf(DateTime(2026, 3, 3, 20)),
+      g.yOf(DateTime(2026, 3, 5, 2)),
+    );
     expect(r.first, LocalDate(2026, 3, 3));
     expect(r.last, LocalDate(2026, 3, 5));
     final flipped = geometry(futureAtTop: true);
-    final r2 = flipped.daysIn(flipped.yOf(DateTime(2026, 3, 5, 2)),
-        flipped.yOf(DateTime(2026, 3, 3, 20)));
+    final r2 = flipped.daysIn(
+      flipped.yOf(DateTime(2026, 3, 5, 2)),
+      flipped.yOf(DateTime(2026, 3, 3, 20)),
+    );
     expect(r2.first, LocalDate(2026, 3, 3));
     expect(r2.last, LocalDate(2026, 3, 5));
   });

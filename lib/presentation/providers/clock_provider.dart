@@ -13,8 +13,13 @@ final minuteClockProvider = StreamProvider<DateTime>((ref) {
   void schedule() {
     final now = DateTime.now();
     controller.add(now);
-    final next =
-        DateTime(now.year, now.month, now.day, now.hour, now.minute + 1);
+    final next = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute + 1,
+    );
     timer = Timer(next.difference(now), schedule);
   }
 

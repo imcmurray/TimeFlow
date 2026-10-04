@@ -18,6 +18,7 @@ import 'package:timeflow/presentation/widgets/confluence_modal.dart';
 import 'package:timeflow/presentation/widgets/merged_task_card.dart';
 import 'package:timeflow/presentation/widgets/reminder_line.dart';
 import 'package:timeflow/presentation/widgets/task_card.dart';
+import 'package:timeflow/presentation/widgets/task_summary_sheet.dart';
 import 'package:timeflow/presentation/widgets/timeline_task_creation_preview.dart';
 
 /// Task cards for the visible days, plus the gestures on the timeline itself:
@@ -41,6 +42,7 @@ class _TaskLayerState extends ConsumerState<TaskLayer> {
   static const _moveSnapMinutes = 5;
 
   List<Task> _tasks = const [];
+  bool _readOnly = false;
 
   // Moving a task.
   Task? _moving;
@@ -154,10 +156,12 @@ class _TaskLayerState extends ConsumerState<TaskLayer> {
     _cancelCreate();
     if (start == null || end == null) return;
     HapticFeedback.lightImpact();
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) =>
-          TaskDetailScreen(initialStartTime: start, initialEndTime: end),
-    ));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            TaskDetailScreen(initialStartTime: start, initialEndTime: end),
+      ),
+    );
   }
 
   void _cancelCreate() {
@@ -175,8 +179,10 @@ class _TaskLayerState extends ConsumerState<TaskLayer> {
     final dragMinutes =
         (_createDragDelta / _g.hourHeight * 60 * (_g.futureAtTop ? -1 : 1))
             .round();
-    final minutes =
-        (_defaultMinutes + dragMinutes).clamp(_snapMinutes, 24 * 60);
+    final minutes = (_defaultMinutes + dragMinutes).clamp(
+      _snapMinutes,
+      24 * 60,
+    );
     return _snap(addWallMinutes(start, minutes), _snapMinutes);
   }
 
@@ -187,8 +193,10 @@ class _TaskLayerState extends ConsumerState<TaskLayer> {
     _tasks = watchTimelineTasks(ref, widget.days, _tasks);
     final now = ref.watch(minuteClockProvider).value ?? DateTime.now();
     final acks = ref.watch(reminderAcksProvider);
-    final use24Hour =
-        ref.watch(settingsProvider.select((s) => s.use24HourFormat));
+    final use24Hour = ref.watch(
+      settingsProvider.select((s) => s.use24HourFormat),
+    );
+    _readOnly = ref.watch(timelineReadOnlyProvider);
 
     final from = widget.days.start;
     final to = widget.days.end;
@@ -196,37 +204,48 @@ class _TaskLayerState extends ConsumerState<TaskLayer> {
         .where((t) => t.startTime.isBefore(to) && t.endTime.isAfter(from))
         .toList();
 
-    return LayoutBuilder(builder: (context, constraints) {
-      final width = constraints.maxWidth;
-      final children = <Widget>[
-        Positioned.fill(
-          child: Listener(
-            behavior: HitTestBehavior.translucent,
-            onPointerDown: _onPointerDown,
-            onPointerMove: (e) => _onPointerMove(e, width),
-            onPointerUp: _onPointerUp,
-            onPointerCancel: (_) => _cancelCreate(),
-            child: const SizedBox.expand(),
-          ),
-        ),
-        for (final t in visible) ..._reminderDot(t, now, acks[t.id]),
-      ];
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final children = <Widget>[
+          if (!_readOnly)
+            Positioned.fill(
+              child: Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: _onPointerDown,
+                onPointerMove: (e) => _onPointerMove(e, width),
+                onPointerUp: _onPointerUp,
+                onPointerCancel: (_) => _cancelCreate(),
+                child: const SizedBox.expand(),
+              ),
+            ),
+          for (final t in visible) ..._reminderDot(t, now, acks[t.id]),
+        ];
 
-      for (final cluster in layoutTasks(visible)) {
-        final columnWidth = width / cluster.columns;
-        if (cluster.columns == 1 || columnWidth >= _minColumnWidth) {
-          for (final placed in cluster.placed) {
-            children.add(_card(placed.task, placed.column * columnWidth,
-                columnWidth - 4, now, acks, use24Hour));
+        for (final cluster in layoutTasks(visible)) {
+          final columnWidth = width / cluster.columns;
+          if (cluster.columns == 1 || columnWidth >= _minColumnWidth) {
+            for (final placed in cluster.placed) {
+              children.add(
+                _card(
+                  placed.task,
+                  placed.column * columnWidth,
+                  columnWidth - 4,
+                  now,
+                  acks,
+                  use24Hour,
+                ),
+              );
+            }
+          } else {
+            children.add(_mergedCard(cluster, width, now, acks, use24Hour));
           }
-        } else {
-          children.add(_mergedCard(cluster, width, now, acks, use24Hour));
         }
-      }
 
-      if (_createStart != null) children.add(_creationPreview(use24Hour));
-      return Stack(children: children);
-    });
+        if (_createStart != null) children.add(_creationPreview(use24Hour));
+        return Stack(children: children);
+      },
+    );
   }
 
   List<Widget> _reminderDot(Task task, DateTime now, ReminderAck? ack) {
@@ -244,16 +263,23 @@ class _TaskLayerState extends ConsumerState<TaskLayer> {
     ];
   }
 
-  Widget _card(Task task, double left, double width, DateTime now,
-      Map<String, ReminderAck> acks, bool use24Hour) {
+  Widget _card(
+    Task task,
+    double left,
+    double width,
+    DateTime now,
+    Map<String, ReminderAck> acks,
+    bool use24Hour,
+  ) {
     final moving = _moving?.id == task.id;
     var display = task;
     var span = _span(task.startTime, task.endTime);
     if (moving) {
       final start = _movedStart(task);
       display = task.copyWith(
-          startTime: start,
-          endTime: addWallMinutes(start, task.durationMinutes));
+        startTime: start,
+        endTime: addWallMinutes(start, task.durationMinutes),
+      );
       span = (top: span.top + _moveDelta, height: span.height);
     }
     final ack = acks[task.id];
@@ -266,11 +292,14 @@ class _TaskLayerState extends ConsumerState<TaskLayer> {
       width: width,
       height: span.height,
       child: GestureDetector(
-        onLongPressStart: (_) => _startMove(task),
-        onLongPressMoveUpdate: (d) =>
-            setState(() => _moveDelta = d.localOffsetFromOrigin.dy),
-        onLongPressEnd: (_) => _endMove(),
-        onLongPressCancel: () => setState(() => _moving = null),
+        onLongPressStart: _readOnly ? null : (_) => _startMove(task),
+        onLongPressMoveUpdate: _readOnly
+            ? null
+            : (d) => setState(() => _moveDelta = d.localOffsetFromOrigin.dy),
+        onLongPressEnd: _readOnly ? null : (_) => _endMove(),
+        onLongPressCancel: _readOnly
+            ? null
+            : () => setState(() => _moving = null),
         child: AnimatedScale(
           scale: moving ? 1.03 : 1,
           duration: const Duration(milliseconds: 150),
@@ -291,11 +320,16 @@ class _TaskLayerState extends ConsumerState<TaskLayer> {
               reminderState: reminderState,
               reminderTime: effectiveReminderTime(task, ack),
               onTap: moving ? null : () => _openDetail(task),
-              onComplete: moving ? null : () => _actions.toggleComplete(task),
-              onDelete: moving ? null : () => _actions.delete(context, task),
+              onComplete: moving || _readOnly
+                  ? null
+                  : () => _actions.toggleComplete(task),
+              onDelete: moving || _readOnly
+                  ? null
+                  : () => _actions.delete(context, task),
               onReminderAcknowledged: reminderState == ReminderState.triggered
-                  ? () =>
-                      ref.read(reminderAcksProvider.notifier).acknowledge(task)
+                  ? () => ref
+                        .read(reminderAcksProvider.notifier)
+                        .acknowledge(task)
                   : null,
               onReminderRescheduled: reminderState == ReminderState.acknowledged
                   ? () => ref.read(reminderAcksProvider.notifier).snooze(task)
@@ -308,8 +342,13 @@ class _TaskLayerState extends ConsumerState<TaskLayer> {
     );
   }
 
-  Widget _mergedCard(TaskCluster cluster, double width, DateTime now,
-      Map<String, ReminderAck> acks, bool use24Hour) {
+  Widget _mergedCard(
+    TaskCluster cluster,
+    double width,
+    DateTime now,
+    Map<String, ReminderAck> acks,
+    bool use24Hour,
+  ) {
     final tasks = cluster.tasks;
     final span = _span(cluster.start, cluster.end);
     final states = <String, ReminderState>{};
@@ -341,8 +380,9 @@ class _TaskLayerState extends ConsumerState<TaskLayer> {
     final start = _createStart!;
     final end = _createEnd()!;
     final span = _g.spanOf(start, end);
-    final conflict = _tasks
-        .any((t) => start.isBefore(t.endTime) && end.isAfter(t.startTime));
+    final conflict = _tasks.any(
+      (t) => start.isBefore(t.endTime) && end.isAfter(t.startTime),
+    );
     return Positioned(
       top: span.top,
       left: 0,
@@ -358,8 +398,12 @@ class _TaskLayerState extends ConsumerState<TaskLayer> {
     );
   }
 
-  void _showConfluence(List<Task> tasks, Map<String, ReminderState> states,
-      Map<String, DateTime> times, bool use24Hour) {
+  void _showConfluence(
+    List<Task> tasks,
+    Map<String, ReminderState> states,
+    Map<String, DateTime> times,
+    bool use24Hour,
+  ) {
     showConfluenceModal(
       context: context,
       tasks: tasks,
@@ -370,11 +414,13 @@ class _TaskLayerState extends ConsumerState<TaskLayer> {
         Navigator.of(context).pop();
         _openDetail(task);
       },
-      onTaskComplete: _actions.toggleComplete,
-      onTaskDelete: (task) async {
-        Navigator.of(context).pop();
-        await _actions.delete(context, task);
-      },
+      onTaskComplete: _readOnly ? null : _actions.toggleComplete,
+      onTaskDelete: _readOnly
+          ? null
+          : (task) async {
+              Navigator.of(context).pop();
+              await _actions.delete(context, task);
+            },
       onReminderAcknowledged: (task) =>
           ref.read(reminderAcksProvider.notifier).acknowledge(task),
       onReminderRescheduled: (task) =>
@@ -383,8 +429,16 @@ class _TaskLayerState extends ConsumerState<TaskLayer> {
   }
 
   void _openDetail(Task task) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => TaskDetailScreen(task: task)),
-    );
+    if (_readOnly) {
+      showTaskSummarySheet(
+        context,
+        task,
+        use24Hour: ref.read(settingsProvider).use24HourFormat,
+      );
+      return;
+    }
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => TaskDetailScreen(task: task)));
   }
 }

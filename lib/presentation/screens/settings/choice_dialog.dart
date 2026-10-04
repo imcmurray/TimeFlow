@@ -46,8 +46,9 @@ Future<T?> showChoiceDialog<T>({
                 RadioListTile<T>(
                   value: option.value,
                   title: Text(option.label),
-                  subtitle:
-                      option.subtitle == null ? null : Text(option.subtitle!),
+                  subtitle: option.subtitle == null
+                      ? null
+                      : Text(option.subtitle!),
                   secondary: option.trailing,
                   controlAffinity: ListTileControlAffinity.leading,
                 ),

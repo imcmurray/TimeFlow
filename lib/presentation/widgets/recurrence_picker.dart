@@ -22,13 +22,13 @@ class RecurrencePicker extends StatelessWidget {
   });
 
   List<RecurrenceRule> get _presets => [
-        RecurrenceRule.daily,
-        RecurrenceRule.weekdaysOnly,
-        RecurrenceRule.weekly,
-        RecurrenceRule.fortnightly,
-        RecurrenceRule.monthly,
-        RecurrenceRule.yearly,
-      ];
+    RecurrenceRule.daily,
+    RecurrenceRule.weekdaysOnly,
+    RecurrenceRule.weekly,
+    RecurrenceRule.fortnightly,
+    RecurrenceRule.monthly,
+    RecurrenceRule.yearly,
+  ];
 
   Future<void> _pick(BuildContext context) async {
     final current = value;
@@ -42,8 +42,12 @@ class RecurrencePicker extends StatelessWidget {
             children: [
               _tile(context, null, 'Does not repeat', current == null),
               for (final p in _presets)
-                _tile(context, p, describeRecurrence(p, start),
-                    current != null && current.samePatternAs(p)),
+                _tile(
+                  context,
+                  p,
+                  describeRecurrence(p, start),
+                  current != null && current.samePatternAs(p),
+                ),
               ListTile(
                 leading: const Icon(Icons.tune),
                 title: const Text('Custom…'),
@@ -70,15 +74,19 @@ class RecurrencePicker extends StatelessWidget {
     onChanged(result.rule?.copyWith(until: current?.until));
   }
 
-  Widget _tile(BuildContext context, RecurrenceRule? rule, String label,
-          bool selected) =>
-      ListTile(
-        leading: Icon(
-            selected ? Icons.radio_button_checked : Icons.radio_button_off),
-        title: Text(label),
-        selected: selected,
-        onTap: () => Navigator.pop(context, _Pick(rule)),
-      );
+  Widget _tile(
+    BuildContext context,
+    RecurrenceRule? rule,
+    String label,
+    bool selected,
+  ) => ListTile(
+    leading: Icon(
+      selected ? Icons.radio_button_checked : Icons.radio_button_off,
+    ),
+    title: Text(label),
+    selected: selected,
+    onTap: () => Navigator.pop(context, _Pick(rule)),
+  );
 
   Future<void> _pickEnd(BuildContext context) async {
     final rule = value!;
@@ -132,10 +140,13 @@ class RecurrencePicker extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 ChoiceChip(
-                  label: Text(rule.until == null
-                      ? 'On a date'
-                      : MaterialLocalizations.of(context)
-                          .formatMediumDate(rule.until!.startOfDay)),
+                  label: Text(
+                    rule.until == null
+                        ? 'On a date'
+                        : MaterialLocalizations.of(
+                            context,
+                          ).formatMediumDate(rule.until!.startOfDay),
+                  ),
                   selected: rule.until != null,
                   onSelected: (_) => _pickEnd(context),
                 ),
@@ -151,9 +162,7 @@ class _Pick {
   final RecurrenceRule? rule;
   final bool custom;
   const _Pick(this.rule) : custom = false;
-  const _Pick.custom()
-      : rule = null,
-        custom = true;
+  const _Pick.custom() : rule = null, custom = true;
 }
 
 class _CustomRuleDialog extends StatefulWidget {
@@ -174,17 +183,17 @@ class _CustomRuleDialogState extends State<_CustomRuleDialog> {
       : {...widget.initial.weekdays};
 
   String _unit(Frequency f) => switch (f) {
-        Frequency.daily => _interval == 1 ? 'day' : 'days',
-        Frequency.weekly => _interval == 1 ? 'week' : 'weeks',
-        Frequency.monthly => _interval == 1 ? 'month' : 'months',
-        Frequency.yearly => _interval == 1 ? 'year' : 'years',
-      };
+    Frequency.daily => _interval == 1 ? 'day' : 'days',
+    Frequency.weekly => _interval == 1 ? 'week' : 'weeks',
+    Frequency.monthly => _interval == 1 ? 'month' : 'months',
+    Frequency.yearly => _interval == 1 ? 'year' : 'years',
+  };
 
   RecurrenceRule get _rule => RecurrenceRule(
-        frequency: _frequency,
-        interval: _interval,
-        weekdays: _frequency == Frequency.weekly ? _weekdays : const {},
-      );
+    frequency: _frequency,
+    interval: _interval,
+    weekdays: _frequency == Frequency.weekly ? _weekdays : const {},
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -200,16 +209,20 @@ class _CustomRuleDialogState extends State<_CustomRuleDialog> {
               IconButton(
                 icon: const Icon(Icons.remove),
                 tooltip: 'Fewer',
-                onPressed:
-                    _interval > 1 ? () => setState(() => _interval--) : null,
+                onPressed: _interval > 1
+                    ? () => setState(() => _interval--)
+                    : null,
               ),
-              Text('$_interval',
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                '$_interval',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               IconButton(
                 icon: const Icon(Icons.add),
                 tooltip: 'More',
-                onPressed:
-                    _interval < 99 ? () => setState(() => _interval++) : null,
+                onPressed: _interval < 99
+                    ? () => setState(() => _interval++)
+                    : null,
               ),
               DropdownButton<Frequency>(
                 value: _frequency,

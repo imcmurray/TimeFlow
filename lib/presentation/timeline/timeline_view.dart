@@ -91,12 +91,15 @@ class TimelineViewState extends ConsumerState<TimelineView>
     _geometry = TimelineGeometry(
       firstDay: center.addDays(-(_dayCount ~/ 2)),
       dayCount: _dayCount,
-      hourHeight: (defaultHourHeight * settings.timelineZoom)
-          .clamp(minHourHeight, maxHourHeight),
+      hourHeight: (defaultHourHeight * settings.timelineZoom).clamp(
+        minHourHeight,
+        maxHourHeight,
+      ),
       futureAtTop: settings.upcomingTasksAboveNow,
     );
-    _visibleDays =
-        ValueNotifier(DayRange(center.addDays(-1), center.addDays(1)));
+    _visibleDays = ValueNotifier(
+      DayRange(center.addDays(-1), center.addDays(1)),
+    );
     _now = ValueNotifier(DateTime.now());
     _following = widget.initialDate == null;
     _scroll.addListener(_onScroll);
@@ -148,7 +151,9 @@ class TimelineViewState extends ConsumerState<TimelineView>
     final target = _geometry.yOf(DateTime.now()) - _viewport * fraction;
     if (!_scroll.hasClients) return target;
     return target.clamp(
-        _scroll.position.minScrollExtent, _scroll.position.maxScrollExtent);
+      _scroll.position.minScrollExtent,
+      _scroll.position.maxScrollExtent,
+    );
   }
 
   void _scrollToNow({required bool animated}) {
@@ -160,8 +165,11 @@ class TimelineViewState extends ConsumerState<TimelineView>
     }
     final target = _nowScrollOffset();
     if (animated) {
-      _scroll.animateTo(target,
-          duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
+      _scroll.animateTo(
+        target,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
     } else {
       _scroll.jumpTo(target);
     }
@@ -183,14 +191,18 @@ class TimelineViewState extends ConsumerState<TimelineView>
     if (!_scroll.hasClients) return;
     _following = false;
     final y = _geometry.yOfDayHour(day, 8);
-    final target = (_geometry.futureAtTop
-            ? y - _viewport * 0.75
-            : y - _viewport * 0.25)
-        .clamp(
-            _scroll.position.minScrollExtent, _scroll.position.maxScrollExtent);
+    final target =
+        (_geometry.futureAtTop ? y - _viewport * 0.75 : y - _viewport * 0.25)
+            .clamp(
+              _scroll.position.minScrollExtent,
+              _scroll.position.maxScrollExtent,
+            );
     if (animated) {
-      _scroll.animateTo(target,
-          duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
+      _scroll.animateTo(
+        target,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
     } else {
       _scroll.jumpTo(target);
     }
@@ -275,8 +287,9 @@ class TimelineViewState extends ConsumerState<TimelineView>
 
   @override
   Widget build(BuildContext context) {
-    final futureAtTop =
-        ref.watch(settingsProvider.select((s) => s.upcomingTasksAboveNow));
+    final futureAtTop = ref.watch(
+      settingsProvider.select((s) => s.upcomingTasksAboveNow),
+    );
     if (futureAtTop != _geometry.futureAtTop) {
       _geometry = _geometry.copyWith(futureAtTop: futureAtTop);
       WidgetsBinding.instance.addPostFrameCallback((_) {

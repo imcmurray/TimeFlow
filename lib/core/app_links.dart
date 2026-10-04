@@ -6,7 +6,7 @@ const publishedWebAppUrl = 'https://imcmurray.github.io/TimeFlow/';
 
 /// Public pages linked from the app.
 const privacyPolicyUrl = '${publishedWebAppUrl}privacy.html';
-const supportUrl = 'https://github.com/imcmurray/TimeFlow/issues';
+const supportUrl = '${publishedWebAppUrl}support.html';
 
 /// The web app address share links should use: the one the user is on when
 /// running in a browser (so self-hosted copies share their own links), or

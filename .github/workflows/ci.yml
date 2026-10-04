@@ -63,7 +63,7 @@ jobs:
       - run: flutter pub get
 
       - name: Build web
-        run: flutter build web --release --base-href=/TimeFlow/ $(./scripts/build_flags.sh)
+        run: flutter build web --release --no-web-resources-cdn --base-href=/TimeFlow/ $(./scripts/build_flags.sh)
 
       - name: Deploy to GitHub Pages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

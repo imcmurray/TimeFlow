@@ -11,6 +11,14 @@ class AppColors {
   static const Color primaryBlue = Color(0xFF42A5F5);
   static const Color primaryBlueDark = Color(0xFF1976D2);
 
+  /// Primary for text, buttons and icons on light backgrounds: 4.85:1 on the
+  /// background, 5:1 under white text (WCAG AA).
+  static const Color primaryInk = Color(0xFF1A6FC8);
+
+  /// Primary on dark backgrounds, used with [onPrimaryDark] text (7.6:1).
+  static const Color primaryInkDark = Color(0xFF64B5F6);
+  static const Color onPrimaryDark = Color(0xFF0B1E33);
+
   // Secondary Greens - Gentle, natural tones
   static const Color secondaryGreenLight = Color(0xFFE8F5E9);
   static const Color secondaryGreen = Color(0xFF66BB6A);
@@ -28,7 +36,7 @@ class AppColors {
 
   // Text Colors - Light Theme
   static const Color textPrimary = Color(0xFF212121);
-  static const Color textSecondary = Color(0xFF757575);
+  static const Color textSecondary = Color(0xFF6B6B6B);
   static const Color textTertiary = Color(0xFF9E9E9E);
 
   // Text Colors - Dark Theme

@@ -12,7 +12,7 @@ dart run build_runner build --delete-conflicting-outputs   # after editing drift
 flutter analyze                                            # must be clean (CI gate)
 flutter test                                               # unit + widget tests (CI gate)
 flutter run -d linux                                       # quickest local run
-flutter build web --release --base-href=/TimeFlow/
+flutter build web --release --no-web-resources-cdn --base-href=/TimeFlow/
 ```
 
 ## Layout

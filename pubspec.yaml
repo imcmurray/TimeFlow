@@ -64,12 +64,12 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/fonts/
     - assets/sounds/
+    - assets/fonts/OFL.txt
 
-  # fonts:
-  #   - family: Nunito
-  #     fonts:
-  #       - asset: assets/fonts/Nunito-Regular.ttf
-  #       - asset: assets/fonts/Nunito-Bold.ttf
-  #         weight: 700
+  fonts:
+    # Variable font (weights 200-1000), SIL Open Font License; bundled so
+    # the web build doesn't fetch fonts from a CDN.
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito.ttf

@@ -8,13 +8,17 @@ import 'package:timeflow/core/theme/app_colors.dart';
 class AppTheme {
   AppTheme._();
 
+  /// Bundled in assets/fonts (SIL Open Font License).
+  static const fontFamily = 'Nunito';
+
   /// Light theme for TimeFlow.
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
+      fontFamily: fontFamily,
       brightness: Brightness.light,
       colorScheme: ColorScheme.light(
-        primary: AppColors.primaryBlue,
+        primary: AppColors.primaryInk,
         primaryContainer: AppColors.primaryBlueLight,
         secondary: AppColors.secondaryGreen,
         secondaryContainer: AppColors.secondaryGreenLight,
@@ -39,7 +43,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: AppColors.primaryBlue,
+        backgroundColor: AppColors.primaryInk,
         foregroundColor: Colors.white,
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -67,16 +71,17 @@ class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
+      fontFamily: fontFamily,
       brightness: Brightness.dark,
       colorScheme: ColorScheme.dark(
-        primary: AppColors.primaryBlue,
+        primary: AppColors.primaryInkDark,
+        onPrimary: AppColors.onPrimaryDark,
         primaryContainer: AppColors.primaryBlue.withValues(alpha: 0.3),
         secondary: AppColors.secondaryGreen,
         secondaryContainer: AppColors.secondaryGreen.withValues(alpha: 0.3),
         tertiary: AppColors.accentCoral,
         tertiaryContainer: AppColors.accentCoral.withValues(alpha: 0.3),
         surface: AppColors.backgroundDark,
-        onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: AppColors.textLightPrimary,
       ),
@@ -94,8 +99,8 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: AppColors.primaryBlue,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primaryInkDark,
+        foregroundColor: AppColors.onPrimaryDark,
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),

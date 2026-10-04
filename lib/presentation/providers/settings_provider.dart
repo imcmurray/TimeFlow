@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:timeflow/domain/entities/settings.dart';
-import 'package:timeflow/services/sun_times_service.dart';
+import 'package:cron_timeflow/domain/entities/settings.dart';
+import 'package:cron_timeflow/services/sun_times_service.dart';
 
 /// Notifier for managing app settings state with persistence.
 class SettingsNotifier extends Notifier<Settings> {
@@ -20,19 +20,30 @@ class SettingsNotifier extends Notifier<Settings> {
   static const _keyTimezoneOffsetHours = 'timeflow_timezone_offset_hours';
   static const _keyShowSunTimes = 'timeflow_show_sun_times';
   // Watermark settings keys
-  static const _keyWatermarkShowWeekNumber = 'timeflow_watermark_show_week_number';
+  static const _keyWatermarkShowWeekNumber =
+      'timeflow_watermark_show_week_number';
   // Custom NOW line position
   static const _keyCustomNowLineMinutes = 'timeflow_custom_now_line_minutes';
-  static const _keyNowLineViewportPosition = 'timeflow_now_line_viewport_position';
-  static const _keyWatermarkShowDayOfYear = 'timeflow_watermark_show_day_of_year';
+  static const _keyNowLineViewportPosition =
+      'timeflow_now_line_viewport_position';
+  static const _keyWatermarkShowDayOfYear =
+      'timeflow_watermark_show_day_of_year';
   static const _keyWatermarkShowHolidays = 'timeflow_watermark_show_holidays';
-  static const _keyWatermarkShowMoonPhase = 'timeflow_watermark_show_moon_phase';
+  static const _keyWatermarkShowMoonPhase =
+      'timeflow_watermark_show_moon_phase';
   static const _keyWatermarkShowQuarter = 'timeflow_watermark_show_quarter';
-  static const _keyWatermarkShowDaysRemaining = 'timeflow_watermark_show_days_remaining';
+  static const _keyWatermarkShowDaysRemaining =
+      'timeflow_watermark_show_days_remaining';
   // Long-press task creation settings
-  static const _keyLongPressDefaultDuration = 'timeflow_longpress_default_duration';
+  static const _keyLongPressDefaultDuration =
+      'timeflow_longpress_default_duration';
   static const _keyLongPressSnapInterval = 'timeflow_longpress_snap_interval';
   static const _keyHasSeenLongPressHint = 'timeflow_has_seen_longpress_hint';
+  // Event crossing alert settings
+  static const _keyEventCrossingAlertEnabled =
+      'timeflow_event_crossing_alert_enabled';
+  static const _keyEventCrossingAlertSound =
+      'timeflow_event_crossing_alert_sound';
 
   SharedPreferences? _prefs;
 
@@ -46,8 +57,8 @@ class SettingsNotifier extends Notifier<Settings> {
     _prefs = await SharedPreferences.getInstance();
 
     // Auto-detect location from timezone if not previously set
-    final hasCustomLocation = _prefs!.containsKey(_keyLatitude) &&
-        _prefs!.containsKey(_keyLongitude);
+    final hasCustomLocation =
+        _prefs!.containsKey(_keyLatitude) && _prefs!.containsKey(_keyLongitude);
 
     double latitude;
     double longitude;
@@ -75,7 +86,8 @@ class SettingsNotifier extends Notifier<Settings> {
       notificationsEnabled: _prefs!.getBool(_keyNotificationsEnabled) ?? true,
       firstLaunch: _prefs!.getBool(_keyFirstLaunch) ?? true,
       upcomingTasksAboveNow: _prefs!.getBool(_keyUpcomingTasksAboveNow) ?? true,
-      bringWindowToFrontOnReminder: _prefs!.getBool(_keyBringWindowToFront) ?? true,
+      bringWindowToFrontOnReminder:
+          _prefs!.getBool(_keyBringWindowToFront) ?? true,
       reminderSoundEnabled: _prefs!.getBool(_keyReminderSoundEnabled) ?? true,
       reminderSound: _prefs!.getString(_keyReminderSound) ?? 'chime',
       use24HourFormat: _prefs!.getBool(_keyUse24HourFormat) ?? false,
@@ -83,19 +95,31 @@ class SettingsNotifier extends Notifier<Settings> {
       longitude: longitude,
       timezoneOffsetHours: timezoneOffsetHours,
       showSunTimes: _prefs!.getBool(_keyShowSunTimes) ?? true,
-      watermarkShowWeekNumber: _prefs!.getBool(_keyWatermarkShowWeekNumber) ?? true,
-      watermarkShowDayOfYear: _prefs!.getBool(_keyWatermarkShowDayOfYear) ?? false,
+      watermarkShowWeekNumber:
+          _prefs!.getBool(_keyWatermarkShowWeekNumber) ?? true,
+      watermarkShowDayOfYear:
+          _prefs!.getBool(_keyWatermarkShowDayOfYear) ?? false,
       watermarkShowHolidays: _prefs!.getBool(_keyWatermarkShowHolidays) ?? true,
-      watermarkShowMoonPhase: _prefs!.getBool(_keyWatermarkShowMoonPhase) ?? false,
+      watermarkShowMoonPhase:
+          _prefs!.getBool(_keyWatermarkShowMoonPhase) ?? false,
       watermarkShowQuarter: _prefs!.getBool(_keyWatermarkShowQuarter) ?? false,
-      watermarkShowDaysRemaining: _prefs!.getBool(_keyWatermarkShowDaysRemaining) ?? false,
-      customNowLineMinutesFromMidnight: _prefs!.containsKey(_keyCustomNowLineMinutes)
-          ? _prefs!.getInt(_keyCustomNowLineMinutes)
-          : null,
-      nowLineViewportPosition: _prefs!.getDouble(_keyNowLineViewportPosition) ?? 0.75,
-      longPressDefaultDurationMinutes: _prefs!.getInt(_keyLongPressDefaultDuration) ?? 60,
-      longPressSnapIntervalMinutes: _prefs!.getInt(_keyLongPressSnapInterval) ?? 15,
+      watermarkShowDaysRemaining:
+          _prefs!.getBool(_keyWatermarkShowDaysRemaining) ?? false,
+      customNowLineMinutesFromMidnight:
+          _prefs!.containsKey(_keyCustomNowLineMinutes)
+              ? _prefs!.getInt(_keyCustomNowLineMinutes)
+              : null,
+      nowLineViewportPosition:
+          _prefs!.getDouble(_keyNowLineViewportPosition) ?? 0.75,
+      longPressDefaultDurationMinutes:
+          _prefs!.getInt(_keyLongPressDefaultDuration) ?? 60,
+      longPressSnapIntervalMinutes:
+          _prefs!.getInt(_keyLongPressSnapInterval) ?? 15,
       hasSeenLongPressHint: _prefs!.getBool(_keyHasSeenLongPressHint) ?? false,
+      eventCrossingAlertEnabled:
+          _prefs!.getBool(_keyEventCrossingAlertEnabled) ?? true,
+      eventCrossingAlertSound:
+          _prefs!.getString(_keyEventCrossingAlertSound) ?? 'chime',
     );
   }
 
@@ -287,6 +311,22 @@ class SettingsNotifier extends Notifier<Settings> {
     state = state.copyWith(hasSeenLongPressHint: value);
     await _ensurePrefs();
     await _prefs!.setBool(_keyHasSeenLongPressHint, value);
+  }
+
+  // Event crossing alert settings
+
+  /// Sets whether now-line crossing alerts are globally enabled.
+  Future<void> setEventCrossingAlertEnabled(bool value) async {
+    state = state.copyWith(eventCrossingAlertEnabled: value);
+    await _ensurePrefs();
+    await _prefs!.setBool(_keyEventCrossingAlertEnabled, value);
+  }
+
+  /// Sets which sound to play for event crossing alerts.
+  Future<void> setEventCrossingAlertSound(String sound) async {
+    state = state.copyWith(eventCrossingAlertSound: sound);
+    await _ensurePrefs();
+    await _prefs!.setString(_keyEventCrossingAlertSound, sound);
   }
 }
 

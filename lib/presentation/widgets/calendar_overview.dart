@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timeflow/presentation/providers/task_provider.dart';
+import 'package:cron_timeflow/presentation/providers/task_provider.dart';
 
 /// Calendar overview showing multiple months for quick date navigation.
 ///
@@ -64,60 +64,60 @@ class _CalendarOverviewState extends ConsumerState<CalendarOverview> {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(child: Text('Error: $error')),
       data: (datesWithTasks) => Column(
-      children: [
-        // Month navigation with arrow buttons
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left),
-                onPressed: () => _pageController.previousPage(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
+        children: [
+          // Month navigation with arrow buttons
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: () => _pageController.previousPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  ),
+                  tooltip: 'Previous month',
                 ),
-                tooltip: 'Previous month',
-              ),
-              Text(
-                'Browse months',
-                style: TextStyle(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: 14,
+                Text(
+                  'Browse months',
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 14,
+                  ),
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right),
-                onPressed: () => _pageController.nextPage(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: () => _pageController.nextPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  ),
+                  tooltip: 'Next month',
                 ),
-                tooltip: 'Next month',
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
 
-        // Month pages
-        Expanded(
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: _totalMonths,
-            itemBuilder: (context, index) {
-              final month = _getMonthForIndex(index);
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: _MonthGrid(
-                  month: month,
-                  datesWithTasks: datesWithTasks,
-                  onDateSelected: widget.onDateSelected,
-                ),
-              );
-            },
+          // Month pages
+          Expanded(
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: _totalMonths,
+              itemBuilder: (context, index) {
+                final month = _getMonthForIndex(index);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: _MonthGrid(
+                    month: month,
+                    datesWithTasks: datesWithTasks,
+                    onDateSelected: widget.onDateSelected,
+                  ),
+                );
+              },
+            ),
           ),
-        ),
-      ],
-    ),
+        ],
+      ),
     );
   }
 }
@@ -142,7 +142,8 @@ class _MonthGrid extends StatelessWidget {
 
     // Month header
     final monthName = _formatMonth(month);
-    final isCurrentMonth = month.year == today.year && month.month == today.month;
+    final isCurrentMonth =
+        month.year == today.year && month.month == today.month;
 
     // Calculate days in month and starting weekday
     final firstDayOfMonth = DateTime(month.year, month.month, 1);
@@ -165,7 +166,9 @@ class _MonthGrid extends StatelessWidget {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: isCurrentMonth ? colorScheme.primary : colorScheme.onSurface,
+                color: isCurrentMonth
+                    ? colorScheme.primary
+                    : colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 12),
@@ -248,8 +251,18 @@ class _MonthGrid extends StatelessWidget {
 
   String _formatMonth(DateTime month) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
     ];
     return '${months[month.month - 1]} ${month.year}';
   }
@@ -278,7 +291,8 @@ class _DayButton extends StatelessWidget {
       style: TextButton.styleFrom(
         shape: const CircleBorder(),
         backgroundColor: isToday ? colorScheme.primary : Colors.transparent,
-        foregroundColor: isToday ? colorScheme.onPrimary : colorScheme.onSurface,
+        foregroundColor:
+            isToday ? colorScheme.onPrimary : colorScheme.onSurface,
         padding: EdgeInsets.zero,
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,

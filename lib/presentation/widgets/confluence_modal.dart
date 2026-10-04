@@ -1,10 +1,11 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:timeflow/core/theme/app_colors.dart';
-import 'package:timeflow/domain/entities/task.dart';
-import 'package:timeflow/presentation/widgets/reminder_line.dart';
-import 'package:timeflow/presentation/widgets/task_card.dart';
-import 'package:timeflow/presentation/widgets/water_ripple_painter.dart';
+import 'package:cron_timeflow/domain/entities/task.dart';
+import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
+import 'package:cron_timeflow/presentation/widgets/reminder_line.dart';
+import 'package:cron_timeflow/presentation/widgets/task_card.dart';
 
 /// A modal that shows expanded view of merged/overlapping tasks.
 ///
@@ -57,27 +58,22 @@ class ConfluenceModal extends StatefulWidget {
 }
 
 class _ConfluenceModalState extends State<ConfluenceModal>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   late AnimationController _divergeController;
-  late AnimationController _rippleController;
   late List<Animation<double>> _slideAnimations;
   late List<Animation<double>> _fadeAnimations;
+  late List<Task> _tasks;
 
   @override
   void initState() {
     super.initState();
+    _tasks = List.of(widget.tasks);
 
     // Diverge animation for cards fanning out
     _divergeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
-
-    // Background ripple animation
-    _rippleController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat();
 
     // Create staggered animations for each task
     _createAnimations();
@@ -127,7 +123,6 @@ class _ConfluenceModalState extends State<ConfluenceModal>
   @override
   void dispose() {
     _divergeController.dispose();
-    _rippleController.dispose();
     super.dispose();
   }
 
@@ -141,10 +136,12 @@ class _ConfluenceModalState extends State<ConfluenceModal>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (_tasks.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     // Sort tasks: important first, then by start time
-    final sortedTasks = List<Task>.from(widget.tasks)
+    final sortedTasks = List<Task>.from(_tasks)
       ..sort((a, b) {
         if (a.isImportant && !b.isImportant) return -1;
         if (!a.isImportant && b.isImportant) return 1;
@@ -152,10 +149,10 @@ class _ConfluenceModalState extends State<ConfluenceModal>
       });
 
     // Calculate the time span for header
-    final earliestStart = widget.tasks
+    final earliestStart = _tasks
         .map((t) => t.startTime)
         .reduce((a, b) => a.isBefore(b) ? a : b);
-    final latestEnd = widget.tasks
+    final latestEnd = _tasks
         .map((t) => t.endTime)
         .reduce((a, b) => a.isAfter(b) ? a : b);
 
@@ -164,31 +161,19 @@ class _ConfluenceModalState extends State<ConfluenceModal>
       child: AnimatedBuilder(
         animation: _divergeController,
         builder: (context, child) {
-          return Container(
-            color: Colors.black.withValues(
-              alpha: 0.5 * _divergeController.value,
+          final blur = 8.0 * _divergeController.value;
+          return BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+            child: Container(
+              color: Colors.black.withValues(
+                alpha: 0.5 * _divergeController.value,
+              ),
+              child: child,
             ),
-            child: child,
           );
         },
         child: Stack(
           children: [
-            // Background ripple effect
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _rippleController,
-                builder: (context, child) {
-                  return CustomPaint(
-                    painter: WaterRipplePainter(
-                      animationValue: _rippleController.value,
-                      color: isDark ? Colors.white : AppColors.primaryBlue,
-                      rippleCount: 5,
-                    ),
-                  );
-                },
-              ),
-            ),
-
             // Modal content
             SafeArea(
               child: Column(
@@ -248,7 +233,7 @@ class _ConfluenceModalState extends State<ConfluenceModal>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
@@ -263,7 +248,7 @@ class _ConfluenceModalState extends State<ConfluenceModal>
                   Icon(
                     Icons.merge_type,
                     size: 18,
-                    color: AppColors.primaryBlue,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -271,7 +256,7 @@ class _ConfluenceModalState extends State<ConfluenceModal>
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -281,15 +266,15 @@ class _ConfluenceModalState extends State<ConfluenceModal>
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryBlue.withValues(alpha: 0.1),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      '${widget.tasks.length} tasks',
+                      '${_tasks.length} tasks',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.primaryBlue,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
@@ -301,7 +286,7 @@ class _ConfluenceModalState extends State<ConfluenceModal>
 
             // Close button
             Material(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(20),
               child: InkWell(
                 onTap: _close,
@@ -311,7 +296,7 @@ class _ConfluenceModalState extends State<ConfluenceModal>
                   child: Icon(
                     Icons.close,
                     size: 24,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ),
@@ -353,9 +338,21 @@ class _ConfluenceModalState extends State<ConfluenceModal>
           },
           onComplete: () {
             widget.onTaskComplete?.call(task);
+            setState(() {
+              final i = _tasks.indexWhere((t) => t.id == task.id);
+              if (i != -1) {
+                _tasks[i] = _tasks[i].copyWith(
+                  isCompleted: !_tasks[i].isCompleted,
+                  updatedAt: DateTime.now(),
+                );
+              }
+            });
           },
           onDelete: () {
             widget.onTaskDelete?.call(task);
+            setState(() {
+              _tasks.removeWhere((t) => t.id == task.id);
+            });
           },
           onReminderAcknowledged: () {
             widget.onReminderAcknowledged?.call(task);
@@ -368,21 +365,8 @@ class _ConfluenceModalState extends State<ConfluenceModal>
     );
   }
 
-  String _formatTime(DateTime time) {
-    if (widget.use24HourFormat) {
-      final hour = time.hour.toString().padLeft(2, '0');
-      final minute = time.minute.toString().padLeft(2, '0');
-      return '$hour:$minute';
-    }
-    final hour = time.hour == 0
-        ? 12
-        : time.hour > 12
-            ? time.hour - 12
-            : time.hour;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
-  }
+  String _formatTime(DateTime time) =>
+      TimeFormatter.formatTime(time, use24HourFormat: widget.use24HourFormat);
 }
 
 /// Shows the confluence modal as a full-screen overlay.

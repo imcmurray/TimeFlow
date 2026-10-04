@@ -89,6 +89,13 @@ class Settings {
   /// Whether the user has seen the long-press task creation hint.
   final bool hasSeenLongPressHint;
 
+  /// Whether now-line crossing alerts are globally enabled.
+  final bool eventCrossingAlertEnabled;
+
+  /// Which sound to play for event crossing alerts.
+  /// Options: 'chime', 'bell', 'alert', 'soft'
+  final String eventCrossingAlertSound;
+
   const Settings({
     this.theme = 'auto',
     this.defaultReminderMinutes = 10,
@@ -115,6 +122,8 @@ class Settings {
     this.longPressDefaultDurationMinutes = 60,
     this.longPressSnapIntervalMinutes = 15,
     this.hasSeenLongPressHint = false,
+    this.eventCrossingAlertEnabled = true,
+    this.eventCrossingAlertSound = 'chime',
   });
 
   /// Default settings for first-time users.
@@ -149,33 +158,55 @@ class Settings {
     int? longPressDefaultDurationMinutes,
     int? longPressSnapIntervalMinutes,
     bool? hasSeenLongPressHint,
+    bool? eventCrossingAlertEnabled,
+    String? eventCrossingAlertSound,
   }) {
     return Settings(
       theme: theme ?? this.theme,
-      defaultReminderMinutes: defaultReminderMinutes ?? this.defaultReminderMinutes,
+      defaultReminderMinutes:
+          defaultReminderMinutes ?? this.defaultReminderMinutes,
       timelineDensity: timelineDensity ?? this.timelineDensity,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       firstLaunch: firstLaunch ?? this.firstLaunch,
-      upcomingTasksAboveNow: upcomingTasksAboveNow ?? this.upcomingTasksAboveNow,
-      bringWindowToFrontOnReminder: bringWindowToFrontOnReminder ?? this.bringWindowToFrontOnReminder,
+      upcomingTasksAboveNow:
+          upcomingTasksAboveNow ?? this.upcomingTasksAboveNow,
+      bringWindowToFrontOnReminder:
+          bringWindowToFrontOnReminder ?? this.bringWindowToFrontOnReminder,
       reminderSoundEnabled: reminderSoundEnabled ?? this.reminderSoundEnabled,
       reminderSound: reminderSound ?? this.reminderSound,
       use24HourFormat: use24HourFormat ?? this.use24HourFormat,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
-      timezoneOffsetHours: clearTimezoneOffset ? null : (timezoneOffsetHours ?? this.timezoneOffsetHours),
+      timezoneOffsetHours: clearTimezoneOffset
+          ? null
+          : (timezoneOffsetHours ?? this.timezoneOffsetHours),
       showSunTimes: showSunTimes ?? this.showSunTimes,
-      watermarkShowWeekNumber: watermarkShowWeekNumber ?? this.watermarkShowWeekNumber,
-      watermarkShowDayOfYear: watermarkShowDayOfYear ?? this.watermarkShowDayOfYear,
-      watermarkShowHolidays: watermarkShowHolidays ?? this.watermarkShowHolidays,
-      watermarkShowMoonPhase: watermarkShowMoonPhase ?? this.watermarkShowMoonPhase,
+      watermarkShowWeekNumber:
+          watermarkShowWeekNumber ?? this.watermarkShowWeekNumber,
+      watermarkShowDayOfYear:
+          watermarkShowDayOfYear ?? this.watermarkShowDayOfYear,
+      watermarkShowHolidays:
+          watermarkShowHolidays ?? this.watermarkShowHolidays,
+      watermarkShowMoonPhase:
+          watermarkShowMoonPhase ?? this.watermarkShowMoonPhase,
       watermarkShowQuarter: watermarkShowQuarter ?? this.watermarkShowQuarter,
-      watermarkShowDaysRemaining: watermarkShowDaysRemaining ?? this.watermarkShowDaysRemaining,
-      customNowLineMinutesFromMidnight: clearCustomNowLine ? null : (customNowLineMinutesFromMidnight ?? this.customNowLineMinutesFromMidnight),
-      nowLineViewportPosition: nowLineViewportPosition ?? this.nowLineViewportPosition,
-      longPressDefaultDurationMinutes: longPressDefaultDurationMinutes ?? this.longPressDefaultDurationMinutes,
-      longPressSnapIntervalMinutes: longPressSnapIntervalMinutes ?? this.longPressSnapIntervalMinutes,
+      watermarkShowDaysRemaining:
+          watermarkShowDaysRemaining ?? this.watermarkShowDaysRemaining,
+      customNowLineMinutesFromMidnight: clearCustomNowLine
+          ? null
+          : (customNowLineMinutesFromMidnight ??
+              this.customNowLineMinutesFromMidnight),
+      nowLineViewportPosition:
+          nowLineViewportPosition ?? this.nowLineViewportPosition,
+      longPressDefaultDurationMinutes: longPressDefaultDurationMinutes ??
+          this.longPressDefaultDurationMinutes,
+      longPressSnapIntervalMinutes:
+          longPressSnapIntervalMinutes ?? this.longPressSnapIntervalMinutes,
       hasSeenLongPressHint: hasSeenLongPressHint ?? this.hasSeenLongPressHint,
+      eventCrossingAlertEnabled:
+          eventCrossingAlertEnabled ?? this.eventCrossingAlertEnabled,
+      eventCrossingAlertSound:
+          eventCrossingAlertSound ?? this.eventCrossingAlertSound,
     );
   }
 
@@ -203,11 +234,15 @@ class Settings {
         other.watermarkShowMoonPhase == watermarkShowMoonPhase &&
         other.watermarkShowQuarter == watermarkShowQuarter &&
         other.watermarkShowDaysRemaining == watermarkShowDaysRemaining &&
-        other.customNowLineMinutesFromMidnight == customNowLineMinutesFromMidnight &&
+        other.customNowLineMinutesFromMidnight ==
+            customNowLineMinutesFromMidnight &&
         other.nowLineViewportPosition == nowLineViewportPosition &&
-        other.longPressDefaultDurationMinutes == longPressDefaultDurationMinutes &&
+        other.longPressDefaultDurationMinutes ==
+            longPressDefaultDurationMinutes &&
         other.longPressSnapIntervalMinutes == longPressSnapIntervalMinutes &&
-        other.hasSeenLongPressHint == hasSeenLongPressHint;
+        other.hasSeenLongPressHint == hasSeenLongPressHint &&
+        other.eventCrossingAlertEnabled == eventCrossingAlertEnabled &&
+        other.eventCrossingAlertSound == eventCrossingAlertSound;
   }
 
   @override
@@ -238,6 +273,8 @@ class Settings {
       longPressDefaultDurationMinutes,
       longPressSnapIntervalMinutes,
       hasSeenLongPressHint,
+      eventCrossingAlertEnabled,
+      eventCrossingAlertSound,
     ]);
   }
 
@@ -260,6 +297,8 @@ class Settings {
         'nowLineViewportPosition: $nowLineViewportPosition, '
         'longPressDefaultDurationMinutes: $longPressDefaultDurationMinutes, '
         'longPressSnapIntervalMinutes: $longPressSnapIntervalMinutes, '
-        'hasSeenLongPressHint: $hasSeenLongPressHint)';
+        'hasSeenLongPressHint: $hasSeenLongPressHint, '
+        'eventCrossingAlertEnabled: $eventCrossingAlertEnabled, '
+        'eventCrossingAlertSound: $eventCrossingAlertSound)';
   }
 }

@@ -1,4 +1,4 @@
-import 'package:timeflow/domain/entities/task_category.dart';
+import 'package:cron_timeflow/domain/entities/task_category.dart';
 
 /// Domain entity representing a Task in TimeFlow.
 ///

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:timeflow/domain/entities/task.dart';
+import 'package:cron_timeflow/domain/entities/task.dart';
 
 import 'task_repository_stub.dart'
     if (dart.library.io) 'task_repository_native.dart'

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:timeflow/core/theme/app_colors.dart';
+import 'package:cron_timeflow/core/theme/app_colors.dart';
 
 /// Visual states for reminder indicators based on time until reminder triggers.
 enum ReminderState {
@@ -47,15 +47,16 @@ class ReminderDot extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
-        boxShadow: state == ReminderState.triggered || state == ReminderState.imminent
-            ? [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.5),
-                  blurRadius: 4,
-                  spreadRadius: 1,
-                ),
-              ]
-            : null,
+        boxShadow:
+            state == ReminderState.triggered || state == ReminderState.imminent
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.5),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : null,
       ),
     );
   }

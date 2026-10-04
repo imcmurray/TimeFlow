@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
-import 'package:timeflow/data/datasources/database.dart';
-import 'package:timeflow/data/repositories/task_repository.dart';
-import 'package:timeflow/domain/entities/task.dart' as domain;
-import 'package:timeflow/domain/entities/task_category.dart';
+import 'package:cron_timeflow/data/datasources/database.dart';
+import 'package:cron_timeflow/data/repositories/task_repository.dart';
+import 'package:cron_timeflow/domain/entities/task.dart' as domain;
+import 'package:cron_timeflow/domain/entities/task_category.dart';
 
 /// Native implementation using Drift/SQLite.
 class TaskRepositoryImpl implements TaskRepository {
@@ -75,8 +75,7 @@ class TaskRepositoryImpl implements TaskRepository {
   @override
   Future<List<domain.Task>> getTasksForRange(
       DateTime startDate, DateTime endDate) async {
-    final rangeStart =
-        DateTime(startDate.year, startDate.month, startDate.day);
+    final rangeStart = DateTime(startDate.year, startDate.month, startDate.day);
     final rangeEnd = DateTime(endDate.year, endDate.month, endDate.day)
         .add(const Duration(days: 1));
 

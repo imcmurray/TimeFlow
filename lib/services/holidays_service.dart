@@ -177,7 +177,6 @@ class HolidaysService {
   /// Get the week number of the year (ISO 8601).
   static int getWeekNumber(DateTime date) {
     // Find the Thursday of this week
-    final dayOfYear = _getDayOfYear(date);
     final weekday = date.weekday; // 1 = Monday, 7 = Sunday
 
     // ISO week date: week 1 is the week containing the first Thursday

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timeflow/data/backup/backup_codec.dart';
+import 'package:timeflow/domain/time/local_date.dart';
 import 'package:timeflow/presentation/helpers/file_export.dart';
 import 'package:timeflow/presentation/providers/task_provider.dart';
 import 'package:timeflow/presentation/screens/settings/section_header.dart';
 
-/// Data management settings: export, import, delete all tasks.
+/// Backup, restore, and deleting everything.
 class SettingsDataSection extends ConsumerWidget {
   const SettingsDataSection({super.key});
 
@@ -15,158 +17,122 @@ class SettingsDataSection extends ConsumerWidget {
         const SectionHeader(title: 'Data'),
         ListTile(
           leading: const Icon(Icons.upload_file),
-          title: const Text('Export Tasks'),
-          subtitle: const Text('Save tasks to a JSON file'),
-          onTap: () => _exportTasks(context, ref),
+          title: const Text('Back up tasks'),
+          subtitle: const Text('Save all tasks to a file'),
+          onTap: () => _export(context, ref),
         ),
         ListTile(
           leading: const Icon(Icons.download),
-          title: const Text('Import Tasks'),
-          subtitle: const Text('Load tasks from a JSON file'),
-          onTap: () => _importTasks(context, ref),
+          title: const Text('Restore from backup'),
+          subtitle: const Text('Add tasks from a backup file'),
+          onTap: () => _import(context, ref),
         ),
         ListTile(
-          leading: const Icon(Icons.delete_forever, color: Colors.red),
-          title: const Text('Delete All Tasks'),
-          subtitle: const Text('Permanently remove all tasks'),
-          onTap: () => _showDeleteAllTasksDialog(context, ref),
+          leading: Icon(Icons.delete_forever,
+              color: Theme.of(context).colorScheme.error),
+          title: const Text('Delete all tasks'),
+          subtitle: const Text('Permanently remove every task'),
+          onTap: () => _deleteAll(context, ref),
         ),
       ],
     );
   }
 
-  Future<void> _showDeleteAllTasksDialog(
-      BuildContext context, WidgetRef ref) async {
-    final taskCount = await ref.read(taskRepositoryProvider).count();
-    if (!context.mounted) return;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete All Tasks?'),
-        content: Text(
-          'This will permanently delete all $taskCount task(s). '
-          'This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete All'),
-          ),
-        ],
-      ),
+  void _snack(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
+  }
 
-    if (confirmed == true && context.mounted) {
-      final messenger = ScaffoldMessenger.of(context);
-      await ref.read(taskRepositoryProvider).clear();
-      ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
-
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('All tasks deleted'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+  Future<void> _export(BuildContext context, WidgetRef ref) async {
+    try {
+      final json = await ref.read(taskRepositoryProvider).exportToJson();
+      final saved = await saveBackupFile(
+          json, 'timeflow-backup-${LocalDate.today().toIso()}.json');
+      if (saved && context.mounted) _snack(context, 'Backup saved');
+    } catch (e) {
+      if (context.mounted) _snack(context, 'Could not save the backup: $e');
     }
   }
 
-  Future<void> _exportTasks(BuildContext context, WidgetRef ref) async {
-    final jsonString = await ref.read(taskRepositoryProvider).exportToJson();
-    final fileName =
-        'timeflow_backup_${DateTime.now().toIso8601String().split('T')[0]}.json';
-
-    final result = await exportJsonFile(jsonString, fileName);
-
-    if (!context.mounted) return;
-
-    if (result.success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.filePath != null
-              ? 'Exported to ${result.filePath}'
-              : 'Export complete'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Export failed: ${result.error}'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
-
-  Future<void> _importTasks(BuildContext context, WidgetRef ref) async {
-    final fileResult = await pickAndReadJsonFile();
-
-    if (!fileResult.success || fileResult.content == null) {
-      if (fileResult.error != 'No file selected' && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to read file: ${fileResult.error}'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+  Future<void> _import(BuildContext context, WidgetRef ref) async {
+    final String? json;
+    try {
+      json = await pickBackupFile();
+    } catch (e) {
+      if (context.mounted) _snack(context, 'Could not read the file: $e');
       return;
     }
-
-    if (!context.mounted) return;
+    if (json == null || !context.mounted) return;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Import Tasks?'),
+        title: const Text('Restore this backup?'),
         content: const Text(
-          'This will add all tasks from the backup file. '
-          'Existing tasks with the same ID will be updated.',
+          'Tasks from the backup are added to your timeline. Tasks that are '
+          'in both are replaced by the backup version.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Import'),
+            child: const Text('Restore'),
           ),
         ],
       ),
     );
-
     if (confirmed != true || !context.mounted) return;
 
     try {
-      final count = await ref
-          .read(taskRepositoryProvider)
-          .importFromJson(fileResult.content!);
-      ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
-
+      final count = await ref.read(taskRepositoryProvider).importFromJson(json);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Imported $count task(s)'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        _snack(
+            context, count == 1 ? 'Restored 1 task' : 'Restored $count tasks');
       }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Import failed: $e'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+    } on BackupFormatException catch (e) {
+      if (context.mounted) _snack(context, e.message);
     }
+  }
+
+  Future<void> _deleteAll(BuildContext context, WidgetRef ref) async {
+    final count = await ref.read(taskRepositoryProvider).count();
+    if (!context.mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete all tasks?'),
+        content: Text(
+          count == 1
+              ? 'Your 1 task will be deleted. This can\'t be undone.'
+              : 'All $count tasks (including every repeating series) will be '
+                  'deleted. This can\'t be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: const Text('Delete all'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    await ref.read(taskRepositoryProvider).clear();
+    messenger.showSnackBar(const SnackBar(
+      content: Text('All tasks deleted'),
+      behavior: SnackBarBehavior.floating,
+    ));
   }
 }

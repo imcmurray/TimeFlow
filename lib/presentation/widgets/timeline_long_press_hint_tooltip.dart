@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 /// Onboarding tooltip that hints about long-press task creation.
-/// Positioned at the top of the timeline area and dismissable by tap.
+/// Must be a direct child of a [Stack]; sits at the top of the viewport and
+/// is dismissed by tapping it.
 class LongPressHintTooltip extends StatefulWidget {
   final VoidCallback onDismiss;
 
@@ -64,84 +65,91 @@ class _LongPressHintTooltipState extends State<LongPressHintTooltip>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Positioned(
-      top: 80,
+      top: 12,
       left: 8,
       right: 8,
       child: SlideTransition(
         position: _slideAnimation,
         child: FadeTransition(
           opacity: _fadeAnimation,
-          child: GestureDetector(
-            onTap: _dismiss,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2D3748) : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+          child: Semantics(
+            button: true,
+            label: 'Tip: long-press anywhere on the timeline to create a task. '
+                'Tap to dismiss.',
+            excludeSemantics: true,
+            child: GestureDetector(
+              onTap: _dismiss,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF2D3748) : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.3),
+                    width: 1,
                   ),
-                ],
-                border: Border.all(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.3),
-                  width: 1,
                 ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.touch_app_rounded,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.touch_app_rounded,
-                      size: 20,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Quick Task Creation',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white : Colors.black87,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Quick Task Creation',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Long-press anywhere on the timeline to create a new task',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark ? Colors.white70 : Colors.black54,
+                          const SizedBox(height: 2),
+                          Text(
+                            'Long-press anywhere on the timeline to create a new task',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? Colors.white70 : Colors.black54,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.close,
-                    size: 18,
-                    color: isDark ? Colors.white38 : Colors.black38,
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.close,
+                      size: 18,
+                      color: isDark ? Colors.white38 : Colors.black38,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

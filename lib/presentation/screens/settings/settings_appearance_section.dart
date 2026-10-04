@@ -4,67 +4,51 @@ import 'package:timeflow/presentation/providers/settings_provider.dart';
 import 'package:timeflow/presentation/screens/settings/choice_dialog.dart';
 import 'package:timeflow/presentation/screens/settings/section_header.dart';
 
-/// Appearance settings: theme, density, task direction, 24-hour time.
+/// Appearance settings: theme, timeline direction, clock format.
 class SettingsAppearanceSection extends ConsumerWidget {
   const SettingsAppearanceSection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsProvider);
     return Column(
       children: [
         const SectionHeader(title: 'Appearance'),
         ListTile(
           leading: const Icon(Icons.palette_outlined),
           title: const Text('Theme'),
-          subtitle: Text(_themeLabel(ref.watch(settingsProvider).theme)),
+          subtitle: Text(_themeLabel(settings.theme)),
           onTap: () => _showThemeDialog(context, ref),
         ),
         ListTile(
-          leading: const Icon(Icons.straighten),
-          title: const Text('Timeline Density'),
-          subtitle:
-              Text(_densityLabel(ref.watch(settingsProvider).timelineDensity)),
-          onTap: () => _showDensityDialog(context, ref),
+          leading: const Icon(Icons.access_time),
+          title: const Text('Clock format'),
+          subtitle: Text(_clockLabel(settings.use24HourPreference)),
+          onTap: () => _showClockDialog(context, ref),
         ),
         SwitchListTile(
           secondary: const Icon(Icons.swap_vert),
-          title: const Text('Upcoming Tasks Above NOW'),
+          title: const Text('Upcoming tasks above NOW'),
           subtitle: const Text('Future tasks flow down toward the NOW line'),
-          value: ref.watch(settingsProvider).upcomingTasksAboveNow,
-          onChanged: (value) {
-            ref.read(settingsProvider.notifier).setUpcomingTasksAboveNow(value);
-          },
-        ),
-        SwitchListTile(
-          secondary: const Icon(Icons.access_time),
-          title: const Text('24-Hour Time'),
-          subtitle: const Text('Display time as 14:30 instead of 2:30 PM'),
-          value: ref.watch(settingsProvider).use24HourFormat,
-          onChanged: (value) {
-            ref.read(settingsProvider.notifier).setUse24HourFormat(value);
-          },
+          value: settings.upcomingTasksAboveNow,
+          onChanged:
+              ref.read(settingsProvider.notifier).setUpcomingTasksAboveNow,
         ),
       ],
     );
   }
 
-  String _themeLabel(String theme) {
-    switch (theme) {
-      case 'light':
-        return 'Light';
-      case 'dark':
-        return 'Dark';
-      case 'auto':
-      default:
-        return 'System default';
-    }
-  }
+  String _themeLabel(String theme) => switch (theme) {
+        'light' => 'Light',
+        'dark' => 'Dark',
+        _ => 'System default',
+      };
 
-  String _densityLabel(double density) {
-    if (density < 0.8) return 'Compact';
-    if (density > 1.2) return 'Spacious';
-    return 'Normal';
-  }
+  String _clockLabel(bool? use24Hour) => switch (use24Hour) {
+        true => '24-hour (14:30)',
+        false => '12-hour (2:30 PM)',
+        null => 'System default',
+      };
 
   Future<void> _showThemeDialog(BuildContext context, WidgetRef ref) async {
     final theme = await showChoiceDialog<String>(
@@ -80,19 +64,24 @@ class SettingsAppearanceSection extends ConsumerWidget {
     if (theme != null) ref.read(settingsProvider.notifier).setTheme(theme);
   }
 
-  Future<void> _showDensityDialog(BuildContext context, WidgetRef ref) async {
-    final density = await showChoiceDialog<double>(
+  Future<void> _showClockDialog(BuildContext context, WidgetRef ref) async {
+    // showChoiceDialog returns null on dismiss, so "system" needs a key.
+    final choice = await showChoiceDialog<String>(
       context: context,
-      title: 'Timeline Density',
-      current: ref.read(settingsProvider).timelineDensity,
+      title: 'Clock format',
+      current: switch (ref.read(settingsProvider).use24HourPreference) {
+        true => '24',
+        false => '12',
+        null => 'system',
+      },
       options: const [
-        ChoiceOption(0.7, 'Compact', subtitle: 'More hours visible'),
-        ChoiceOption(1.0, 'Normal'),
-        ChoiceOption(1.3, 'Spacious', subtitle: 'Easier to read'),
+        ChoiceOption('system', 'System default'),
+        ChoiceOption('12', '12-hour', subtitle: '2:30 PM'),
+        ChoiceOption('24', '24-hour', subtitle: '14:30'),
       ],
     );
-    if (density != null) {
-      ref.read(settingsProvider.notifier).setTimelineDensity(density);
-    }
+    if (choice == null) return;
+    ref.read(settingsProvider.notifier).setUse24HourPreference(
+        switch (choice) { '24' => true, '12' => false, _ => null });
   }
 }

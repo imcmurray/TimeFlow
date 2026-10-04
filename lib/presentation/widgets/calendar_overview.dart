@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timeflow/domain/time/local_date.dart';
 import 'package:timeflow/presentation/providers/task_provider.dart';
 
 /// Calendar overview showing multiple months for quick date navigation.
@@ -57,85 +58,80 @@ class _CalendarOverviewState extends ConsumerState<CalendarOverview> {
 
   @override
   Widget build(BuildContext context) {
-    final datesWithTasksAsync = ref.watch(datesWithTasksProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return datesWithTasksAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Error: $error')),
-      data: (datesWithTasks) => Column(
-        children: [
-          // Month navigation with arrow buttons
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: () => _pageController.previousPage(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  ),
-                  tooltip: 'Previous month',
+    return Column(
+      children: [
+        // Month navigation with arrow buttons
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.chevron_left),
+                onPressed: () => _pageController.previousPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
                 ),
-                Text(
-                  'Browse months',
-                  style: TextStyle(
-                    color: colorScheme.onSurfaceVariant,
-                    fontSize: 14,
-                  ),
+                tooltip: 'Previous month',
+              ),
+              Text(
+                'Browse months',
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 14,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: () => _pageController.nextPage(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  ),
-                  tooltip: 'Next month',
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                onPressed: () => _pageController.nextPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
                 ),
-              ],
-            ),
+                tooltip: 'Next month',
+              ),
+            ],
           ),
+        ),
 
-          // Month pages
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: _totalMonths,
-              itemBuilder: (context, index) {
-                final month = _getMonthForIndex(index);
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: _MonthGrid(
-                    month: month,
-                    datesWithTasks: datesWithTasks,
-                    onDateSelected: widget.onDateSelected,
-                  ),
-                );
-              },
-            ),
+        // Month pages
+        Expanded(
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: _totalMonths,
+            itemBuilder: (context, index) {
+              final month = _getMonthForIndex(index);
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: _MonthGrid(
+                  month: month,
+                  onDateSelected: widget.onDateSelected,
+                ),
+              );
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
 /// A single month grid showing all days.
-class _MonthGrid extends StatelessWidget {
+class _MonthGrid extends ConsumerWidget {
   final DateTime month;
-  final Set<DateTime> datesWithTasks;
   final ValueChanged<DateTime> onDateSelected;
 
   const _MonthGrid({
     required this.month,
-    required this.datesWithTasks,
     required this.onDateSelected,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final datesWithTasks =
+        ref.watch(monthTaskDaysProvider(LocalDate.of(month))).value ??
+            const <LocalDate>{};
     final colorScheme = Theme.of(context).colorScheme;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -202,6 +198,7 @@ class _MonthGrid extends StatelessWidget {
                   daysInMonth: daysInMonth,
                   startingWeekday: startingWeekday,
                   colorScheme: colorScheme,
+                  datesWithTasks: datesWithTasks,
                 ),
               ),
             ),
@@ -217,6 +214,7 @@ class _MonthGrid extends StatelessWidget {
     required int daysInMonth,
     required int startingWeekday,
     required ColorScheme colorScheme,
+    required Set<LocalDate> datesWithTasks,
   }) {
     final rows = <Widget>[];
     int dayCounter = 1 - (startingWeekday - 1);
@@ -229,7 +227,7 @@ class _MonthGrid extends StatelessWidget {
         } else {
           final date = DateTime(month.year, month.month, dayCounter);
           final isToday = date == today;
-          final hasTask = datesWithTasks.contains(date);
+          final hasTask = datesWithTasks.contains(LocalDate.of(date));
           final day = dayCounter;
           cells.add(
             Expanded(

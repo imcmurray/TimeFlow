@@ -5,8 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
-import 'package:timeflow/presentation/widgets/timeline_view.dart';
+import 'package:timeflow/presentation/timeline/timeline_view.dart';
 import 'package:timeflow/presentation/widgets/calendar_overview.dart';
+import 'package:timeflow/presentation/widgets/timeline_long_press_hint_tooltip.dart';
 import 'package:timeflow/presentation/screens/task_detail_screen.dart';
 import 'package:timeflow/presentation/screens/settings_screen.dart';
 import 'package:timeflow/presentation/screens/share_screen.dart';
@@ -36,8 +37,10 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
   DateTime? _selectedDateFromCalendar;
   double _pinchScale = 1.0;
   bool _isPinching = false;
-  double _currentHourHeight = TimelineViewState.defaultHourHeight;
-  double _baseHourHeight = TimelineViewState.defaultHourHeight;
+  late double _currentHourHeight = (TimelineViewState.defaultHourHeight *
+          ref.read(settingsProvider).timelineZoom)
+      .clamp(TimelineViewState.minHourHeight, TimelineViewState.maxHourHeight);
+  late double _baseHourHeight = _currentHourHeight;
   final FocusNode _focusNode = FocusNode();
   bool _isCtrlPressed = false;
 
@@ -299,11 +302,7 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                           onScaleEnd: _onScaleEnd,
                           child: TimelineView(
                             key: _timelineKey,
-                            upcomingTasksAboveNow: ref
-                                .watch(settingsProvider)
-                                .upcomingTasksAboveNow,
                             initialDate: _selectedDateFromCalendar,
-                            initialHourHeight: _currentHourHeight,
                             onVisibleDateChanged: _onVisibleDateChanged,
                             onNowLineVisibilityChanged:
                                 _onNowLineVisibilityChanged,
@@ -318,6 +317,15 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                       onDateSelected: _onDateSelected,
                     ),
             ),
+
+            if (_viewMode == TimelineViewMode.day &&
+                !ref.watch(
+                    settingsProvider.select((s) => s.hasSeenLongPressHint)))
+              LongPressHintTooltip(
+                onDismiss: () => ref
+                    .read(settingsProvider.notifier)
+                    .setHasSeenLongPressHint(true),
+              ),
 
             // Jump to NOW button (bottom left, only in day view when NOW line not visible)
             if (_viewMode == TimelineViewMode.day && !_isNowLineVisible)

@@ -101,7 +101,8 @@ class SettingsNotificationsSection extends ConsumerWidget {
           ),
       ],
     );
-    if (sound != null)
+    if (sound != null) {
       ref.read(settingsProvider.notifier).setReminderSound(sound);
+    }
   }
 }

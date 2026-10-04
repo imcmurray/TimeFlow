@@ -309,7 +309,7 @@ class _TaskCardState extends State<TaskCard>
 
         // Category badge and recurring indicator
         if (widget.task.category != TaskCategory.none ||
-            widget.task.recurringPattern != null) ...[
+            widget.task.isRecurring) ...[
           const SizedBox(height: 4),
           Row(
             children: [
@@ -318,7 +318,7 @@ class _TaskCardState extends State<TaskCard>
                   category: widget.task.category,
                   compact: true,
                 ),
-              if (widget.task.recurringPattern != null) ...[
+              if (widget.task.isRecurring) ...[
                 if (widget.task.category != TaskCategory.none)
                   const SizedBox(width: 6),
                 Icon(

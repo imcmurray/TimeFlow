@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:timeflow/domain/entities/task.dart';
+import 'package:timeflow/domain/time/local_date.dart';
 import 'package:timeflow/presentation/providers/task_provider.dart';
 import 'package:timeflow/presentation/utils/time_formatter.dart';
 
@@ -28,7 +29,8 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
   final GlobalKey _previewKey = GlobalKey();
 
   List<Task> _getFilteredTasks() {
-    final tasksAsync = ref.read(tasksForDateProvider(widget.date));
+    final tasksAsync =
+        ref.watch(tasksForDayProvider(LocalDate.of(widget.date)));
     final tasks = tasksAsync.value ?? [];
     return tasks.where((task) {
       final taskStartHour = task.startTime.hour;

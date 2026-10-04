@@ -13,7 +13,7 @@ class LocationPreset {
   const LocationPreset(this.name, this.latitude, this.longitude);
 }
 
-/// Location, timezone, and day watermark settings.
+/// Location and day watermark settings.
 class SettingsLocationSection extends ConsumerWidget {
   const SettingsLocationSection({super.key});
 
@@ -81,17 +81,6 @@ class SettingsLocationSection extends ConsumerWidget {
               ? () => _showLocationDialog(context, ref)
               : null,
         ),
-        ListTile(
-          leading: const Icon(Icons.schedule),
-          title: const Text('Timezone'),
-          subtitle: Text(_getTimezoneLabel(
-              ref.watch(settingsProvider).timezoneOffsetHours)),
-          enabled: ref.watch(settingsProvider).showSunTimes,
-          onTap: ref.watch(settingsProvider).showSunTimes
-              ? () => _showTimezoneDialog(context, ref)
-              : null,
-        ),
-
         const Divider(),
 
         // Day Watermark
@@ -162,16 +151,6 @@ class SettingsLocationSection extends ConsumerWidget {
     );
   }
 
-  String _getTimezoneLabel(double? offset) {
-    if (offset == null) {
-      final deviceOffset = DateTime.now().timeZoneOffset.inMinutes / 60.0;
-      final sign = deviceOffset >= 0 ? '+' : '';
-      return 'Auto (UTC$sign${deviceOffset.toStringAsFixed(deviceOffset.truncateToDouble() == deviceOffset ? 0 : 1)})';
-    }
-    final sign = offset >= 0 ? '+' : '';
-    return 'UTC$sign${offset.toStringAsFixed(offset.truncateToDouble() == offset ? 0 : 1)}';
-  }
-
   String _getLocationLabel(double latitude, double longitude) {
     for (final preset in _locationPresets) {
       if ((preset.latitude - latitude).abs() < 0.5 &&
@@ -210,59 +189,6 @@ class SettingsLocationSection extends ConsumerWidget {
       ref
           .read(settingsProvider.notifier)
           .setLocation(preset.latitude, preset.longitude);
-    }
-  }
-
-  Future<void> _showTimezoneDialog(BuildContext context, WidgetRef ref) async {
-    final currentOffset = ref.read(settingsProvider).timezoneOffsetHours;
-
-    final timezones = <MapEntry<String, double?>>[
-      const MapEntry('Auto-detect from device', null),
-      const MapEntry('UTC-12 (Baker Island)', -12),
-      const MapEntry('UTC-11 (American Samoa)', -11),
-      const MapEntry('UTC-10 (Hawaii)', -10),
-      const MapEntry('UTC-9 (Alaska)', -9),
-      const MapEntry('UTC-8 (Pacific Time)', -8),
-      const MapEntry('UTC-7 (Mountain Time)', -7),
-      const MapEntry('UTC-6 (Central Time)', -6),
-      const MapEntry('UTC-5 (Eastern Time)', -5),
-      const MapEntry('UTC-4 (Atlantic Time)', -4),
-      const MapEntry('UTC-3 (Argentina)', -3),
-      const MapEntry('UTC-2 (Mid-Atlantic)', -2),
-      const MapEntry('UTC-1 (Azores)', -1),
-      const MapEntry('UTC+0 (London, GMT)', 0),
-      const MapEntry('UTC+1 (Paris, Berlin)', 1),
-      const MapEntry('UTC+2 (Athens, Cairo)', 2),
-      const MapEntry('UTC+3 (Moscow)', 3),
-      const MapEntry('UTC+4 (Dubai)', 4),
-      const MapEntry('UTC+5 (Pakistan)', 5),
-      const MapEntry('UTC+5:30 (India)', 5.5),
-      const MapEntry('UTC+6 (Bangladesh)', 6),
-      const MapEntry('UTC+7 (Bangkok)', 7),
-      const MapEntry('UTC+8 (Singapore, Perth)', 8),
-      const MapEntry('UTC+9 (Tokyo)', 9),
-      const MapEntry('UTC+9:30 (Adelaide)', 9.5),
-      const MapEntry('UTC+10 (Sydney)', 10),
-      const MapEntry('UTC+11 (Solomon Islands)', 11),
-      const MapEntry('UTC+12 (Auckland)', 12),
-      const MapEntry('UTC+13 (Samoa)', 13),
-      const MapEntry('UTC+14 (Line Islands)', 14),
-    ];
-
-    // showChoiceDialog returns null on dismiss, so "auto" needs a sentinel.
-    const auto = double.infinity;
-    final offset = await showChoiceDialog<double>(
-      context: context,
-      title: 'Select Timezone',
-      current: currentOffset ?? auto,
-      options: [
-        for (final tz in timezones) ChoiceOption(tz.value ?? auto, tz.key),
-      ],
-    );
-    if (offset != null) {
-      ref
-          .read(settingsProvider.notifier)
-          .setTimezoneOffsetHours(offset == auto ? null : offset);
     }
   }
 

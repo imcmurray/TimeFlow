@@ -46,7 +46,7 @@ so you always see what's happening now, what's coming, and what's behind you.
 | Android | Main release; Play Store submission in progress, signed APKs on [Releases](https://github.com/imcmurray/TimeFlow/releases) |
 | Web (installable app, works offline) | [imcmurray.github.io/TimeFlow](https://imcmurray.github.io/TimeFlow/) |
 | Linux, Windows, macOS | Experimental builds attached to releases (unsigned) |
-| iOS | Not yet |
+| iPhone, iPad | In progress — project ready, see [docs/IOS.md](docs/IOS.md) |
 
 ## Development
 

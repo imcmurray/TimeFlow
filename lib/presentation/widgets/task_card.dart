@@ -182,7 +182,7 @@ class _TaskCardState extends State<TaskCard>
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.symmetric(vertical: 4),
+          margin: const EdgeInsets.symmetric(vertical: 2),
           decoration: BoxDecoration(
             color: isTriggered
                 ? AppColors.reminderLine.withValues(alpha: 0.1)
@@ -280,7 +280,11 @@ class _TaskCardState extends State<TaskCard>
     Color cardColor,
   ) {
     final availableHeight = constraints.maxHeight;
-    final padding = availableHeight < 40 ? 4.0 : 8.0;
+    final padding = availableHeight < 32
+        ? 2.0
+        : availableHeight < 40
+        ? 4.0
+        : 8.0;
 
     return PriorityColumnCard(
       padding: EdgeInsets.all(padding),

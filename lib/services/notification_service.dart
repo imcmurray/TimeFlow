@@ -140,7 +140,12 @@ class NotificationService {
   /// The response that launched the app, if it was opened from a reminder.
   Future<ReminderResponse?> launchResponse() async {
     if (kIsWeb) return null;
-    final details = await _plugin.getNotificationAppLaunchDetails();
+    final NotificationAppLaunchDetails? details;
+    try {
+      details = await _plugin.getNotificationAppLaunchDetails();
+    } on UnimplementedError {
+      return null; // Linux and Windows can't report this.
+    }
     final r = details?.notificationResponse;
     if (details?.didNotificationLaunchApp != true || r == null) return null;
     return _toResponse(r);

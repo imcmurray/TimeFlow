@@ -48,7 +48,8 @@ Future<ExportResult> exportJsonFile(String content, String fileName) async {
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsString(content);
-      await SharePlus.instance.share(ShareParams(files: [XFile(file.path)], subject: 'TimeFlow Backup'));
+      await SharePlus.instance.share(
+          ShareParams(files: [XFile(file.path)], subject: 'TimeFlow Backup'));
       return const ExportResult(success: true);
     }
   } catch (e) {

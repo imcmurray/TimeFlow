@@ -85,8 +85,8 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
 
   Future<void> _shareAsText() async {
     final text = _generateShareText();
-    await SharePlus.instance
-        .share(ShareParams(text: text, subject: 'Schedule for ${_formatDate()}'));
+    await SharePlus.instance.share(
+        ShareParams(text: text, subject: 'Schedule for ${_formatDate()}'));
   }
 
   Future<void> _shareAsImage() async {

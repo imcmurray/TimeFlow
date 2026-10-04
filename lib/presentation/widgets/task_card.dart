@@ -159,7 +159,9 @@ class _TaskCardState extends State<TaskCard>
       },
       background: _SwipeBackground(
         alignment: Alignment.centerLeft,
-        color: widget.task.isCompleted ? AppColors.primaryBlue : AppColors.taskCompleted,
+        color: widget.task.isCompleted
+            ? AppColors.primaryBlue
+            : AppColors.taskCompleted,
         icon: widget.task.isCompleted ? Icons.undo : Icons.check_circle,
         label: widget.task.isCompleted ? 'Not Done' : 'Complete',
       ),
@@ -300,10 +302,8 @@ class _TaskCardState extends State<TaskCard>
           style: TextStyle(
             fontSize: 12,
             decoration: TextDecoration.none,
-            color: Theme.of(context)
-                .colorScheme
-                .onSurface
-                .withValues(alpha: 0.6),
+            color:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
 

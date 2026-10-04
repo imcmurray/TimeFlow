@@ -64,7 +64,6 @@ class SettingsNotificationsSection extends ConsumerWidget {
               ? () => _showSoundPicker(context, ref)
               : null,
         ),
-
       ],
     );
   }
@@ -102,6 +101,7 @@ class SettingsNotificationsSection extends ConsumerWidget {
           ),
       ],
     );
-    if (sound != null) ref.read(settingsProvider.notifier).setReminderSound(sound);
+    if (sound != null)
+      ref.read(settingsProvider.notifier).setReminderSound(sound);
   }
 }

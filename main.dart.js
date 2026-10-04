@@ -122213,11 +122213,11 @@ A.aDO.prototype={
 $0(){return A.bja(null,null,"TimeFlow",this.b.b0($.b4O(),t.gu).gp(),this.a)},
 $S:0}
 A.aDI.prototype={
-$1(a){var s=null,r=t.p,q=A.bQ(A.b([A.a8("Version: "+this.a.c,s,s,s,s,s,s,s),A.a8("Build: 6c0cb9c (2026-10-04T19:26:48Z)",s,s,s,s,s,s,s),B.bt,B.aso,B.dp,A.ij(!1,s,!0,A.a8("View or create issues on GitHub",s,s,s,A.cl(s,s,A.H(a).ax.b,s,B.lg,s,s,s,s,s,s,s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s,s),s,!0,s,s,s,s,s,s,s,s,s,s,s,new A.aDG(),s,s,s,s,s,s,s)],r),B.ak,B.m,B.Z,0,B.D)
+$1(a){var s=null,r=t.p,q=A.bQ(A.b([A.a8("Version: "+this.a.c,s,s,s,s,s,s,s),A.a8("Build: 0e085d4 (2026-10-04T19:45:25Z)",s,s,s,s,s,s,s),B.bt,B.aso,B.dp,A.ij(!1,s,!0,A.a8("View or create issues on GitHub",s,s,s,A.cl(s,s,A.H(a).ax.b,s,B.lg,s,s,s,s,s,s,s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s,s),s,!0,s,s,s,s,s,s,s,s,s,s,s,new A.aDG(),s,s,s,s,s,s,s)],r),B.ak,B.m,B.Z,0,B.D)
 return A.qO(A.b([A.fi(B.arM,s,s,new A.aDH(a),s,s)],r),q,s,!1,B.HG)},
 $S:80}
 A.aDG.prototype={
-$0(){return A.b3i(A.e3("https://github.com/imcmurray/TimeFlow/issues",0,null))},
+$0(){return A.b3i(A.e3("https://imcmurray.github.io/TimeFlow/support.html",0,null))},
 $S:0}
 A.aDH.prototype={
 $0(){A.bU(this.a,!1).e8(null)

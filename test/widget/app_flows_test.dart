@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timeflow/domain/entities/recurrence_rule.dart';
 import 'package:timeflow/domain/entities/task.dart';
+import 'package:timeflow/presentation/helpers/task_actions.dart';
 import 'package:timeflow/presentation/providers/task_provider.dart';
 import 'package:timeflow/presentation/screens/onboarding_screen.dart';
 import 'package:timeflow/presentation/screens/settings_screen.dart';
@@ -104,6 +105,37 @@ void main() {
           .overridesOf(occurrence!.seriesId!),
     );
     expect(overrides!.single.task.title, 'Morning meds');
+  });
+
+  testWidgets('the undo snackbar after deleting a task times out', (
+    tester,
+  ) async {
+    late WidgetRef ref;
+    late BuildContext context;
+    final container = await pumpApp(
+      tester,
+      Scaffold(
+        body: Consumer(
+          builder: (c, r, _) {
+            ref = r;
+            context = c;
+            return const SizedBox();
+          },
+        ),
+      ),
+    );
+    final task = await tester.runAsync(
+      () => container.read(taskServiceProvider).create(_draft('Gym', _soon())),
+    );
+    await tester.runAsync(() => TaskActions(ref).delete(context, task!));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Deleted "Gym"'), findsOneWidget);
+    expect(find.text('Undo'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Deleted "Gym"'), findsNothing);
   });
 
   testWidgets('onboarding can start with a sample day', (tester) async {

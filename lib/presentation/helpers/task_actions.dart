@@ -39,6 +39,10 @@ class TaskActions {
         SnackBar(
           content: Text('Deleted "${task.title}"'),
           behavior: SnackBarBehavior.floating,
+          // Snackbars with an action persist by default, which left this one
+          // on screen for good (#23). Let it time out and offer a close icon.
+          persist: false,
+          showCloseIcon: true,
           action: SnackBarAction(
             label: 'Undo',
             onPressed: () => _ref.read(taskRepositoryProvider).upsert(task),

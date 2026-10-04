@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timeflow/data/datasources/database.dart';
 import 'package:timeflow/data/repositories/task_repository.dart';
@@ -315,6 +317,30 @@ void main() {
         () => repo.importFromJson('{"version": 9, "tasks": []}'),
         throwsA(isA<Exception>()),
       );
+    });
+  });
+
+  group('photos', () {
+    test('stored, carried by backups, and pruned when unused', () async {
+      final photo = Uint8List.fromList([1, 2, 3, 4]);
+      final ref = await repo.saveAttachment(photo, 'image/jpeg');
+      final task = await service.create(draft('Vet',
+          start: DateTime(2026, 6, 3, 9)).copyWith(attachmentPath: ref));
+      expect((await repo.attachment(ref))!.bytes, photo);
+
+      final json = await repo.exportToJson();
+      await repo.clear();
+      expect(await repo.attachment(ref), isNull);
+      await repo.importFromJson(json);
+      expect((await repo.attachment(ref))!.bytes, photo);
+
+      expect(await repo.pruneAttachments(), 0);
+      final stored = (await day(6, 3)).single;
+      await service.update(stored, stored.copyWith(attachmentPath: null),
+          EditScope.all);
+      expect(await repo.pruneAttachments(), 1);
+      expect(await repo.attachment(ref), isNull);
+      expect(task.attachmentPath, ref);
     });
   });
 

@@ -214,24 +214,93 @@ class TaskRepository {
   Future<T> transaction<T>(Future<T> Function() action) =>
       _db.transaction(action);
 
-  Future<void> clear() => _db.delete(_tasks).go();
+  Future<void> clear() => _db.transaction(() async {
+    await _db.delete(_tasks).go();
+    await _db.delete(_db.attachments).go();
+  });
+
+  // ------------------------------------------------------------ attachments
+
+  static const attachmentScheme = 'attachment:';
+
+  /// Stores a photo and returns the reference to put in
+  /// [Task.attachmentPath].
+  Future<String> saveAttachment(Uint8List bytes, String mimeType) async {
+    final id = newId();
+    await _db
+        .into(_db.attachments)
+        .insert(
+          AttachmentsCompanion.insert(
+            id: id,
+            mimeType: mimeType,
+            bytes: bytes,
+            createdAt: DateTime.now(),
+          ),
+        );
+    return '$attachmentScheme$id';
+  }
+
+  /// The photo a [Task.attachmentPath] reference points to.
+  Future<({Uint8List bytes, String mimeType})?> attachment(
+    String reference,
+  ) async {
+    if (!reference.startsWith(attachmentScheme)) return null;
+    final id = reference.substring(attachmentScheme.length);
+    final row = await (_db.select(
+      _db.attachments,
+    )..where((a) => a.id.equals(id))).getSingleOrNull();
+    return row == null ? null : (bytes: row.bytes, mimeType: row.mimeType);
+  }
+
+  /// Deletes photos no task refers to any more.
+  Future<int> pruneAttachments() {
+    return _db.customUpdate(
+      'DELETE FROM attachments WHERE '
+      "'$attachmentScheme' || id NOT IN "
+      '(SELECT attachment_path FROM tasks WHERE attachment_path IS NOT NULL)',
+      updates: {_db.attachments},
+      updateKind: UpdateKind.delete,
+    );
+  }
 
   // ----------------------------------------------------------------- backup
 
   Future<String> exportToJson() async {
     final rows = await _db.select(_tasks).get();
-    return BackupCodec.encode([
-      for (final r in rows) StoredTask(r.toTask(), isCancelled: r.isCancelled),
-    ]);
+    final attachments = await _db.select(_db.attachments).get();
+    return BackupCodec.encode(
+      [
+        for (final r in rows)
+          StoredTask(r.toTask(), isCancelled: r.isCancelled),
+      ],
+      attachments: [
+        for (final a in attachments)
+          BackupAttachment(a.id, a.mimeType, a.bytes),
+      ],
+    );
   }
 
   /// Restores a backup, merging it with existing tasks (same ids are
   /// replaced). Returns the number of tasks and series restored.
   /// Throws [BackupFormatException] for files that aren't backups.
   Future<int> importFromJson(String json) async {
-    final rows = BackupCodec.decode(json, newId: newId);
-    await importRows(rows);
-    return rows.where((r) => r.task.seriesId == null).length;
+    final backup = BackupCodec.decodeBackup(json, newId: newId);
+    await _db.transaction(() async {
+      for (final a in backup.attachments) {
+        await _db
+            .into(_db.attachments)
+            .insertOnConflictUpdate(
+              AttachmentsCompanion.insert(
+                id: a.id,
+                mimeType: a.mimeType,
+                bytes: a.bytes,
+                createdAt: DateTime.now(),
+              ),
+            );
+      }
+      await importRows(backup.rows);
+    });
+    return backup.rows.where((r) => r.task.seriesId == null).length;
   }
 
   Future<void> importRows(List<StoredTask> rows) {

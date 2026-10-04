@@ -63,7 +63,21 @@ class Tasks extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [Tasks])
+/// Photos attached to tasks, referenced from `Tasks.attachmentPath` as
+/// `attachment:<id>`. Kept in the database (not as files) so they work the
+/// same on every platform, including the web, and travel with backups.
+@DataClassName('AttachmentRow')
+class Attachments extends Table {
+  TextColumn get id => text()();
+  TextColumn get mimeType => text()();
+  BlobColumn get bytes => blob()();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DriftDatabase(tables: [Tasks, Attachments])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _open());
 

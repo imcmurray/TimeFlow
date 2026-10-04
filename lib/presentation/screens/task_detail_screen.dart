@@ -5,12 +5,14 @@ import 'package:timeflow/domain/entities/task.dart';
 import 'package:timeflow/domain/entities/task_category.dart';
 import 'package:timeflow/domain/time/local_date.dart';
 import 'package:timeflow/domain/time/wall_clock.dart';
+import 'package:timeflow/presentation/helpers/photo_picker.dart';
 import 'package:timeflow/presentation/helpers/task_actions.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
 import 'package:timeflow/presentation/providers/task_provider.dart';
 import 'package:timeflow/presentation/utils/time_formatter.dart';
 import 'package:timeflow/presentation/widgets/edit_scope_dialog.dart';
 import 'package:timeflow/presentation/widgets/recurrence_picker.dart';
+import 'package:timeflow/presentation/widgets/task_photo.dart';
 import 'package:timeflow/services/reminder_coordinator.dart';
 import 'package:timeflow/services/task_service.dart';
 
@@ -52,6 +54,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   int? _reminderMinutes;
   RecurrenceRule? _recurrence;
   TaskCategory _category = TaskCategory.none;
+  String? _attachment;
   bool _saving = false;
 
   late final Task _initial;
@@ -74,6 +77,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       _reminderMinutes = task.reminderMinutes;
       _recurrence = task.recurrence;
       _category = task.category;
+      _attachment = task.attachmentPath;
     } else {
       if (widget.initialStartTime != null && widget.initialEndTime != null) {
         _start = widget.initialStartTime!;
@@ -130,7 +134,21 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       reminderMinutes: _reminderMinutes,
       recurrence: _recurrence,
       category: _category,
+      attachmentPath: _attachment,
     );
+  }
+
+  Future<void> _addPhoto() async {
+    try {
+      final photo = await pickPhoto(context);
+      if (photo == null) return;
+      final reference = await ref
+          .read(taskRepositoryProvider)
+          .saveAttachment(photo.bytes, photo.mimeType);
+      if (mounted) setState(() => _attachment = reference);
+    } catch (e) {
+      _snack('Couldn\'t add that photo');
+    }
   }
 
   bool get _isDirty {
@@ -438,6 +456,18 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                 maxLines: 8,
                 textCapitalization: TextCapitalization.sentences,
               ),
+              const SizedBox(height: 16),
+              if (_attachment != null)
+                TaskPhotoThumbnail(
+                  reference: _attachment!,
+                  onRemove: () => setState(() => _attachment = null),
+                )
+              else
+                OutlinedButton.icon(
+                  onPressed: _addPhoto,
+                  icon: const Icon(Icons.add_a_photo_outlined),
+                  label: const Text('Add a photo'),
+                ),
               const SizedBox(height: 24),
               FilledButton(
                 onPressed: _saving ? null : _save,

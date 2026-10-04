@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:timeflow/data/migrations/legacy_recurrence.dart';
 import 'package:timeflow/domain/entities/recurrence_rule.dart';
 import 'package:timeflow/domain/entities/task.dart';
@@ -16,6 +18,15 @@ class BackupFormatException implements Exception {
   String toString() => message;
 }
 
+/// A photo carried in a backup.
+class BackupAttachment {
+  final String id;
+  final String mimeType;
+  final Uint8List bytes;
+
+  const BackupAttachment(this.id, this.mimeType, this.bytes);
+}
+
 /// Reads and writes TimeFlow backup files.
 ///
 /// Version 2 (current) stores rows as they are kept in the database: series
@@ -27,13 +38,49 @@ class BackupCodec {
 
   static const currentVersion = 2;
 
-  static String encode(List<StoredTask> rows, {DateTime? exportedAt}) {
+  static String encode(
+    List<StoredTask> rows, {
+    List<BackupAttachment> attachments = const [],
+    DateTime? exportedAt,
+  }) {
     return const JsonEncoder.withIndent('  ').convert({
       'format': 'timeflow-backup',
       'version': currentVersion,
       'exportedAt': (exportedAt ?? DateTime.now()).toUtc().toIso8601String(),
       'tasks': [for (final r in rows) _rowToJson(r)],
+      if (attachments.isNotEmpty)
+        'attachments': [
+          for (final a in attachments)
+            {
+              'id': a.id,
+              'mimeType': a.mimeType,
+              'data': base64.encode(a.bytes),
+            },
+        ],
     });
+  }
+
+  /// Parses a backup with its photos. Throws [BackupFormatException].
+  static ({List<StoredTask> rows, List<BackupAttachment> attachments})
+  decodeBackup(String source, {required String Function() newId}) {
+    final rows = decode(source, newId: newId);
+    final data = jsonDecode(source) as Map<String, dynamic>;
+    final list = (data['attachments'] as List?) ?? const [];
+    try {
+      return (
+        rows: rows,
+        attachments: [
+          for (final a in list.cast<Map<String, dynamic>>())
+            BackupAttachment(
+              a['id'] as String,
+              a['mimeType'] as String,
+              base64.decode(a['data'] as String),
+            ),
+        ],
+      );
+    } catch (e) {
+      throw BackupFormatException('The backup file is damaged ($e).');
+    }
   }
 
   /// Parses a backup file. Throws [BackupFormatException] if it isn't one.

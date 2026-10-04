@@ -19,6 +19,7 @@ Future<void> migrateToSchemaV3(AppDatabase db, Migrator m, int from) async {
   await m.createTable(db.tasks);
   await m.createIndex(db.tasksStartAt);
   await m.createIndex(db.tasksSeriesOccurrence);
+  await m.createTable(db.attachments);
 
   final legacy = rows.map((r) => legacyTaskFromV2Row(r.data)).toList();
   final stored = collapseLegacyRecurrence(legacy, newId: const Uuid().v4);

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,7 +28,11 @@ Future<void> main() async {
       deviceTimeZoneProvider.overrideWithValue(timeZone),
     ],
   );
-  await migrateLegacyWebStorage(container.read(taskRepositoryProvider));
+  final repository = container.read(taskRepositoryProvider);
+  await migrateLegacyWebStorage(repository);
+  // Photos removed from tasks (or whose tasks were deleted) are cleaned up
+  // once per launch.
+  unawaited(repository.pruneAttachments());
   // Reminders start after the first frame so a notification that launched
   // the app can navigate.
   WidgetsBinding.instance.addPostFrameCallback((_) {

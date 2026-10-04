@@ -89,7 +89,7 @@ Deploys from `main` to https://imcmurray.github.io/TimeFlow/. Built with
   projects) needs a token with *Account Analytics: Write* to create the site.
   If it's added to `web/index.html`, add a sentence about cookieless page-view
   counts to `web/privacy.html` and the README's "no analytics" claim.
-- **iOS** needs an Apple developer account, an `ios/` folder
-  (`flutter create --platforms=ios .`) and macOS CI signing.
+- **iOS**: the project is ready and builds unsigned in CI; signing,
+  device testing and App Store Connect are in [IOS.md](IOS.md).
 - **Desktop builds** are unsigned (macOS will warn; Windows SmartScreen will
   warn).

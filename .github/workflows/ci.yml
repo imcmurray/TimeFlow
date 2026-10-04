@@ -119,3 +119,25 @@ jobs:
           path: |
             build/app/outputs/bundle/release/app-release.aab
             build/app/outputs/flutter-apk/app-release.apk
+
+  ios:
+    name: iOS build (unsigned)
+    needs: check
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # Catches anything that breaks the iOS build. Signing and TestFlight
+      # uploads happen on a Mac (see docs/IOS.md) until CI signing is set up.
+      - name: Build iOS without code signing
+        run: flutter build ios --release --no-codesign $(./scripts/build_flags.sh)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/screens/settings/choice_dialog.dart';
 import 'package:timeflow/presentation/screens/settings/section_header.dart';
 
 /// Appearance settings: theme, density, task direction, 24-hour time.
@@ -65,89 +66,33 @@ class SettingsAppearanceSection extends ConsumerWidget {
     return 'Normal';
   }
 
-  void _showThemeDialog(BuildContext context, WidgetRef ref) {
-    final currentTheme = ref.read(settingsProvider).theme;
-    showDialog(
+  Future<void> _showThemeDialog(BuildContext context, WidgetRef ref) async {
+    final theme = await showChoiceDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Choose Theme'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<String>(
-              title: const Text('Light'),
-              value: 'light',
-              groupValue: currentTheme,
-              onChanged: (value) {
-                ref.read(settingsProvider.notifier).setTheme(value!);
-                Navigator.pop(context);
-              },
-            ),
-            RadioListTile<String>(
-              title: const Text('Dark'),
-              value: 'dark',
-              groupValue: currentTheme,
-              onChanged: (value) {
-                ref.read(settingsProvider.notifier).setTheme(value!);
-                Navigator.pop(context);
-              },
-            ),
-            RadioListTile<String>(
-              title: const Text('System default'),
-              value: 'auto',
-              groupValue: currentTheme,
-              onChanged: (value) {
-                ref.read(settingsProvider.notifier).setTheme(value!);
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
+      title: 'Choose Theme',
+      current: ref.read(settingsProvider).theme,
+      options: const [
+        ChoiceOption('light', 'Light'),
+        ChoiceOption('dark', 'Dark'),
+        ChoiceOption('auto', 'System default'),
+      ],
     );
+    if (theme != null) ref.read(settingsProvider.notifier).setTheme(theme);
   }
 
-  void _showDensityDialog(BuildContext context, WidgetRef ref) {
-    final currentDensity = ref.read(settingsProvider).timelineDensity;
-    showDialog(
+  Future<void> _showDensityDialog(BuildContext context, WidgetRef ref) async {
+    final density = await showChoiceDialog<double>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Timeline Density'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<double>(
-              title: const Text('Compact'),
-              subtitle: const Text('More hours visible'),
-              value: 0.7,
-              groupValue: currentDensity,
-              onChanged: (value) {
-                ref.read(settingsProvider.notifier).setTimelineDensity(value!);
-                Navigator.pop(context);
-              },
-            ),
-            RadioListTile<double>(
-              title: const Text('Normal'),
-              value: 1.0,
-              groupValue: currentDensity,
-              onChanged: (value) {
-                ref.read(settingsProvider.notifier).setTimelineDensity(value!);
-                Navigator.pop(context);
-              },
-            ),
-            RadioListTile<double>(
-              title: const Text('Spacious'),
-              subtitle: const Text('Easier to read'),
-              value: 1.3,
-              groupValue: currentDensity,
-              onChanged: (value) {
-                ref.read(settingsProvider.notifier).setTimelineDensity(value!);
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
+      title: 'Timeline Density',
+      current: ref.read(settingsProvider).timelineDensity,
+      options: const [
+        ChoiceOption(0.7, 'Compact', subtitle: 'More hours visible'),
+        ChoiceOption(1.0, 'Normal'),
+        ChoiceOption(1.3, 'Spacious', subtitle: 'Easier to read'),
+      ],
     );
+    if (density != null) {
+      ref.read(settingsProvider.notifier).setTimelineDensity(density);
+    }
   }
 }

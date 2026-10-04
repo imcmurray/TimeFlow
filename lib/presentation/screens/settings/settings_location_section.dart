@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/screens/settings/choice_dialog.dart';
 import 'package:timeflow/presentation/screens/settings/section_header.dart';
 
 /// A location preset with name and coordinates.
@@ -183,63 +184,36 @@ class SettingsLocationSection extends ConsumerWidget {
     return '${latitude.abs().toStringAsFixed(1)}°$latDir, ${longitude.abs().toStringAsFixed(1)}°$lonDir';
   }
 
-  void _showLocationDialog(BuildContext context, WidgetRef ref) {
+  Future<void> _showLocationDialog(BuildContext context, WidgetRef ref) async {
     final currentLat = ref.read(settingsProvider).latitude;
     final currentLon = ref.read(settingsProvider).longitude;
 
-    showDialog(
+    final current = _locationPresets.indexWhere((p) =>
+        (p.latitude - currentLat).abs() < 0.5 &&
+        (p.longitude - currentLon).abs() < 0.5);
+    final index = await showChoiceDialog<int>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Select Location'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 400,
-          child: ListView.builder(
-            itemCount: _locationPresets.length,
-            itemBuilder: (context, index) {
-              final preset = _locationPresets[index];
-              final isSelected = (preset.latitude - currentLat).abs() < 0.5 &&
-                  (preset.longitude - currentLon).abs() < 0.5;
-              return ListTile(
-                title: Text(preset.name),
-                subtitle: Text(
-                  '${preset.latitude.abs().toStringAsFixed(1)}°${preset.latitude >= 0 ? 'N' : 'S'}, '
-                  '${preset.longitude.abs().toStringAsFixed(1)}°${preset.longitude >= 0 ? 'E' : 'W'}',
-                ),
-                leading: Radio<bool>(
-                  value: true,
-                  groupValue: isSelected,
-                  onChanged: (_) {
-                    ref.read(settingsProvider.notifier).setLocation(
-                          preset.latitude,
-                          preset.longitude,
-                        );
-                    Navigator.pop(context);
-                  },
-                ),
-                selected: isSelected,
-                onTap: () {
-                  ref.read(settingsProvider.notifier).setLocation(
-                        preset.latitude,
-                        preset.longitude,
-                      );
-                  Navigator.pop(context);
-                },
-              );
-            },
+      title: 'Select Location',
+      current: current,
+      options: [
+        for (var i = 0; i < _locationPresets.length; i++)
+          ChoiceOption(
+            i,
+            _locationPresets[i].name,
+            subtitle: _formatCoordinates(
+                _locationPresets[i].latitude, _locationPresets[i].longitude),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
+      ],
     );
+    if (index != null) {
+      final preset = _locationPresets[index];
+      ref
+          .read(settingsProvider.notifier)
+          .setLocation(preset.latitude, preset.longitude);
+    }
   }
 
-  void _showTimezoneDialog(BuildContext context, WidgetRef ref) {
+  Future<void> _showTimezoneDialog(BuildContext context, WidgetRef ref) async {
     final currentOffset = ref.read(settingsProvider).timezoneOffsetHours;
 
     final timezones = <MapEntry<String, double?>>[
@@ -275,48 +249,24 @@ class SettingsLocationSection extends ConsumerWidget {
       const MapEntry('UTC+14 (Line Islands)', 14),
     ];
 
-    showDialog(
+    // showChoiceDialog returns null on dismiss, so "auto" needs a sentinel.
+    const auto = double.infinity;
+    final offset = await showChoiceDialog<double>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Select Timezone'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 400,
-          child: ListView.builder(
-            itemCount: timezones.length,
-            itemBuilder: (context, index) {
-              final tz = timezones[index];
-              final isSelected = currentOffset == tz.value;
-              return ListTile(
-                title: Text(tz.key),
-                leading: Radio<double?>(
-                  value: tz.value,
-                  groupValue: currentOffset,
-                  onChanged: (value) {
-                    ref
-                        .read(settingsProvider.notifier)
-                        .setTimezoneOffsetHours(value);
-                    Navigator.pop(context);
-                  },
-                ),
-                selected: isSelected,
-                onTap: () {
-                  ref
-                      .read(settingsProvider.notifier)
-                      .setTimezoneOffsetHours(tz.value);
-                  Navigator.pop(context);
-                },
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
+      title: 'Select Timezone',
+      current: currentOffset ?? auto,
+      options: [
+        for (final tz in timezones) ChoiceOption(tz.value ?? auto, tz.key),
+      ],
     );
+    if (offset != null) {
+      ref
+          .read(settingsProvider.notifier)
+          .setTimezoneOffsetHours(offset == auto ? null : offset);
+    }
   }
+
+  String _formatCoordinates(double lat, double lon) =>
+      '${lat.abs().toStringAsFixed(1)}°${lat >= 0 ? 'N' : 'S'}, '
+      '${lon.abs().toStringAsFixed(1)}°${lon >= 0 ? 'E' : 'W'}';
 }

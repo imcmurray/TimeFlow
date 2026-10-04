@@ -597,7 +597,7 @@ class _TaskCardsLayerMultiDayState
                     child: AnimatedContainer(
                       duration: Duration(milliseconds: isDragging ? 0 : 200),
                       transform: isDragging
-                          ? (Matrix4.identity()..scale(1.03))
+                          ? (Matrix4.identity()..scaleByDouble(1.03, 1.03, 1.0, 1.0))
                           : Matrix4.identity(),
                       transformAlignment: Alignment.center,
                       decoration: isDragging

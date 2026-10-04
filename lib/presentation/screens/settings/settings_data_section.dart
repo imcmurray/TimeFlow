@@ -63,10 +63,11 @@ class SettingsDataSection extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
+      final messenger = ScaffoldMessenger.of(context);
       await ref.read(taskRepositoryProvider).clear();
       ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('All tasks deleted'),
           behavior: SnackBarBehavior.floating,

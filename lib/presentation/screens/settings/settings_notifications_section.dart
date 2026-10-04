@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/screens/settings/choice_dialog.dart';
 import 'package:timeflow/presentation/screens/settings/section_header.dart';
 import 'package:timeflow/services/reminder_sound_service.dart';
 
-/// Notifications and event alert settings.
+/// Notification and reminder settings.
 class SettingsNotificationsSection extends ConsumerWidget {
   const SettingsNotificationsSection({super.key});
 
@@ -64,78 +65,43 @@ class SettingsNotificationsSection extends ConsumerWidget {
               : null,
         ),
 
-        const Divider(),
-
       ],
     );
   }
 
-  void _showReminderDialog(BuildContext context, WidgetRef ref) {
-    final currentMinutes = ref.read(settingsProvider).defaultReminderMinutes;
-    showDialog(
+  Future<void> _showReminderDialog(BuildContext context, WidgetRef ref) async {
+    final minutes = await showChoiceDialog<int>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Default Reminder Time'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final minutes in [5, 10, 15, 30, 60])
-              RadioListTile<int>(
-                title: Text(minutes == 60
-                    ? '1 hour before'
-                    : '$minutes minutes before'),
-                value: minutes,
-                groupValue: currentMinutes,
-                onChanged: (value) {
-                  ref
-                      .read(settingsProvider.notifier)
-                      .setDefaultReminderMinutes(value!);
-                  Navigator.pop(context);
-                },
-              ),
-          ],
-        ),
-      ),
+      title: 'Default Reminder Time',
+      current: ref.read(settingsProvider).defaultReminderMinutes,
+      options: [
+        for (final m in [5, 10, 15, 30, 60])
+          ChoiceOption(m, m == 60 ? '1 hour before' : '$m minutes before'),
+      ],
     );
+    if (minutes != null) {
+      ref.read(settingsProvider.notifier).setDefaultReminderMinutes(minutes);
+    }
   }
 
-  void _showSoundPicker(BuildContext context, WidgetRef ref) {
-    final currentSound = ref.read(settingsProvider).reminderSound;
-    showDialog(
+  Future<void> _showSoundPicker(BuildContext context, WidgetRef ref) async {
+    final sound = await showChoiceDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Choose Alert Sound'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: ReminderSoundService.availableSounds.map((sound) {
-            return ListTile(
-              title: Text(ReminderSoundService.getLabel(sound)),
-              leading: Radio<String>(
-                value: sound,
-                groupValue: currentSound,
-                onChanged: (value) {
-                  ref.read(settingsProvider.notifier).setReminderSound(value!);
-                  Navigator.pop(context);
-                },
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.play_arrow),
-                onPressed: () => ReminderSoundService.play(sound),
-              ),
-              onTap: () {
-                ref.read(settingsProvider.notifier).setReminderSound(sound);
-                Navigator.pop(context);
-              },
-            );
-          }).toList(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+      title: 'Choose Alert Sound',
+      current: ref.read(settingsProvider).reminderSound,
+      options: [
+        for (final sound in ReminderSoundService.availableSounds)
+          ChoiceOption(
+            sound,
+            ReminderSoundService.getLabel(sound),
+            trailing: IconButton(
+              icon: const Icon(Icons.play_arrow),
+              tooltip: 'Preview',
+              onPressed: () => ReminderSoundService.play(sound),
+            ),
           ),
-        ],
-      ),
+      ],
     );
+    if (sound != null) ref.read(settingsProvider.notifier).setReminderSound(sound);
   }
 }

@@ -23,7 +23,7 @@ class WelcomeSlide extends StatelessWidget {
       tagline:
           'Experience time as a gentle flowing river, not a pressure cooker.',
       description:
-          'TimeFlow helps you plan your day in a calm, stress-free way. No harsh alarms or urgent notifications - just a peaceful view of your schedule.',
+          'TimeFlow shows your day as a river. Tasks drift toward the present and flow past it, so you always see what\'s now, what\'s next, and what\'s behind you.',
     );
   }
 }
@@ -41,7 +41,7 @@ class NowLineSlide extends StatelessWidget {
       title: 'The NOW Line',
       tagline: 'Time flows gently past you.',
       description:
-          'The glowing blue line shows the current moment. Watch as your timeline scrolls smoothly - like time flowing by naturally. The present is always in view.',
+          'The blue line is the present moment. The timeline moves on its own as time passes, so the present stays in view. Long-press the line to move it up or down the screen.',
     );
   }
 }
@@ -117,39 +117,39 @@ class TasksSlide extends StatelessWidget {
     return OnboardingSlide(
       isDark: isDark,
       icon: Icon(Icons.calendar_today, size: 80, color: AppColors.primaryBlue),
-      title: 'Plan Your Day',
-      tagline: 'Add tasks with a simple tap.',
+      title: 'Plan your day',
+      tagline: 'Tap + or long-press the timeline.',
       description:
-          'Use the + button to add tasks. Set times, add reminders, mark important items, and even attach photos. Swipe right on any task to complete it.',
+          'Give tasks a time, a gentle reminder, a repeat pattern, notes or a photo. Swipe a task right when it\'s done, left to delete it.',
     );
   }
 }
 
-/// Confluent merge explanation slide.
-class ConfluentMergeSlide extends StatelessWidget {
-  const ConfluentMergeSlide({super.key, required this.isDark});
+/// Sharing explanation slide.
+class ShareSlide extends StatelessWidget {
+  const ShareSlide({super.key, required this.isDark});
   final bool isDark;
 
   @override
   Widget build(BuildContext context) {
     return OnboardingSlide(
       isDark: isDark,
-      icon: Transform.rotate(
-        angle: 3.14159265 / 2, // 90 degrees - pointing down
-        child: Icon(Icons.merge_type, size: 80, color: AppColors.primaryBlue),
-      ),
-      title: 'Confluent Merge',
-      tagline: 'Rivers converging into one.',
+      icon: Icon(Icons.ios_share, size: 80, color: AppColors.primaryBlue),
+      title: 'Hand over your day',
+      tagline: 'One link, no sign-up.',
       description:
-          'When multiple tasks overlap, they merge into a single unified card—like rivers converging into a stronger stream. Tap the merged card to see individual tasks.',
+          'Share a day or a week with a pet sitter, caregiver or family member. '
+          'They open the link in any browser and see the same live river. '
+          'Your tasks stay on your device; the schedule travels inside the link.',
     );
   }
 }
 
 /// Final get-started slide.
 class GetStartedSlide extends StatelessWidget {
-  const GetStartedSlide({super.key, required this.isDark});
+  const GetStartedSlide({super.key, required this.isDark, this.onSampleDay});
   final bool isDark;
+  final VoidCallback? onSampleDay;
 
   @override
   Widget build(BuildContext context) {
@@ -160,10 +160,18 @@ class GetStartedSlide extends StatelessWidget {
         size: 80,
         color: AppColors.secondaryGreen,
       ),
-      title: "You're Ready!",
-      tagline: 'Start flowing with time.',
+      title: "You're ready",
+      tagline: 'Let time flow.',
       description:
-          "That's all you need to know. Tap \"Get Started\" to begin planning your day with TimeFlow.",
+          'Start with an empty river, or add a sample day to see how it works. '
+          'Sample tasks can be deleted like any other.',
+      footer: onSampleDay == null
+          ? null
+          : OutlinedButton.icon(
+              onPressed: onSampleDay,
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('Start with a sample day'),
+            ),
     );
   }
 }

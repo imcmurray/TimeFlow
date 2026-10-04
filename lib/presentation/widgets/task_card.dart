@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:timeflow/core/theme/app_colors.dart';
 import 'package:timeflow/domain/entities/task.dart';
 import 'package:timeflow/domain/entities/task_category.dart';
@@ -238,7 +239,39 @@ class _TaskCardState extends State<TaskCard>
       card = applyShakeTransform(card);
     }
 
-    return card;
+    return Semantics(
+      container: true,
+      button: widget.onTap != null,
+      label: _semanticLabel(),
+      onTap: widget.onTap,
+      // Screen-reader alternatives to swiping.
+      customSemanticsActions: {
+        if (widget.onComplete != null)
+          CustomSemanticsAction(
+            label: widget.task.isCompleted ? 'Mark not done' : 'Mark done',
+          ): widget.onComplete!,
+        if (widget.onDelete != null)
+          const CustomSemanticsAction(label: 'Delete'): widget.onDelete!,
+      },
+      excludeSemantics: true,
+      child: card,
+    );
+  }
+
+  String _semanticLabel() {
+    final t = widget.task;
+    final parts = <String>[
+      t.title,
+      '${_formatTime(t.startTime)} to ${_formatTime(t.endTime)}',
+      if (t.isCompleted) 'done',
+      if (t.isImportant) 'important',
+      if (t.category != TaskCategory.none) t.category.label,
+      if (t.isRecurring) 'repeats',
+      if (t.attachmentPath != null) 'has a photo',
+      if (widget.reminderState == ReminderState.triggered) 'reminder due',
+      if (t.description != null) t.description!,
+    ];
+    return parts.join(', ');
   }
 
   Widget _buildContent(

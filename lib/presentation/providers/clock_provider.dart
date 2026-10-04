@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Widgets that only care about minute-level changes (which tasks are past,
 /// reminder states) watch this instead of running their own timers, so the
 /// timeline rebuilds once a minute rather than every second.
-final minuteClockProvider = StreamProvider<DateTime>((ref) {
+final minuteClockProvider = StreamProvider.autoDispose<DateTime>((ref) {
   final controller = StreamController<DateTime>();
   Timer? timer;
   void schedule() {

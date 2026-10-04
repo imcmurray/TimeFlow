@@ -9,7 +9,8 @@ import 'package:timeflow/presentation/providers/task_provider.dart';
 import 'package:timeflow/presentation/timeline/timeline_geometry.dart';
 import 'package:timeflow/presentation/timeline/timeline_tasks.dart';
 import 'package:timeflow/presentation/timeline/timeline_view.dart';
-import 'package:timeflow/presentation/widgets/day_boundary_marker.dart';
+import 'package:timeflow/presentation/widgets/day_watermark.dart';
+import 'package:timeflow/presentation/widgets/simple_day_divider.dart';
 import 'package:timeflow/services/holidays_service.dart';
 
 /// Date bands at each midnight.

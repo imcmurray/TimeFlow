@@ -4,12 +4,14 @@ import 'package:timeflow/core/theme/app_colors.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
 import 'package:timeflow/presentation/screens/onboarding/onboarding_slide.dart';
 import 'package:timeflow/presentation/screens/onboarding/onboarding_slides.dart';
+import 'package:timeflow/presentation/providers/task_provider.dart';
 import 'package:timeflow/presentation/screens/timeline_screen.dart';
+import 'package:timeflow/services/sample_day.dart';
 
 /// Onboarding screen shown on first app launch.
 ///
-/// Introduces users to TimeFlow's core concepts through a 5-slide walkthrough:
-/// Welcome, NOW Line, Tasks, Confluent Merge, and Get Started.
+/// Five slides: welcome, the NOW line, planning, sharing, and getting
+/// started (optionally with a sample day).
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -39,7 +41,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
   }
 
+  Future<void> _startWithSampleDay() async {
+    await addSampleDay(ref.read(taskServiceProvider));
+    _completeOnboarding();
+  }
+
   void _completeOnboarding() {
+    if (!mounted) return;
     ref.read(settingsProvider.notifier).setFirstLaunch(false);
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const TimelineScreen()),
@@ -65,8 +73,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   WelcomeSlide(isDark: isDark),
                   NowLineSlide(isDark: isDark),
                   TasksSlide(isDark: isDark),
-                  ConfluentMergeSlide(isDark: isDark),
-                  GetStartedSlide(isDark: isDark),
+                  ShareSlide(isDark: isDark),
+                  GetStartedSlide(
+                    isDark: isDark,
+                    onSampleDay: _startWithSampleDay,
+                  ),
                 ],
               ),
             ),

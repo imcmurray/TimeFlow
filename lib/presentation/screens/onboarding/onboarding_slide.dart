@@ -11,6 +11,7 @@ class OnboardingSlide extends StatelessWidget {
     required this.tagline,
     required this.description,
     required this.isDark,
+    this.footer,
   });
 
   final Widget icon;
@@ -19,49 +20,58 @@ class OnboardingSlide extends StatelessWidget {
   final String description;
   final bool isDark;
 
+  /// Optional action under the description.
+  final Widget? footer;
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          icon,
-          const SizedBox(height: 40),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: isDark
-                  ? AppColors.textLightPrimary
-                  : AppColors.textPrimary,
-            ),
-            textAlign: TextAlign.center,
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              icon,
+              const SizedBox(height: 40),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: isDark
+                      ? AppColors.textLightPrimary
+                      : AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                tagline,
+                style: TextStyle(
+                  fontSize: 18,
+                  color: AppColors.primaryBlue,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isDark
+                      ? AppColors.textLightSecondary
+                      : AppColors.textSecondary,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              if (footer != null) ...[const SizedBox(height: 24), footer!],
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            tagline,
-            style: TextStyle(
-              fontSize: 18,
-              color: AppColors.primaryBlue,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-          Text(
-            description,
-            style: TextStyle(
-              fontSize: 16,
-              color: isDark
-                  ? AppColors.textLightSecondary
-                  : AppColors.textSecondary,
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -158,7 +158,17 @@ class _MergedTaskCardState extends State<MergedTaskCard>
       card = applyShakeTransform(card);
     }
 
-    return card;
+    return Semantics(
+      container: true,
+      button: true,
+      label:
+          '${widget.tasks.length} overlapping tasks: '
+          '${widget.tasks.map((t) => t.title).join(', ')}',
+      hint: 'Opens the list',
+      onTap: widget.onTap,
+      excludeSemantics: true,
+      child: card,
+    );
   }
 
   LinearGradient _buildGradient() {

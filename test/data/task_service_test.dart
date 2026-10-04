@@ -324,8 +324,12 @@ void main() {
     test('stored, carried by backups, and pruned when unused', () async {
       final photo = Uint8List.fromList([1, 2, 3, 4]);
       final ref = await repo.saveAttachment(photo, 'image/jpeg');
-      final task = await service.create(draft('Vet',
-          start: DateTime(2026, 6, 3, 9)).copyWith(attachmentPath: ref));
+      final task = await service.create(
+        draft(
+          'Vet',
+          start: DateTime(2026, 6, 3, 9),
+        ).copyWith(attachmentPath: ref),
+      );
       expect((await repo.attachment(ref))!.bytes, photo);
 
       final json = await repo.exportToJson();
@@ -336,8 +340,11 @@ void main() {
 
       expect(await repo.pruneAttachments(), 0);
       final stored = (await day(6, 3)).single;
-      await service.update(stored, stored.copyWith(attachmentPath: null),
-          EditScope.all);
+      await service.update(
+        stored,
+        stored.copyWith(attachmentPath: null),
+        EditScope.all,
+      );
       expect(await repo.pruneAttachments(), 1);
       expect(await repo.attachment(ref), isNull);
       expect(task.attachmentPath, ref);

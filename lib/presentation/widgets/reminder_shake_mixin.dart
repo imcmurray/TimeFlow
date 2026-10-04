@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 /// Mixin that adds a horizontal shake animation for triggered reminders.
@@ -8,6 +10,10 @@ mixin ReminderShakeMixin<T extends StatefulWidget>
     on State<T>, SingleTickerProviderStateMixin<T> {
   late final AnimationController shakeController;
   late final Animation<double> shakeAnimation;
+  Timer? _shakeStop;
+
+  /// How long a triggered reminder shakes before settling.
+  static const _shakeFor = Duration(seconds: 2);
 
   /// Must be called from [initState] of the host widget.
   void initShake() {
@@ -22,13 +28,26 @@ mixin ReminderShakeMixin<T extends StatefulWidget>
 
   /// Must be called from [dispose] of the host widget.
   void disposeShake() {
+    _shakeStop?.cancel();
     shakeController.dispose();
   }
 
-  /// Start or stop the shake animation based on [active].
+  /// Shakes briefly when [active] becomes true (skipped when the system asks
+  /// for reduced motion), and stops when it's false.
   void setShakeActive(bool active) {
-    if (active) {
+    _shakeStop?.cancel();
+    final reduceMotion = WidgetsBinding
+        .instance
+        .platformDispatcher
+        .accessibilityFeatures
+        .disableAnimations;
+    if (active && !reduceMotion) {
       shakeController.repeat(reverse: true);
+      _shakeStop = Timer(_shakeFor, () {
+        if (!mounted) return;
+        shakeController.stop();
+        shakeController.reset();
+      });
     } else {
       shakeController.stop();
       shakeController.reset();

@@ -79,6 +79,8 @@ jobs:
 
   desktop:
     strategy:
+      # One desktop platform failing shouldn't cancel the others.
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
@@ -106,7 +108,8 @@ jobs:
         if: matrix.platform == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 
       - name: Build
         shell: bash
@@ -119,6 +122,9 @@ jobs:
 
   publish:
     needs: [android, desktop]
+    # Publish whatever built: the Android APK must succeed, while the
+    # experimental desktop zips are attached when they're available.
+    if: always() && needs.android.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -126,6 +132,7 @@ jobs:
       - name: Zip desktop builds
         run: |
           for p in linux windows macos; do
+            [ -d "timeflow-$p" ] || continue
             (cd "timeflow-$p" && zip -qr "../timeflow-$GITHUB_REF_NAME-$p-experimental.zip" .)
           done
 

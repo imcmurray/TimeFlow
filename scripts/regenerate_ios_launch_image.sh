@@ -1,6 +1,6 @@
 #!/bin/bash
 # Regenerates the iOS launch-screen image from the logo SVG: the mark on a
-# transparent background at 100pt (1x/2x/3x). The background colour comes
+# transparent background at 160pt (1x/2x/3x). The background colour comes
 # from the LaunchBackground colour set, which matches the app's light and
 # dark scaffold colours. Needs macOS (renders the SVG with AppKit).
 set -e
@@ -11,7 +11,7 @@ import AppKit
 let args = CommandLine.arguments
 guard let svg = NSImage(contentsOfFile: args[1]) else { fatalError("can't load \(args[1])") }
 for (scale, suffix) in [(1, ""), (2, "@2x"), (3, "@3x")] {
-    let px = 100 * scale
+    let px = 160 * scale
     let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: px, pixelsHigh: px,
                                bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
                                isPlanar: false, colorSpaceName: .deviceRGB,

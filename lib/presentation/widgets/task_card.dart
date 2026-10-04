@@ -1,10 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:timeflow/core/theme/app_colors.dart';
 import 'package:timeflow/domain/entities/task.dart';
 import 'package:timeflow/domain/entities/task_category.dart';
+import 'package:timeflow/presentation/utils/time_formatter.dart';
 import 'package:timeflow/presentation/widgets/reminder_line.dart';
+import 'package:timeflow/presentation/widgets/priority_column_card.dart';
+import 'package:timeflow/presentation/widgets/reminder_shake_mixin.dart';
 
 /// A card widget representing a single task on the timeline.
 ///
@@ -56,23 +60,15 @@ class TaskCard extends StatefulWidget {
   State<TaskCard> createState() => _TaskCardState();
 }
 
-class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin {
-  late AnimationController _shakeController;
-  late Animation<double> _shakeAnimation;
+class _TaskCardState extends State<TaskCard>
+    with SingleTickerProviderStateMixin, ReminderShakeMixin {
   Timer? _countdownTimer;
 
   @override
   void initState() {
     super.initState();
-    _shakeController = AnimationController(
-      duration: const Duration(milliseconds: 100),
-      vsync: this,
-    );
-    _shakeAnimation = Tween<double>(begin: -2.0, end: 2.0).animate(
-      CurvedAnimation(parent: _shakeController, curve: Curves.easeInOut),
-    );
-
-    _updateAnimation();
+    initShake();
+    setShakeActive(widget.reminderState == ReminderState.triggered);
     _startCountdownTimer();
   }
 
@@ -80,7 +76,7 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
   void didUpdateWidget(TaskCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.reminderState != widget.reminderState) {
-      _updateAnimation();
+      setShakeActive(widget.reminderState == ReminderState.triggered);
     }
     if (oldWidget.reminderTime != widget.reminderTime ||
         oldWidget.reminderState != widget.reminderState) {
@@ -118,19 +114,10 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
     });
   }
 
-  void _updateAnimation() {
-    if (widget.reminderState == ReminderState.triggered) {
-      _shakeController.repeat(reverse: true);
-    } else {
-      _shakeController.stop();
-      _shakeController.reset();
-    }
-  }
-
   @override
   void dispose() {
     _countdownTimer?.cancel();
-    _shakeController.dispose();
+    disposeShake();
     super.dispose();
   }
 
@@ -142,7 +129,9 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
     // Determine card color - prioritize category color for visual consistency
     Color cardColor;
     if (widget.task.color != null) {
-      cardColor = Color(int.parse(widget.task.color!.replaceFirst('#', '0xFF')));
+      cardColor = Color(
+        int.parse(widget.task.color!.replaceFirst('#', '0xFF')),
+      );
     } else if (widget.task.category != TaskCategory.none) {
       // Use category color as the primary indicator
       cardColor = widget.task.category.color;
@@ -156,27 +145,32 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
       cardColor = AppColors.primaryBlue;
     }
 
+    // Swipe right to complete, left to delete (the delete can be undone).
+    // Without callbacks (read-only views) the card doesn't swipe.
+    final direction = switch ((widget.onComplete, widget.onDelete)) {
+      (null, null) => DismissDirection.none,
+      (_, null) => DismissDirection.startToEnd,
+      (null, _) => DismissDirection.endToStart,
+      _ => DismissDirection.horizontal,
+    };
     Widget card = Dismissible(
       key: Key(widget.task.id),
-      direction: DismissDirection.horizontal,
+      direction: direction,
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
           widget.onComplete?.call();
-          return false;
         } else {
-          return await _showDeleteConfirmation(context);
-        }
-      },
-      onDismissed: (direction) {
-        if (direction == DismissDirection.endToStart) {
           widget.onDelete?.call();
         }
+        return false;
       },
       background: _SwipeBackground(
         alignment: Alignment.centerLeft,
-        color: AppColors.taskCompleted,
-        icon: Icons.check_circle,
-        label: 'Complete',
+        color: widget.task.isCompleted
+            ? AppColors.primaryBlue
+            : AppColors.taskCompleted,
+        icon: widget.task.isCompleted ? Icons.undo : Icons.check_circle,
+        label: widget.task.isCompleted ? 'Not Done' : 'Complete',
       ),
       secondaryBackground: _SwipeBackground(
         alignment: Alignment.centerRight,
@@ -197,7 +191,9 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
             border: Border.all(
               color: isTriggered
                   ? AppColors.reminderLine
-                  : cardColor.withValues(alpha: widget.task.isCompleted ? 0.3 : 0.5),
+                  : cardColor.withValues(
+                      alpha: widget.task.isCompleted ? 0.3 : 0.5,
+                    ),
               width: isTriggered ? 2.5 : 2,
             ),
             boxShadow: [
@@ -219,7 +215,9 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
                   width: 4,
                   color: isTriggered
                       ? AppColors.reminderLine
-                      : cardColor.withValues(alpha: widget.task.isCompleted ? 0.5 : 1.0),
+                      : cardColor.withValues(
+                          alpha: widget.task.isCompleted ? 0.5 : 1.0,
+                        ),
                 ),
                 // Content
                 Expanded(
@@ -238,156 +236,171 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
 
     // Apply shake animation when triggered
     if (isTriggered) {
-      card = AnimatedBuilder(
-        animation: _shakeAnimation,
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(_shakeAnimation.value, 0),
-            child: child,
-          );
-        },
-        child: card,
-      );
+      card = applyShakeTransform(card);
     }
 
-    return card;
+    return Semantics(
+      container: true,
+      button: widget.onTap != null,
+      label: _semanticLabel(),
+      onTap: widget.onTap,
+      // Screen-reader alternatives to swiping.
+      customSemanticsActions: {
+        if (widget.onComplete != null)
+          CustomSemanticsAction(
+            label: widget.task.isCompleted ? 'Mark not done' : 'Mark done',
+          ): widget.onComplete!,
+        if (widget.onDelete != null)
+          const CustomSemanticsAction(label: 'Delete'): widget.onDelete!,
+      },
+      excludeSemantics: true,
+      child: card,
+    );
   }
 
-  Widget _buildContent(BuildContext context, BoxConstraints constraints, Color cardColor) {
+  String _semanticLabel() {
+    final t = widget.task;
+    final parts = <String>[
+      t.title,
+      '${_formatTime(t.startTime)} to ${_formatTime(t.endTime)}',
+      if (t.isCompleted) 'done',
+      if (t.isImportant) 'important',
+      if (t.category != TaskCategory.none) t.category.label,
+      if (t.isRecurring) 'repeats',
+      if (t.attachmentPath != null) 'has a photo',
+      if (widget.reminderState == ReminderState.triggered) 'reminder due',
+      if (t.description != null) t.description!,
+    ];
+    return parts.join(', ');
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    BoxConstraints constraints,
+    Color cardColor,
+  ) {
     final availableHeight = constraints.maxHeight;
     final padding = availableHeight < 40 ? 4.0 : 8.0;
-    final contentHeight = availableHeight - (padding * 2);
-    final showTime = contentHeight >= 45;
-    final showDescription = contentHeight >= 85 &&
-        widget.task.description != null &&
-        widget.task.description!.isNotEmpty;
-    final showIndicators = contentHeight >= 55;
 
-    return ClipRect(
-      child: Padding(
-        padding: EdgeInsets.all(padding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+    return PriorityColumnCard(
+      padding: EdgeInsets.all(padding),
+      children: [
+        // Title row (highest priority)
+        Row(
           children: [
-            // Title row
-            Row(
-              children: [
-                // Show category icon in title row for small cards (when indicators won't show)
-                if (!showIndicators && widget.task.category != TaskCategory.none)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Icon(
-                      widget.task.category.icon,
-                      size: 14,
-                      color: widget.task.category.color,
-                    ),
-                  ),
-                if (widget.task.isImportant)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Icon(
-                      Icons.star,
-                      size: 16,
-                      color: AppColors.accentCoral,
-                    ),
-                  ),
-                Expanded(
-                  child: Text(
-                    widget.task.title,
-                    style: TextStyle(
-                      fontSize: availableHeight < 40 ? 12 : 16,
-                      fontWeight: FontWeight.w600,
-                      decoration: widget.task.isCompleted
-                          ? TextDecoration.lineThrough
-                          : TextDecoration.none,
-                      color: widget.task.isCompleted
-                          ? Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.5)
-                          : Theme.of(context).colorScheme.onSurface,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                // Reminder badge or completion check
-                if (widget.task.isCompleted)
-                  const Icon(
-                    Icons.check_circle,
-                    size: 18,
-                    color: AppColors.taskCompleted,
-                  )
-                else if (widget.reminderState != null && widget.task.reminderMinutes != null)
-                  _buildReminderBadge(),
-              ],
-            ),
-
-            // Time row
-            if (showTime) ...[
-              const SizedBox(height: 4),
-              Text(
-                '${_formatTime(widget.task.startTime)} - ${_formatTime(widget.task.endTime)}',
-                style: TextStyle(
-                  fontSize: 12,
-                  decoration: TextDecoration.none,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.6),
+            if (widget.task.category != TaskCategory.none)
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Icon(
+                  widget.task.category.icon,
+                  size: 14,
+                  color: widget.task.category.color,
                 ),
               ),
-            ],
-
-            // Description preview
-            if (showDescription) ...[
-              const SizedBox(height: 4),
-              Text(
-                widget.task.description!,
+            if (widget.task.isImportant)
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Icon(Icons.star, size: 16, color: AppColors.accentCoral),
+              ),
+            Expanded(
+              child: Text(
+                widget.task.title,
                 style: TextStyle(
-                  fontSize: 12,
-                  decoration: TextDecoration.none,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.5),
+                  fontSize: availableHeight < 40 ? 12 : 16,
+                  fontWeight: FontWeight.w600,
+                  decoration: widget.task.isCompleted
+                      ? TextDecoration.lineThrough
+                      : TextDecoration.none,
+                  color: widget.task.isCompleted
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.5)
+                      : Theme.of(context).colorScheme.onSurface,
                 ),
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-            ],
-
-            // Category badge and recurring indicator
-            if (showIndicators) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  // Category badge
-                  if (widget.task.category != TaskCategory.none)
-                    CategoryBadge(
-                      category: widget.task.category,
-                      compact: true,
-                    ),
-                  // Recurring indicator
-                  if (widget.task.recurringPattern != null) ...[
-                    if (widget.task.category != TaskCategory.none)
-                      const SizedBox(width: 6),
-                    Icon(
-                      Icons.repeat,
-                      size: 14,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.4),
-                    ),
-                  ],
-                ],
-              ),
-            ],
+            ),
+            // Reminder badge or completion check
+            if (widget.task.isCompleted)
+              const Icon(
+                Icons.check_circle,
+                size: 18,
+                color: AppColors.taskCompleted,
+              )
+            else if (widget.reminderState != null &&
+                widget.task.reminderMinutes != null)
+              _buildReminderBadge(),
           ],
         ),
-      ),
+
+        // Time row
+        const SizedBox(height: 4),
+        Text(
+          '${_formatTime(widget.task.startTime)} - ${_formatTime(widget.task.endTime)}',
+          style: TextStyle(
+            fontSize: 12,
+            decoration: TextDecoration.none,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+
+        // Category badge and recurring indicator
+        if (widget.task.category != TaskCategory.none ||
+            widget.task.isRecurring ||
+            widget.task.attachmentPath != null) ...[
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              if (widget.task.category != TaskCategory.none)
+                CategoryBadge(category: widget.task.category, compact: true),
+              if (widget.task.isRecurring) ...[
+                if (widget.task.category != TaskCategory.none)
+                  const SizedBox(width: 6),
+                Icon(
+                  Icons.repeat,
+                  size: 14,
+                  semanticLabel: 'Repeats',
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
+              ],
+              if (widget.task.attachmentPath != null) ...[
+                const SizedBox(width: 6),
+                Icon(
+                  Icons.photo_outlined,
+                  size: 14,
+                  semanticLabel: 'Has a photo',
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
+              ],
+            ],
+          ),
+        ],
+
+        // Description preview (lowest priority)
+        if (widget.task.description != null &&
+            widget.task.description!.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            widget.task.description!,
+            style: TextStyle(
+              fontSize: 12,
+              decoration: TextDecoration.none,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ],
     );
   }
 
@@ -416,8 +429,8 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
       onTap: isTriggered
           ? widget.onReminderAcknowledged
           : isAcknowledged
-              ? widget.onReminderRescheduled
-              : null,
+          ? widget.onReminderRescheduled
+          : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
@@ -431,18 +444,10 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 14,
-              color: badgeColor,
-            ),
+            Icon(icon, size: 14, color: badgeColor),
             if (isAcknowledged) ...[
               const SizedBox(width: 2),
-              Icon(
-                Icons.check,
-                size: 10,
-                color: badgeColor,
-              ),
+              Icon(Icons.check, size: 10, color: badgeColor),
             ] else if (timeText != null) ...[
               const SizedBox(width: 2),
               Text(
@@ -481,43 +486,8 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
     }
   }
 
-  String _formatTime(DateTime time) {
-    if (widget.use24HourFormat) {
-      final hour = time.hour.toString().padLeft(2, '0');
-      final minute = time.minute.toString().padLeft(2, '0');
-      return '$hour:$minute';
-    }
-    final hour = time.hour == 0
-        ? 12
-        : time.hour > 12
-            ? time.hour - 12
-            : time.hour;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
-  }
-
-  Future<bool> _showDeleteConfirmation(BuildContext context) async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Delete Task'),
-            content: Text('Delete "${widget.task.title}"?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: const Text('Delete'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-  }
+  String _formatTime(DateTime time) =>
+      TimeFormatter.formatTime(time, use24HourFormat: widget.use24HourFormat);
 }
 
 /// Background shown during swipe gestures.

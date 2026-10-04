@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timeflow/domain/time/local_date.dart';
 import 'package:timeflow/presentation/providers/task_provider.dart';
 
 /// Calendar overview showing multiple months for quick date navigation.
@@ -57,13 +58,9 @@ class _CalendarOverviewState extends ConsumerState<CalendarOverview> {
 
   @override
   Widget build(BuildContext context) {
-    final datesWithTasksAsync = ref.watch(datesWithTasksProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return datesWithTasksAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Error: $error')),
-      data: (datesWithTasks) => Column(
+    return Column(
       children: [
         // Month navigation with arrow buttons
         Padding(
@@ -109,7 +106,6 @@ class _CalendarOverviewState extends ConsumerState<CalendarOverview> {
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: _MonthGrid(
                   month: month,
-                  datesWithTasks: datesWithTasks,
                   onDateSelected: widget.onDateSelected,
                 ),
               );
@@ -117,32 +113,30 @@ class _CalendarOverviewState extends ConsumerState<CalendarOverview> {
           ),
         ),
       ],
-    ),
     );
   }
 }
 
 /// A single month grid showing all days.
-class _MonthGrid extends StatelessWidget {
+class _MonthGrid extends ConsumerWidget {
   final DateTime month;
-  final Set<DateTime> datesWithTasks;
   final ValueChanged<DateTime> onDateSelected;
 
-  const _MonthGrid({
-    required this.month,
-    required this.datesWithTasks,
-    required this.onDateSelected,
-  });
+  const _MonthGrid({required this.month, required this.onDateSelected});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final datesWithTasks =
+        ref.watch(monthTaskDaysProvider(LocalDate.of(month))).value ??
+        const <LocalDate>{};
     final colorScheme = Theme.of(context).colorScheme;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
     // Month header
     final monthName = _formatMonth(month);
-    final isCurrentMonth = month.year == today.year && month.month == today.month;
+    final isCurrentMonth =
+        month.year == today.year && month.month == today.month;
 
     // Calculate days in month and starting weekday
     final firstDayOfMonth = DateTime(month.year, month.month, 1);
@@ -165,7 +159,9 @@ class _MonthGrid extends StatelessWidget {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: isCurrentMonth ? colorScheme.primary : colorScheme.onSurface,
+                color: isCurrentMonth
+                    ? colorScheme.primary
+                    : colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 12),
@@ -199,6 +195,7 @@ class _MonthGrid extends StatelessWidget {
                   daysInMonth: daysInMonth,
                   startingWeekday: startingWeekday,
                   colorScheme: colorScheme,
+                  datesWithTasks: datesWithTasks,
                 ),
               ),
             ),
@@ -214,6 +211,7 @@ class _MonthGrid extends StatelessWidget {
     required int daysInMonth,
     required int startingWeekday,
     required ColorScheme colorScheme,
+    required Set<LocalDate> datesWithTasks,
   }) {
     final rows = <Widget>[];
     int dayCounter = 1 - (startingWeekday - 1);
@@ -226,7 +224,7 @@ class _MonthGrid extends StatelessWidget {
         } else {
           final date = DateTime(month.year, month.month, dayCounter);
           final isToday = date == today;
-          final hasTask = datesWithTasks.contains(date);
+          final hasTask = datesWithTasks.contains(LocalDate.of(date));
           final day = dayCounter;
           cells.add(
             Expanded(
@@ -248,8 +246,18 @@ class _MonthGrid extends StatelessWidget {
 
   String _formatMonth(DateTime month) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${months[month.month - 1]} ${month.year}';
   }
@@ -278,7 +286,9 @@ class _DayButton extends StatelessWidget {
       style: TextButton.styleFrom(
         shape: const CircleBorder(),
         backgroundColor: isToday ? colorScheme.primary : Colors.transparent,
-        foregroundColor: isToday ? colorScheme.onPrimary : colorScheme.onSurface,
+        foregroundColor: isToday
+            ? colorScheme.onPrimary
+            : colorScheme.onSurface,
         padding: EdgeInsets.zero,
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,

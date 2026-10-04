@@ -1,30 +1,61 @@
-import 'dart:io';
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:drift_flutter/drift_flutter.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:timeflow/data/migrations/schema_v3_migration.dart';
+import 'package:timeflow/domain/time/wall_clock.dart';
 
 part 'database.g.dart';
 
-/// Drift table definition for tasks.
+/// Stores [DateTime]s as offset-less wall-clock text (`2026-10-04T09:00:00`).
 ///
-/// Mirrors the Task domain entity for SQLite persistence.
+/// Task times are wall-clock times: a task at 9:00 stays at 9:00 across DST
+/// changes. Fixed-width text also sorts chronologically, so range queries
+/// work as plain string comparisons.
+class WallClockConverter extends TypeConverter<DateTime, String> {
+  const WallClockConverter();
+
+  @override
+  DateTime fromSql(String fromDb) => parseWallClock(fromDb);
+
+  @override
+  String toSql(DateTime value) => formatWallClock(value);
+}
+
+/// Tasks: standalone tasks, recurring series definitions, and stored
+/// occurrences of a series (overrides).
+///
+/// - Standalone: `recurrence` and `seriesId` are null.
+/// - Series: `recurrence` holds the RRULE; the row's start/end give the first
+///   occurrence and the time of day.
+/// - Override: `seriesId` + `occurrenceDate` say which generated occurrence
+///   this row replaces. `isCancelled` marks a deleted occurrence.
+@DataClassName('TaskRow')
+@TableIndex(name: 'tasks_start_at', columns: {#startAt})
+@TableIndex(
+  name: 'tasks_series_occurrence',
+  columns: {#seriesId, #occurrenceDate},
+  unique: true,
+)
 class Tasks extends Table {
   TextColumn get id => text()();
   TextColumn get title => text()();
   TextColumn get description => text().nullable()();
-  DateTimeColumn get startTime => dateTime()();
-  DateTimeColumn get endTime => dateTime()();
+  TextColumn get notes => text().nullable()();
+  TextColumn get startAt => text().map(const WallClockConverter())();
+  TextColumn get endAt => text().map(const WallClockConverter())();
   BoolColumn get isImportant => boolean().withDefault(const Constant(false))();
   BoolColumn get isCompleted => boolean().withDefault(const Constant(false))();
   IntColumn get reminderMinutes => integer().nullable()();
-  TextColumn get recurringPattern => text().nullable()();
-  TextColumn get recurringTemplateId => text().nullable()();
-  TextColumn get notes => text().nullable()();
   TextColumn get attachmentPath => text().nullable()();
   TextColumn get color => text().nullable()();
   TextColumn get category => text().withDefault(const Constant('none'))();
+  TextColumn get recurrence => text().nullable()();
+  TextColumn get seriesId => text().nullable()();
+
+  /// `yyyy-MM-dd` date the series scheduled this occurrence on.
+  TextColumn get occurrenceDate => text().nullable()();
+  BoolColumn get isCancelled => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -32,37 +63,47 @@ class Tasks extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// The main Drift database for TimeFlow.
-@DriftDatabase(tables: [Tasks])
+/// Photos attached to tasks, referenced from `Tasks.attachmentPath` as
+/// `attachment:<id>`. Kept in the database (not as files) so they work the
+/// same on every platform, including the web, and travel with backups.
+@DataClassName('AttachmentRow')
+class Attachments extends Table {
+  TextColumn get id => text()();
+  TextColumn get mimeType => text()();
+  BlobColumn get bytes => blob()();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DriftDatabase(tables: [Tasks, Attachments])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
-
-  /// Constructor for testing with in-memory database.
-  AppDatabase.forTesting(super.executor);
+  AppDatabase([QueryExecutor? executor]) : super(executor ?? _open());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
-  MigrationStrategy get migration {
-    return MigrationStrategy(
-      onCreate: (Migrator m) async {
-        await m.createAll();
-      },
-      onUpgrade: (Migrator m, int from, int to) async {
-        if (from < 2) {
-          // Add category column with default value 'none'
-          await m.addColumn(tasks, tasks.category);
-        }
-      },
-    );
-  }
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 3) await migrateToSchemaV3(this, m, from);
+    },
+  );
 
-  static LazyDatabase _openConnection() {
-    return LazyDatabase(() async {
-      final dbFolder = await getApplicationDocumentsDirectory();
-      final file = File(p.join(dbFolder.path, 'timeflow.db'));
-      return NativeDatabase.createInBackground(file);
-    });
-  }
+  static QueryExecutor _open() => driftDatabase(
+    name: 'timeflow',
+    native: DriftNativeOptions(
+      // Keep the file name the app has always used.
+      databasePath: () async => p.join(
+        (await getApplicationDocumentsDirectory()).path,
+        'timeflow.db',
+      ),
+    ),
+    web: DriftWebOptions(
+      sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+      driftWorker: Uri.parse('drift_worker.js'),
+    ),
+  );
 }

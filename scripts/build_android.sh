@@ -29,24 +29,19 @@ echo "  TimeFlow Android Build Script"
 echo "========================================"
 echo ""
 
-# Step 1: Generate build info
-echo "📝 Generating build info..."
-./scripts/generate_build_info.sh
-echo ""
-
-# Step 2: Get dependencies
+# Step 1: Get dependencies
 echo "📦 Getting dependencies..."
 flutter pub get
 echo ""
 
-# Step 3: Generate drift code (if needed)
+# Step 2: Generate drift code (if needed)
 echo "🔧 Generating drift database code..."
-flutter pub run build_runner build --delete-conflicting-outputs
+dart run build_runner build --delete-conflicting-outputs
 echo ""
 
-# Step 4: Build APK
+# Step 3: Build APK
 echo "🏗️  Building $BUILD_TYPE APK..."
-flutter build apk --$BUILD_TYPE
+flutter build apk --$BUILD_TYPE $(./scripts/build_flags.sh)
 echo ""
 
 APK_PATH="build/app/outputs/flutter-apk/app-$BUILD_TYPE.apk"
@@ -59,7 +54,7 @@ fi
 echo "✅ APK built: $APK_PATH"
 echo ""
 
-# Step 5: Install (if requested and device connected)
+# Step 4: Install (if requested and device connected)
 if [ "$DO_INSTALL" = true ]; then
     echo "📱 Checking for connected devices..."
 

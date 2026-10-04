@@ -8,7 +8,7 @@
 PRODUCT_NAME = TimeFlow
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = io.timeflow.app
+PRODUCT_BUNDLE_IDENTIFIER = com.rinserepeatlabs.timeflow
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 TimeFlow. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 RinseRepeatLabs. All rights reserved.

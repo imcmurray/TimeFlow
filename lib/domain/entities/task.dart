@@ -1,59 +1,55 @@
+import 'package:timeflow/domain/entities/recurrence_rule.dart';
 import 'package:timeflow/domain/entities/task_category.dart';
+import 'package:timeflow/domain/time/local_date.dart';
+import 'package:timeflow/domain/time/wall_clock.dart';
 
-/// Domain entity representing a Task in TimeFlow.
+/// A task on the timeline.
 ///
-/// Tasks are the core data model, representing scheduled activities
-/// that flow through the timeline.
+/// A Task is one of:
+/// - a **standalone** task (`seriesId == null`, `recurrence == null`);
+/// - a **series** definition (`recurrence != null`, `seriesId == null`). The
+///   timeline never shows these directly, only their occurrences;
+/// - an **occurrence** of a series (`seriesId != null`). Occurrences that
+///   nobody has completed or edited are generated on the fly
+///   ([isVirtual] is true, nothing is stored for them). Completing or editing
+///   one stores it as an override for its [occurrenceDate].
+///
+/// Start and end are local wall-clock times.
 class Task {
-  /// Unique identifier for the task.
   final String id;
-
-  /// Task name/title.
   final String title;
-
-  /// Optional detailed description.
   final String? description;
-
-  /// Task start time.
   final DateTime startTime;
-
-  /// Task end time.
   final DateTime endTime;
-
-  /// Whether this task is marked as important/high priority.
   final bool isImportant;
-
-  /// Whether the task has been completed.
   final bool isCompleted;
 
-  /// Minutes before task to trigger reminder notification.
-  /// Null if no reminder is set.
+  /// Minutes before [startTime] to remind; null for no reminder.
   final int? reminderMinutes;
-
-  /// Recurrence rule string (e.g., 'daily', 'weekly', null for one-time).
-  final String? recurringPattern;
-
-  /// Template ID linking recurring task instances together.
-  /// Null for non-recurring tasks. For recurring tasks, all instances
-  /// share the same templateId to enable "edit all" functionality.
-  final String? recurringTemplateId;
-
-  /// Additional notes for the task.
   final String? notes;
 
-  /// Local path to an attached file/photo.
+  /// Path of an attached photo inside the app's storage.
   final String? attachmentPath;
 
-  /// Custom color override for the task card (hex string).
+  /// Custom card color override (hex string).
   final String? color;
-
-  /// Category for organizing tasks by type.
   final TaskCategory category;
 
-  /// Timestamp when the task was created.
-  final DateTime createdAt;
+  /// The repeat rule. Set on series definitions and copied onto their
+  /// occurrences so the UI can say how a task repeats.
+  final RecurrenceRule? recurrence;
 
-  /// Timestamp when the task was last updated.
+  /// For occurrences: the id of the series they belong to.
+  final String? seriesId;
+
+  /// For occurrences: the date the series scheduled this occurrence on. Stays
+  /// the same if the occurrence is later moved to another time or day.
+  final LocalDate? occurrenceDate;
+
+  /// True for an occurrence that is generated, not stored.
+  final bool isVirtual;
+
+  final DateTime createdAt;
   final DateTime updatedAt;
 
   const Task({
@@ -65,121 +61,131 @@ class Task {
     this.isImportant = false,
     this.isCompleted = false,
     this.reminderMinutes,
-    this.recurringPattern,
-    this.recurringTemplateId,
     this.notes,
     this.attachmentPath,
     this.color,
     this.category = TaskCategory.none,
+    this.recurrence,
+    this.seriesId,
+    this.occurrenceDate,
+    this.isVirtual = false,
     required this.createdAt,
     required this.updatedAt,
   });
 
-  /// Duration of the task.
-  Duration get duration => endTime.difference(startTime);
+  /// Whether this task belongs to a repeating series (as definition or occurrence).
+  bool get isRecurring => recurrence != null || seriesId != null;
 
-  /// Whether the task is currently active (now is between start and end).
-  bool get isCurrent {
-    final now = DateTime.now();
-    return now.isAfter(startTime) && now.isBefore(endTime);
-  }
+  /// Whether this is an occurrence of a series.
+  bool get isOccurrence => seriesId != null;
 
-  /// Whether the task is in the future.
+  /// Length in wall-clock minutes.
+  int get durationMinutes => wallMinutesBetween(startTime, endTime);
+
+  Duration get duration => Duration(minutes: durationMinutes);
+
+  /// Whether the task is happening at [now].
+  bool isCurrentAt(DateTime now) =>
+      !now.isBefore(startTime) && now.isBefore(endTime);
+
+  bool get isCurrent => isCurrentAt(DateTime.now());
   bool get isUpcoming => DateTime.now().isBefore(startTime);
+  bool get isPast => !DateTime.now().isBefore(endTime);
 
-  /// Whether the task is in the past.
-  bool get isPast => DateTime.now().isAfter(endTime);
+  /// When the reminder should fire, or null if there is no reminder.
+  DateTime? get reminderTime => reminderMinutes == null
+      ? null
+      : addWallMinutes(startTime, -reminderMinutes!);
 
-  /// Creates a copy of this task with the given fields replaced.
+  static const _keep = Object();
+
+  /// Returns a copy with the given fields replaced. Nullable fields can be
+  /// cleared by passing null explicitly.
   Task copyWith({
     String? id,
     String? title,
-    String? description,
+    Object? description = _keep,
     DateTime? startTime,
     DateTime? endTime,
     bool? isImportant,
     bool? isCompleted,
-    int? reminderMinutes,
-    String? recurringPattern,
-    String? recurringTemplateId,
-    String? notes,
-    String? attachmentPath,
-    String? color,
+    Object? reminderMinutes = _keep,
+    Object? notes = _keep,
+    Object? attachmentPath = _keep,
+    Object? color = _keep,
     TaskCategory? category,
+    Object? recurrence = _keep,
+    Object? seriesId = _keep,
+    Object? occurrenceDate = _keep,
+    bool? isVirtual,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return Task(
       id: id ?? this.id,
       title: title ?? this.title,
-      description: description ?? this.description,
+      description: identical(description, _keep)
+          ? this.description
+          : description as String?,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       isImportant: isImportant ?? this.isImportant,
       isCompleted: isCompleted ?? this.isCompleted,
-      reminderMinutes: reminderMinutes ?? this.reminderMinutes,
-      recurringPattern: recurringPattern ?? this.recurringPattern,
-      recurringTemplateId: recurringTemplateId ?? this.recurringTemplateId,
-      notes: notes ?? this.notes,
-      attachmentPath: attachmentPath ?? this.attachmentPath,
-      color: color ?? this.color,
+      reminderMinutes: identical(reminderMinutes, _keep)
+          ? this.reminderMinutes
+          : reminderMinutes as int?,
+      notes: identical(notes, _keep) ? this.notes : notes as String?,
+      attachmentPath: identical(attachmentPath, _keep)
+          ? this.attachmentPath
+          : attachmentPath as String?,
+      color: identical(color, _keep) ? this.color : color as String?,
       category: category ?? this.category,
+      recurrence: identical(recurrence, _keep)
+          ? this.recurrence
+          : recurrence as RecurrenceRule?,
+      seriesId: identical(seriesId, _keep)
+          ? this.seriesId
+          : seriesId as String?,
+      occurrenceDate: identical(occurrenceDate, _keep)
+          ? this.occurrenceDate
+          : occurrenceDate as LocalDate?,
+      isVirtual: isVirtual ?? this.isVirtual,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
-  /// Converts this task to a JSON map for export.
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'description': description,
-        'startTime': startTime.toIso8601String(),
-        'endTime': endTime.toIso8601String(),
-        'isImportant': isImportant,
-        'isCompleted': isCompleted,
-        'reminderMinutes': reminderMinutes,
-        'recurringPattern': recurringPattern,
-        'recurringTemplateId': recurringTemplateId,
-        'notes': notes,
-        'attachmentPath': attachmentPath,
-        'color': color,
-        'category': category.value,
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': updatedAt.toIso8601String(),
-      };
-
-  /// Creates a Task from a JSON map.
-  factory Task.fromJson(Map<String, dynamic> json) => Task(
-        id: json['id'] as String,
-        title: json['title'] as String,
-        description: json['description'] as String?,
-        startTime: DateTime.parse(json['startTime'] as String),
-        endTime: DateTime.parse(json['endTime'] as String),
-        isImportant: json['isImportant'] as bool? ?? false,
-        isCompleted: json['isCompleted'] as bool? ?? false,
-        reminderMinutes: json['reminderMinutes'] as int?,
-        recurringPattern: json['recurringPattern'] as String?,
-        recurringTemplateId: json['recurringTemplateId'] as String?,
-        notes: json['notes'] as String?,
-        attachmentPath: json['attachmentPath'] as String?,
-        color: json['color'] as String?,
-        category: TaskCategoryExtension.fromString(json['category'] as String?),
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        updatedAt: DateTime.parse(json['updatedAt'] as String),
-      );
+  /// Whether the user-visible content (everything except identity, series
+  /// bookkeeping and timestamps) equals [other]'s.
+  bool sameContentAs(Task other) =>
+      title == other.title &&
+      description == other.description &&
+      startTime == other.startTime &&
+      endTime == other.endTime &&
+      isImportant == other.isImportant &&
+      isCompleted == other.isCompleted &&
+      reminderMinutes == other.reminderMinutes &&
+      notes == other.notes &&
+      attachmentPath == other.attachmentPath &&
+      color == other.color &&
+      category == other.category;
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is Task && other.id == id;
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Task &&
+          other.id == id &&
+          other.seriesId == seriesId &&
+          other.occurrenceDate == occurrenceDate &&
+          other.recurrence == recurrence &&
+          other.isVirtual == isVirtual &&
+          other.updatedAt == updatedAt &&
+          sameContentAs(other);
 
   @override
-  int get hashCode => id.hashCode;
+  int get hashCode => Object.hash(id, updatedAt, startTime, isCompleted);
 
   @override
-  String toString() {
-    return 'Task(id: $id, title: $title, startTime: $startTime, endTime: $endTime)';
-  }
+  String toString() =>
+      'Task($id, "$title", $startTime–$endTime${isVirtual ? ', virtual' : ''})';
 }

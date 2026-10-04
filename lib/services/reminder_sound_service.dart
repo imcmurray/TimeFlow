@@ -5,7 +5,12 @@ class ReminderSoundService {
   static final AudioPlayer _player = AudioPlayer();
 
   /// Available sound options.
-  static const List<String> availableSounds = ['chime', 'bell', 'alert', 'soft'];
+  static const List<String> availableSounds = [
+    'chime',
+    'bell',
+    'alert',
+    'soft',
+  ];
 
   /// Human-readable labels for sound options.
   static const Map<String, String> soundLabels = {
@@ -17,7 +22,9 @@ class ReminderSoundService {
 
   /// Play the specified reminder sound.
   static Future<void> play(String soundName) async {
-    final validSound = availableSounds.contains(soundName) ? soundName : 'chime';
+    final validSound = availableSounds.contains(soundName)
+        ? soundName
+        : 'chime';
     await _player.play(AssetSource('sounds/$validSound.mp3'));
   }
 

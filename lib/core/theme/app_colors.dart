@@ -11,6 +11,14 @@ class AppColors {
   static const Color primaryBlue = Color(0xFF42A5F5);
   static const Color primaryBlueDark = Color(0xFF1976D2);
 
+  /// Primary for text, buttons and icons on light backgrounds: 4.85:1 on the
+  /// background, 5:1 under white text (WCAG AA).
+  static const Color primaryInk = Color(0xFF1A6FC8);
+
+  /// Primary on dark backgrounds, used with [onPrimaryDark] text (7.6:1).
+  static const Color primaryInkDark = Color(0xFF64B5F6);
+  static const Color onPrimaryDark = Color(0xFF0B1E33);
+
   // Secondary Greens - Gentle, natural tones
   static const Color secondaryGreenLight = Color(0xFFE8F5E9);
   static const Color secondaryGreen = Color(0xFF66BB6A);
@@ -28,7 +36,7 @@ class AppColors {
 
   // Text Colors - Light Theme
   static const Color textPrimary = Color(0xFF212121);
-  static const Color textSecondary = Color(0xFF757575);
+  static const Color textSecondary = Color(0xFF6B6B6B);
   static const Color textTertiary = Color(0xFF9E9E9E);
 
   // Text Colors - Dark Theme
@@ -36,9 +44,12 @@ class AppColors {
   static const Color textLightSecondary = Color(0xFFB0B0B0);
   static const Color textLightTertiary = Color(0xFF757575);
 
-  // NOW Line Colors
-  static const Color nowLineLight = Color(0xFF42A5F5);
+  // NOW Line Colors. The "on" colors are for text on the NOW badges and
+  // meet WCAG AA (4.5:1) against them.
+  static const Color nowLineLight = Color(0xFF1976D2);
   static const Color nowLineDark = Color(0xFF64B5F6);
+  static const Color onNowLineLight = Color(0xFFFFFFFF);
+  static const Color onNowLineDark = Color(0xFF0B1E33);
   static const Color nowLineGlow = Color(0x4042A5F5);
 
   // Task Status Colors
@@ -50,8 +61,9 @@ class AppColors {
   // Timeline Colors
   static const Color timelineLight = Color(0xFFE0E0E0);
   static const Color timelineDark = Color(0xFF424242);
-  static const Color hourMarkerLight = Color(0xFF9E9E9E);
-  static const Color hourMarkerDark = Color(0xFF757575);
+  // Hour labels: at least 4.5:1 against the timeline backgrounds.
+  static const Color hourMarkerLight = Color(0xFF6B6B6B);
+  static const Color hourMarkerDark = Color(0xFFA0A0A0);
 
   // Reminder Line Colors
   static const Color reminderLine = Color(0xFFEF5350);

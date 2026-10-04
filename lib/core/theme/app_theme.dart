@@ -8,13 +8,17 @@ import 'package:timeflow/core/theme/app_colors.dart';
 class AppTheme {
   AppTheme._();
 
+  /// Bundled in assets/fonts (SIL Open Font License).
+  static const fontFamily = 'Nunito';
+
   /// Light theme for TimeFlow.
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
+      fontFamily: fontFamily,
       brightness: Brightness.light,
       colorScheme: ColorScheme.light(
-        primary: AppColors.primaryBlue,
+        primary: AppColors.primaryInk,
         primaryContainer: AppColors.primaryBlueLight,
         secondary: AppColors.secondaryGreen,
         secondaryContainer: AppColors.secondaryGreenLight,
@@ -36,17 +40,13 @@ class AppTheme {
         color: Colors.white,
         elevation: 2,
         shadowColor: AppColors.primaryBlue.withValues(alpha: 0.1),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: AppColors.primaryBlue,
+        backgroundColor: AppColors.primaryInk,
         foregroundColor: Colors.white,
         elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       textTheme: const TextTheme(
         headlineLarge: TextStyle(
@@ -57,12 +57,8 @@ class AppTheme {
           color: AppColors.textPrimary,
           fontWeight: FontWeight.w600,
         ),
-        bodyLarge: TextStyle(
-          color: AppColors.textPrimary,
-        ),
-        bodyMedium: TextStyle(
-          color: AppColors.textSecondary,
-        ),
+        bodyLarge: TextStyle(color: AppColors.textPrimary),
+        bodyMedium: TextStyle(color: AppColors.textSecondary),
         labelLarge: TextStyle(
           color: AppColors.textPrimary,
           fontWeight: FontWeight.w500,
@@ -75,16 +71,17 @@ class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
+      fontFamily: fontFamily,
       brightness: Brightness.dark,
       colorScheme: ColorScheme.dark(
-        primary: AppColors.primaryBlue,
+        primary: AppColors.primaryInkDark,
+        onPrimary: AppColors.onPrimaryDark,
         primaryContainer: AppColors.primaryBlue.withValues(alpha: 0.3),
         secondary: AppColors.secondaryGreen,
         secondaryContainer: AppColors.secondaryGreen.withValues(alpha: 0.3),
         tertiary: AppColors.accentCoral,
         tertiaryContainer: AppColors.accentCoral.withValues(alpha: 0.3),
         surface: AppColors.backgroundDark,
-        onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: AppColors.textLightPrimary,
       ),
@@ -99,17 +96,13 @@ class AppTheme {
         color: AppColors.cardDark,
         elevation: 2,
         shadowColor: Colors.black26,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: AppColors.primaryBlue,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primaryInkDark,
+        foregroundColor: AppColors.onPrimaryDark,
         elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       textTheme: const TextTheme(
         headlineLarge: TextStyle(
@@ -120,12 +113,8 @@ class AppTheme {
           color: AppColors.textLightPrimary,
           fontWeight: FontWeight.w600,
         ),
-        bodyLarge: TextStyle(
-          color: AppColors.textLightPrimary,
-        ),
-        bodyMedium: TextStyle(
-          color: AppColors.textLightSecondary,
-        ),
+        bodyLarge: TextStyle(color: AppColors.textLightPrimary),
+        bodyMedium: TextStyle(color: AppColors.textLightSecondary),
         labelLarge: TextStyle(
           color: AppColors.textLightPrimary,
           fontWeight: FontWeight.w500,

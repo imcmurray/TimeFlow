@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:timeflow/core/theme/app_colors.dart';
 import 'package:timeflow/domain/entities/task.dart';
+import 'package:timeflow/presentation/utils/time_formatter.dart';
 import 'package:timeflow/presentation/widgets/reminder_line.dart';
+import 'package:timeflow/presentation/widgets/priority_column_card.dart';
+import 'package:timeflow/presentation/widgets/reminder_shake_mixin.dart';
 import 'package:timeflow/presentation/widgets/water_ripple_painter.dart';
 
 /// A merged card representing multiple overlapping tasks.
@@ -45,30 +48,29 @@ class MergedTaskCard extends StatefulWidget {
 }
 
 class _MergedTaskCardState extends State<MergedTaskCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _shakeController;
-  late Animation<double> _shakeAnimation;
+    with SingleTickerProviderStateMixin, ReminderShakeMixin {
   Timer? _countdownTimer;
 
   @override
   void initState() {
     super.initState();
-    _shakeController = AnimationController(
-      duration: const Duration(milliseconds: 100),
-      vsync: this,
+    initShake();
+    setShakeActive(
+      widget.reminderStates.values.any(
+        (state) => state == ReminderState.triggered,
+      ),
     );
-    _shakeAnimation = Tween<double>(begin: -2.0, end: 2.0).animate(
-      CurvedAnimation(parent: _shakeController, curve: Curves.easeInOut),
-    );
-
-    _updateAnimation();
     _startCountdownTimer();
   }
 
   @override
   void didUpdateWidget(MergedTaskCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _updateAnimation();
+    setShakeActive(
+      widget.reminderStates.values.any(
+        (state) => state == ReminderState.triggered,
+      ),
+    );
     _startCountdownTimer();
   }
 
@@ -77,9 +79,11 @@ class _MergedTaskCardState extends State<MergedTaskCard>
 
     // Find the earliest upcoming reminder
     final upcomingReminders = widget.reminderTimes.entries
-        .where((e) =>
-            widget.reminderStates[e.key] != ReminderState.triggered &&
-            widget.reminderStates[e.key] != ReminderState.acknowledged)
+        .where(
+          (e) =>
+              widget.reminderStates[e.key] != ReminderState.triggered &&
+              widget.reminderStates[e.key] != ReminderState.acknowledged,
+        )
         .toList();
 
     if (upcomingReminders.isEmpty) return;
@@ -98,31 +102,19 @@ class _MergedTaskCardState extends State<MergedTaskCard>
     });
   }
 
-  void _updateAnimation() {
-    // Shake if any task has a triggered reminder
-    final hasTriggered = widget.reminderStates.values
-        .any((state) => state == ReminderState.triggered);
-
-    if (hasTriggered) {
-      _shakeController.repeat(reverse: true);
-    } else {
-      _shakeController.stop();
-      _shakeController.reset();
-    }
-  }
-
   @override
   void dispose() {
     _countdownTimer?.cancel();
-    _shakeController.dispose();
+    disposeShake();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasTriggeredReminder = widget.reminderStates.values
-        .any((state) => state == ReminderState.triggered);
+    final hasTriggeredReminder = widget.reminderStates.values.any(
+      (state) => state == ReminderState.triggered,
+    );
     final gradient = _buildGradient();
     final dominantColor = _getDominantColor();
 
@@ -163,19 +155,20 @@ class _MergedTaskCardState extends State<MergedTaskCard>
 
     // Apply shake animation when any reminder is triggered
     if (hasTriggeredReminder) {
-      card = AnimatedBuilder(
-        animation: _shakeAnimation,
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(_shakeAnimation.value, 0),
-            child: child,
-          );
-        },
-        child: card,
-      );
+      card = applyShakeTransform(card);
     }
 
-    return card;
+    return Semantics(
+      container: true,
+      button: true,
+      label:
+          '${widget.tasks.length} overlapping tasks: '
+          '${widget.tasks.map((t) => t.title).join(', ')}',
+      hint: 'Opens the list',
+      onTap: widget.onTap,
+      excludeSemantics: true,
+      child: card,
+    );
   }
 
   LinearGradient _buildGradient() {
@@ -226,58 +219,33 @@ class _MergedTaskCardState extends State<MergedTaskCard>
       builder: (context, constraints) {
         final availableHeight = constraints.maxHeight;
         final padding = availableHeight < 60 ? 8.0 : 16.0;
-        final contentHeight = availableHeight - (padding * 2);
 
-        // Progressive disclosure based on available space
-        final showTimeRange = contentHeight >= 60;
-        final showColorDots = contentHeight >= 100;
-
-        // Calculate available height for titles (subtract space for other elements)
-        var titleHeight = contentHeight;
-        if (showTimeRange) titleHeight -= 24; // time range + spacing
-        if (showColorDots) titleHeight -= 20; // color dots + spacing
-
-        return ClipRect(
-          child: SizedBox(
-            height: availableHeight,
-            child: Padding(
-              padding: EdgeInsets.all(padding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Title list with reminder badge (always shown)
-                  Flexible(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: _buildTitleList(context, titleHeight)),
-                        _buildReminderSummary(),
-                      ],
-                    ),
-                  ),
-
-                  // Time range (if space)
-                  if (showTimeRange) ...[
-                    const SizedBox(height: 4),
-                    _buildTimeRange(context),
-                  ],
-
-                  // Color dots (if more space)
-                  if (showColorDots) ...[
-                    const SizedBox(height: 4),
-                    _buildColorDots(),
-                  ],
-                ],
-              ),
+        return PriorityColumnCard(
+          padding: EdgeInsets.all(padding),
+          children: [
+            // Title list with reminder badge (highest priority)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _buildTitleList(context)),
+                _buildReminderSummary(),
+              ],
             ),
-          ),
+
+            // Time range
+            const SizedBox(height: 4),
+            _buildTimeRange(context),
+
+            // Color dots (lowest priority)
+            const SizedBox(height: 4),
+            _buildColorDots(),
+          ],
         );
       },
     );
   }
 
-  Widget _buildTitleList(BuildContext context, double availableHeight) {
+  Widget _buildTitleList(BuildContext context) {
     final sortedTasks = List<Task>.from(widget.tasks)
       ..sort((a, b) {
         if (a.isImportant && !b.isImportant) return -1;
@@ -297,8 +265,9 @@ class _MergedTaskCardState extends State<MergedTaskCard>
           return Flexible(
             child: Padding(
               padding: EdgeInsets.only(
-                  right: index < displayTasks.length - 1 ? 8 : 0),
-              child: _buildTitlePill(task, availableHeight),
+                right: index < displayTasks.length - 1 ? 8 : 0,
+              ),
+              child: _buildTitlePill(task),
             ),
           );
         }),
@@ -318,24 +287,17 @@ class _MergedTaskCardState extends State<MergedTaskCard>
     );
   }
 
-  Widget _buildTitlePill(Task task, double availableHeight) {
+  Widget _buildTitlePill(Task task) {
     final color = _getTaskColor(task);
-    final isSmall = availableHeight < 50;
 
     return GestureDetector(
       onTap: widget.onTapTask != null ? () => widget.onTapTask!(task) : null,
       child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: 8,
-          vertical: isSmall ? 2 : 4,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: color.withValues(alpha: 0.5),
-            width: 1.5,
-          ),
+          border: Border.all(color: color.withValues(alpha: 0.5), width: 1.5),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -349,10 +311,14 @@ class _MergedTaskCardState extends State<MergedTaskCard>
               child: Text(
                 task.title,
                 style: TextStyle(
-                  fontSize: isSmall ? 11 : 12,
-                  fontWeight: task.isImportant ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 11,
+                  fontWeight: task.isImportant
+                      ? FontWeight.bold
+                      : FontWeight.w500,
                   color: color,
-                  decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+                  decoration: task.isCompleted
+                      ? TextDecoration.lineThrough
+                      : null,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -362,7 +328,10 @@ class _MergedTaskCardState extends State<MergedTaskCard>
               Padding(
                 padding: const EdgeInsets.only(left: 4),
                 child: Icon(
-                    Icons.check_circle, size: 12, color: color.withValues(alpha: 0.7)),
+                  Icons.check_circle,
+                  size: 12,
+                  color: color.withValues(alpha: 0.7),
+                ),
               ),
           ],
         ),
@@ -385,18 +354,11 @@ class _MergedTaskCardState extends State<MergedTaskCard>
 
     return Row(
       children: [
-        Icon(
-          Icons.schedule,
-          size: 14,
-          color: Colors.white70,
-        ),
+        Icon(Icons.schedule, size: 14, color: Colors.white70),
         const SizedBox(width: 4),
         Text(
           '$startStr - $endStr',
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.white70,
-          ),
+          style: const TextStyle(fontSize: 12, color: Colors.white70),
         ),
         const SizedBox(width: 8),
         Container(
@@ -443,8 +405,9 @@ class _MergedTaskCardState extends State<MergedTaskCard>
     // Get earliest pending reminder
     DateTime? earliest;
     if (pendingReminders.isNotEmpty) {
-      earliest = pendingReminders.values
-          .reduce((a, b) => a.isBefore(b) ? a : b);
+      earliest = pendingReminders.values.reduce(
+        (a, b) => a.isBefore(b) ? a : b,
+      );
     }
 
     final isTriggered = triggeredCount > 0;
@@ -469,16 +432,15 @@ class _MergedTaskCardState extends State<MergedTaskCard>
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: badgeColor,
-          width: 1.5,
-        ),
+        border: Border.all(color: badgeColor, width: 1.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isTriggered ? Icons.notifications_active : Icons.notifications_outlined,
+            isTriggered
+                ? Icons.notifications_active
+                : Icons.notifications_outlined,
             size: 14,
             color: badgeColor,
           ),
@@ -509,53 +471,27 @@ class _MergedTaskCardState extends State<MergedTaskCard>
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: color,
-                  width: 2,
-                ),
+                border: Border.all(color: color, width: 2),
                 boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.5),
-                    blurRadius: 2,
-                  ),
+                  BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 2),
                 ],
               ),
             ),
           );
         }),
         const Spacer(),
-        const Icon(
-          Icons.touch_app,
-          size: 14,
-          color: Colors.white54,
-        ),
+        const Icon(Icons.touch_app, size: 14, color: Colors.white54),
         const SizedBox(width: 4),
         const Text(
           'Tap to expand',
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.white54,
-          ),
+          style: TextStyle(fontSize: 10, color: Colors.white54),
         ),
       ],
     );
   }
 
-  String _formatTime(DateTime time) {
-    if (widget.use24HourFormat) {
-      final hour = time.hour.toString().padLeft(2, '0');
-      final minute = time.minute.toString().padLeft(2, '0');
-      return '$hour:$minute';
-    }
-    final hour = time.hour == 0
-        ? 12
-        : time.hour > 12
-            ? time.hour - 12
-            : time.hour;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
-  }
+  String _formatTime(DateTime time) =>
+      TimeFormatter.formatTime(time, use24HourFormat: widget.use24HourFormat);
 
   String _formatCountdown(DateTime reminderTime) {
     final remaining = reminderTime.difference(DateTime.now());

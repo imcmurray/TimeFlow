@@ -1,38 +1,50 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Experience time as a gentle flowing river. A revolutionary daily schedule app that transforms how you experience time.">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Your day as a gentle river: tasks flow toward a fixed NOW line as time passes. Plan, get reminders, and share your day with a link.">
+  <meta name="theme-color" content="#FAFAFA" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
 
-  <!-- iOS meta tags & icons -->
+  <!-- Link previews (share links open a read-only schedule) -->
+  <meta property="og:title" content="TimeFlow">
+  <meta property="og:description" content="A schedule shared with TimeFlow. Open it to see the day flow past the NOW line.">
+  <meta property="og:image" content="icons/Icon-512.png">
+  <meta name="twitter:card" content="summary">
+
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="TimeFlow">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" href="favicon.png">
 
   <title>TimeFlow</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    body { margin: 0; background: #FAFAFA; }
+    @media (prefers-color-scheme: dark) { body { background: #121212; } }
+  </style>
 </head>
 <body>
+  <noscript>TimeFlow needs JavaScript to run.</noscript>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js');
+        // Hand the files this page loaded to the worker for offline use,
+        // once the app itself has finished loading them.
+        const share = () => navigator.serviceWorker.ready.then((reg) =>
+          reg.active && reg.active.postMessage({
+            cache: performance.getEntriesByType('resource').map((e) => e.name),
+          }));
+        setTimeout(share, 4000);
+        setTimeout(share, 15000);
+      });
+    }
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

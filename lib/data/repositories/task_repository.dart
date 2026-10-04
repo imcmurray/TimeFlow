@@ -1,82 +1,313 @@
-import 'dart:convert';
-
+import 'package:drift/drift.dart';
+import 'package:timeflow/data/backup/backup_codec.dart';
+import 'package:timeflow/data/datasources/database.dart';
+import 'package:timeflow/data/datasources/task_row_mapper.dart';
+import 'package:timeflow/data/migrations/legacy_recurrence.dart';
+import 'package:timeflow/domain/entities/recurrence_rule.dart';
 import 'package:timeflow/domain/entities/task.dart';
+import 'package:timeflow/domain/recurrence/series_expander.dart';
+import 'package:timeflow/domain/time/local_date.dart';
+import 'package:timeflow/domain/time/wall_clock.dart';
+import 'package:uuid/uuid.dart';
 
-import 'task_repository_stub.dart'
-    if (dart.library.io) 'task_repository_native.dart'
-    if (dart.library.html) 'task_repository_web.dart' as impl;
-
-/// Abstract repository interface for task storage.
+/// Storage for tasks, series and occurrence overrides.
 ///
-/// Platform-specific implementations are selected at compile time:
-/// - Native (desktop/mobile): Uses Drift/SQLite
-/// - Web: Uses SharedPreferences with JSON
-abstract class TaskRepository {
-  /// Factory constructor that returns platform-specific implementation.
-  factory TaskRepository() = impl.TaskRepositoryImpl;
+/// Reads return what the timeline shows: standalone tasks plus the
+/// occurrences of every series (stored overrides and generated ones), never
+/// series definitions or cancelled occurrences. The write methods are
+/// primitives; [TaskService] builds the user-level operations on top.
+class TaskRepository {
+  TaskRepository(this._db);
 
-  /// Returns all tasks that overlap with the given date.
-  Future<List<Task>> getTasksForDate(DateTime date);
+  final AppDatabase _db;
 
-  /// Returns all tasks that overlap with the given date range.
-  Future<List<Task>> getTasksForRange(DateTime startDate, DateTime endDate);
+  static const _uuid = Uuid();
+  static String newId() => _uuid.v4();
 
-  /// Returns a task by its ID, or null if not found.
-  Future<Task?> getById(String id);
+  /// Overrides more than this many days before a range can't affect it
+  /// (no task is allowed to be that long).
+  static const _maxSpanDays = 31;
 
-  /// Saves a task (insert or update).
-  Future<void> save(Task task);
+  $TasksTable get _tasks => _db.tasks;
 
-  /// Saves multiple tasks at once.
-  Future<void> saveAll(List<Task> tasks);
+  // ---------------------------------------------------------------- reading
 
-  /// Returns all tasks with the given recurring template ID.
-  Future<List<Task>> getByTemplateId(String templateId);
+  /// Tasks and occurrences overlapping [from]..[to) (end exclusive), sorted
+  /// by start time.
+  Future<List<Task>> getRange(DateTime from, DateTime to) async {
+    final fromS = formatWallClock(from);
+    final toS = formatWallClock(to);
 
-  /// Updates all tasks with the given template ID from the given date onwards.
-  Future<void> updateFutureByTemplateId(
-    String templateId,
-    DateTime fromDate,
-    Task Function(Task) update,
-  );
-
-  /// Deletes a task by its ID.
-  Future<void> delete(String id);
-
-  /// Deletes all tasks with the given recurring template ID.
-  Future<void> deleteByTemplateId(String templateId);
-
-  /// Deletes all future tasks with the given template ID.
-  Future<void> deleteFutureByTemplateId(String templateId, DateTime fromDate);
-
-  /// Returns all tasks.
-  Future<List<Task>> getAll();
-
-  /// Clears all tasks.
-  Future<void> clear();
-
-  /// Returns count of all tasks.
-  Future<int> count();
-
-  /// Exports all tasks to a JSON string.
-  Future<String> exportToJson() async {
-    final tasks = await getAll();
-    final exportData = {
-      'version': 1,
-      'exportedAt': DateTime.now().toIso8601String(),
-      'tasks': tasks.map((t) => t.toJson()).toList(),
+    final seriesRows = await (_db.select(
+      _tasks,
+    )..where((t) => t.recurrence.isNotNull())).get();
+    final rules = {
+      for (final s in seriesRows) s.id: RecurrenceRule.parse(s.recurrence!),
     };
-    return jsonEncode(exportData);
+
+    final concrete =
+        await (_db.select(_tasks)..where(
+              (t) =>
+                  t.recurrence.isNull() &
+                  t.isCancelled.equals(false) &
+                  t.startAt.isSmallerThanValue(toS) &
+                  t.endAt.isBiggerThanValue(fromS),
+            ))
+            .get();
+
+    final result = [
+      for (final row in concrete)
+        row.toTask(
+          seriesRule: row.seriesId != null ? rules[row.seriesId] : null,
+        ),
+    ];
+
+    if (seriesRows.isNotEmpty) {
+      final windowStart = LocalDate.of(from).addDays(-_maxSpanDays).toIso();
+      final windowEnd = LocalDate.of(to).toIso();
+      final overridden =
+          await (_db.selectOnly(_tasks)
+                ..addColumns([_tasks.seriesId, _tasks.occurrenceDate])
+                ..where(
+                  _tasks.seriesId.isNotNull() &
+                      _tasks.occurrenceDate.isBiggerOrEqualValue(windowStart) &
+                      _tasks.occurrenceDate.isSmallerOrEqualValue(windowEnd),
+                ))
+              .get();
+      final skip = <String, Set<LocalDate>>{};
+      for (final r in overridden) {
+        skip
+            .putIfAbsent(r.read(_tasks.seriesId)!, () => {})
+            .add(LocalDate.parseIso(r.read(_tasks.occurrenceDate)!));
+      }
+      for (final s in seriesRows) {
+        if (s.startAt.isAfter(to)) continue;
+        result.addAll(
+          SeriesExpander.occurrencesOf(
+            s.toTask(),
+            from: from,
+            to: to,
+            skip: skip[s.id] ?? const {},
+          ),
+        );
+      }
+    }
+
+    result.sort((a, b) {
+      final c = a.startTime.compareTo(b.startTime);
+      return c != 0 ? c : a.id.compareTo(b.id);
+    });
+    return result;
   }
 
-  /// Imports tasks from a JSON string.
-  Future<int> importFromJson(String jsonString) async {
-    final data = jsonDecode(jsonString) as Map<String, dynamic>;
-    final tasksList = data['tasks'] as List<dynamic>;
-    final tasks = tasksList
-        .map((json) => Task.fromJson(json as Map<String, dynamic>))
-        .toList();
-    await saveAll(tasks);
-    return tasks.length;
+  /// [getRange], re-run whenever tasks change.
+  Stream<List<Task>> watchRange(DateTime from, DateTime to) => _db
+      .customSelect('SELECT 1', readsFrom: {_tasks})
+      .watch()
+      .asyncMap((_) => getRange(from, to));
+
+  /// Emits whenever any task changes.
+  Stream<void> get changes =>
+      _db.tableUpdates(TableUpdateQuery.onTable(_tasks));
+
+  /// A stored task, series or override by id.
+  Future<Task?> getStored(String id) async {
+    final row = await (_db.select(
+      _tasks,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (row == null) return null;
+    final rule = row.seriesId == null
+        ? null
+        : (await getSeries(row.seriesId!))?.recurrence;
+    return row.toTask(seriesRule: rule);
+  }
+
+  Future<Task?> getSeries(String seriesId) async {
+    final row =
+        await (_db.select(_tasks)
+              ..where((t) => t.id.equals(seriesId) & t.recurrence.isNotNull()))
+            .getSingleOrNull();
+    return row?.toTask();
+  }
+
+  /// Stored overrides of a series (including cancelled ones), optionally only
+  /// those on or after [from].
+  Future<List<StoredTask>> overridesOf(
+    String seriesId, {
+    LocalDate? from,
+  }) async {
+    final query = _db.select(_tasks)
+      ..where((t) {
+        var e = t.seriesId.equals(seriesId);
+        if (from != null) {
+          e = e & t.occurrenceDate.isBiggerOrEqualValue(from.toIso());
+        }
+        return e;
+      });
+    final rule = (await getSeries(seriesId))?.recurrence;
+    return [
+      for (final row in await query.get())
+        StoredTask(row.toTask(seriesRule: rule), isCancelled: row.isCancelled),
+    ];
+  }
+
+  /// Number of things the user created: standalone tasks and series.
+  Future<int> count() async {
+    final c = _tasks.id.count();
+    final row =
+        await (_db.selectOnly(_tasks)
+              ..addColumns([c])
+              ..where(_tasks.seriesId.isNull()))
+            .getSingle();
+    return row.read(c) ?? 0;
+  }
+
+  // ---------------------------------------------------------------- writing
+
+  /// Inserts or replaces a standalone task, series, or override. An override
+  /// replaces any other override for the same series and date.
+  Future<void> upsert(Task task, {bool isCancelled = false}) {
+    return _db.transaction(() async {
+      if (task.seriesId != null && task.occurrenceDate != null) {
+        await (_db.delete(_tasks)..where(
+              (t) =>
+                  t.seriesId.equals(task.seriesId!) &
+                  t.occurrenceDate.equals(task.occurrenceDate!.toIso()) &
+                  t.id.equals(task.id).not(),
+            ))
+            .go();
+      }
+      await _db
+          .into(_tasks)
+          .insertOnConflictUpdate(
+            taskToCompanion(task, isCancelled: isCancelled),
+          );
+    });
+  }
+
+  Future<void> upsertAll(Iterable<StoredTask> rows) {
+    return _db.batch(
+      (b) => b.insertAllOnConflictUpdate(
+        _tasks,
+        rows.map(storedToCompanion).toList(),
+      ),
+    );
+  }
+
+  Future<void> delete(String id) =>
+      (_db.delete(_tasks)..where((t) => t.id.equals(id))).go();
+
+  /// Deletes a series and all its overrides.
+  Future<void> deleteSeries(String seriesId) => (_db.delete(
+    _tasks,
+  )..where((t) => t.id.equals(seriesId) | t.seriesId.equals(seriesId))).go();
+
+  /// Deletes a series' overrides dated on or after [from].
+  Future<void> deleteOverridesFrom(String seriesId, LocalDate from) =>
+      (_db.delete(_tasks)..where(
+            (t) =>
+                t.seriesId.equals(seriesId) &
+                t.occurrenceDate.isBiggerOrEqualValue(from.toIso()),
+          ))
+          .go();
+
+  Future<T> transaction<T>(Future<T> Function() action) =>
+      _db.transaction(action);
+
+  Future<void> clear() => _db.transaction(() async {
+    await _db.delete(_tasks).go();
+    await _db.delete(_db.attachments).go();
+  });
+
+  // ------------------------------------------------------------ attachments
+
+  static const attachmentScheme = 'attachment:';
+
+  /// Stores a photo and returns the reference to put in
+  /// [Task.attachmentPath].
+  Future<String> saveAttachment(Uint8List bytes, String mimeType) async {
+    final id = newId();
+    await _db
+        .into(_db.attachments)
+        .insert(
+          AttachmentsCompanion.insert(
+            id: id,
+            mimeType: mimeType,
+            bytes: bytes,
+            createdAt: DateTime.now(),
+          ),
+        );
+    return '$attachmentScheme$id';
+  }
+
+  /// The photo a [Task.attachmentPath] reference points to.
+  Future<({Uint8List bytes, String mimeType})?> attachment(
+    String reference,
+  ) async {
+    if (!reference.startsWith(attachmentScheme)) return null;
+    final id = reference.substring(attachmentScheme.length);
+    final row = await (_db.select(
+      _db.attachments,
+    )..where((a) => a.id.equals(id))).getSingleOrNull();
+    return row == null ? null : (bytes: row.bytes, mimeType: row.mimeType);
+  }
+
+  /// Deletes photos no task refers to any more.
+  Future<int> pruneAttachments() {
+    return _db.customUpdate(
+      'DELETE FROM attachments WHERE '
+      "'$attachmentScheme' || id NOT IN "
+      '(SELECT attachment_path FROM tasks WHERE attachment_path IS NOT NULL)',
+      updates: {_db.attachments},
+      updateKind: UpdateKind.delete,
+    );
+  }
+
+  // ----------------------------------------------------------------- backup
+
+  Future<String> exportToJson() async {
+    final rows = await _db.select(_tasks).get();
+    final attachments = await _db.select(_db.attachments).get();
+    return BackupCodec.encode(
+      [
+        for (final r in rows)
+          StoredTask(r.toTask(), isCancelled: r.isCancelled),
+      ],
+      attachments: [
+        for (final a in attachments)
+          BackupAttachment(a.id, a.mimeType, a.bytes),
+      ],
+    );
+  }
+
+  /// Restores a backup, merging it with existing tasks (same ids are
+  /// replaced). Returns the number of tasks and series restored.
+  /// Throws [BackupFormatException] for files that aren't backups.
+  Future<int> importFromJson(String json) async {
+    final backup = BackupCodec.decodeBackup(json, newId: newId);
+    await _db.transaction(() async {
+      for (final a in backup.attachments) {
+        await _db
+            .into(_db.attachments)
+            .insertOnConflictUpdate(
+              AttachmentsCompanion.insert(
+                id: a.id,
+                mimeType: a.mimeType,
+                bytes: a.bytes,
+                createdAt: DateTime.now(),
+              ),
+            );
+      }
+      await importRows(backup.rows);
+    });
+    return backup.rows.where((r) => r.task.seriesId == null).length;
+  }
+
+  Future<void> importRows(List<StoredTask> rows) {
+    return _db.transaction(() async {
+      for (final r in rows) {
+        await upsert(r.task, isCancelled: r.isCancelled);
+      }
+    });
   }
 }

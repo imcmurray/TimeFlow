@@ -182,11 +182,7 @@ class CategoryBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            category.icon,
-            size: compact ? 12 : 16,
-            color: category.color,
-          ),
+          Icon(category.icon, size: compact ? 12 : 16, color: category.color),
           if (!compact) ...[
             const SizedBox(width: 4),
             Text(
@@ -203,10 +199,7 @@ class CategoryBadge extends StatelessWidget {
     );
 
     if (onTap != null) {
-      return GestureDetector(
-        onTap: onTap,
-        child: badge,
-      );
+      return GestureDetector(onTap: onTap, child: badge);
     }
 
     return badge;

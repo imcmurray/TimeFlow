@@ -1,28 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:timeflow/domain/entities/recurrence_rule.dart';
 import 'package:timeflow/domain/entities/task.dart';
 import 'package:timeflow/domain/entities/task_category.dart';
+import 'package:timeflow/domain/time/local_date.dart';
+import 'package:timeflow/domain/time/wall_clock.dart';
+import 'package:timeflow/presentation/helpers/photo_picker.dart';
+import 'package:timeflow/presentation/helpers/task_actions.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
 import 'package:timeflow/presentation/providers/task_provider.dart';
-import 'package:timeflow/services/recurring_task_service.dart';
-import 'package:uuid/uuid.dart';
+import 'package:timeflow/presentation/utils/time_formatter.dart';
+import 'package:timeflow/presentation/widgets/edit_scope_dialog.dart';
+import 'package:timeflow/presentation/widgets/recurrence_picker.dart';
+import 'package:timeflow/presentation/widgets/task_photo.dart';
+import 'package:timeflow/services/reminder_coordinator.dart';
+import 'package:timeflow/services/task_service.dart';
 
-/// Full-screen modal for task creation and editing.
-///
-/// Provides comprehensive task management with all available fields:
-/// title, times, priority, description, reminders, recurrence, and attachments.
+/// Creates or edits a task.
 class TaskDetailScreen extends ConsumerStatefulWidget {
-  /// The task to edit, or null for creating a new task.
+  /// The task (or occurrence) to edit; null creates a new task.
   final Task? task;
 
-  /// The initial date for new tasks.
+  /// Day for a new task; it starts at the next whole hour.
   final DateTime? initialDate;
 
-  /// Explicit start time for new tasks (overrides initialDate time calculation).
+  /// Exact times for a new task (from long-pressing the timeline).
   final DateTime? initialStartTime;
-
-  /// Explicit end time for new tasks (used with initialStartTime).
   final DateTime? initialEndTime;
 
   const TaskDetailScreen({
@@ -38,16 +41,23 @@ class TaskDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
-  late final TextEditingController _titleController;
-  late final TextEditingController _descriptionController;
-  late final TextEditingController _notesController;
+  static const _reminderOptions = [0, 5, 10, 15, 30, 60, 120, 1440];
 
-  late DateTime _startTime;
-  late DateTime _endTime;
-  bool _isImportant = false;
+  late final TextEditingController _title;
+  late final TextEditingController _description;
+  late final TextEditingController _notes;
+
+  late DateTime _start;
+  late DateTime _end;
+  bool _important = false;
+  bool _completed = false;
   int? _reminderMinutes;
-  String? _recurringPattern;
+  RecurrenceRule? _recurrence;
   TaskCategory _category = TaskCategory.none;
+  String? _attachment;
+  bool _saving = false;
+
+  late final Task _initial;
 
   bool get _isEditing => widget.task != null;
 
@@ -55,485 +65,422 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   void initState() {
     super.initState();
     final task = widget.task;
-    final now = DateTime.now();
-    final initialDate = widget.initialDate ?? now;
-
-    _titleController = TextEditingController(text: task?.title ?? '');
-    _descriptionController = TextEditingController(text: task?.description ?? '');
-    _notesController = TextEditingController(text: task?.notes ?? '');
+    _title = TextEditingController(text: task?.title ?? '');
+    _description = TextEditingController(text: task?.description ?? '');
+    _notes = TextEditingController(text: task?.notes ?? '');
 
     if (task != null) {
-      _startTime = task.startTime;
-      _endTime = task.endTime;
-      _isImportant = task.isImportant;
+      _start = task.startTime;
+      _end = task.endTime;
+      _important = task.isImportant;
+      _completed = task.isCompleted;
       _reminderMinutes = task.reminderMinutes;
-      _recurringPattern = task.recurringPattern;
+      _recurrence = task.recurrence;
       _category = task.category;
-    } else if (widget.initialStartTime != null && widget.initialEndTime != null) {
-      // Use explicit start/end times (from long-press creation)
-      _startTime = widget.initialStartTime!;
-      _endTime = widget.initialEndTime!;
+      _attachment = task.attachmentPath;
     } else {
-      final taskDate = DateTime(initialDate.year, initialDate.month, initialDate.day);
-      final nextHour = (now.hour + 1).clamp(0, 23);
-      _startTime = DateTime(taskDate.year, taskDate.month, taskDate.day, nextHour);
-      _endTime = _startTime.add(const Duration(hours: 1));
+      if (widget.initialStartTime != null && widget.initialEndTime != null) {
+        _start = widget.initialStartTime!;
+        _end = widget.initialEndTime!;
+      } else {
+        final now = DateTime.now();
+        final day = LocalDate.of(widget.initialDate ?? now);
+        _start = day.at(now.hour + 1, 0);
+        if (LocalDate.of(_start) != day) _start = day.at(9, 0);
+        _end = addWallMinutes(_start, 60);
+      }
+      final settings = ref.read(settingsProvider);
+      _reminderMinutes = settings.notificationsEnabled
+          ? settings.defaultReminderMinutes
+          : null;
     }
+    _initial = _draft();
   }
 
   @override
   void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    _notesController.dispose();
+    _title.dispose();
+    _description.dispose();
+    _notes.dispose();
     super.dispose();
   }
 
-  Future<void> _selectTime(bool isStart) async {
-    final initialTime = TimeOfDay.fromDateTime(isStart ? _startTime : _endTime);
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: initialTime,
+  String? _trimmed(TextEditingController c) {
+    final t = c.text.trim();
+    return t.isEmpty ? null : t;
+  }
+
+  /// The task as currently entered.
+  Task _draft() {
+    final now = DateTime.now();
+    final base =
+        widget.task ??
+        Task(
+          id: 'new',
+          title: '',
+          startTime: _start,
+          endTime: _end,
+          createdAt: now,
+          updatedAt: now,
+        );
+    return base.copyWith(
+      title: _title.text.trim(),
+      description: _trimmed(_description),
+      notes: _trimmed(_notes),
+      startTime: _start,
+      endTime: _end,
+      isImportant: _important,
+      isCompleted: _completed,
+      reminderMinutes: _reminderMinutes,
+      recurrence: _recurrence,
+      category: _category,
+      attachmentPath: _attachment,
     );
+  }
 
-    if (picked != null) {
-      setState(() {
-        if (isStart) {
-          _startTime = DateTime(
-            _startTime.year,
-            _startTime.month,
-            _startTime.day,
-            picked.hour,
-            picked.minute,
-          );
-          if (_endTime.isBefore(_startTime) || _endTime.isAtSameMomentAs(_startTime)) {
-            _endTime = _startTime.add(const Duration(hours: 1));
-          }
-        } else {
-          _endTime = DateTime(
-            _endTime.year,
-            _endTime.month,
-            _endTime.day,
-            picked.hour,
-            picked.minute,
-          );
-        }
-      });
+  Future<void> _addPhoto() async {
+    try {
+      final photo = await pickPhoto(context);
+      if (photo == null) return;
+      final reference = await ref
+          .read(taskRepositoryProvider)
+          .saveAttachment(photo.bytes, photo.mimeType);
+      if (mounted) setState(() => _attachment = reference);
+    } catch (e) {
+      _snack('Couldn\'t add that photo');
     }
   }
 
-  String _formatTime(DateTime time) {
-    final use24Hour = ref.read(settingsProvider).use24HourFormat;
-    if (use24Hour) {
-      return DateFormat('HH:mm').format(time);
-    }
-    final hour = time.hour == 0
-        ? 12
-        : time.hour > 12
-            ? time.hour - 12
-            : time.hour;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
+  bool get _isDirty {
+    final d = _draft();
+    return !d.sameContentAs(_initial) || d.recurrence != _initial.recurrence;
   }
 
-  void _adjustDate(int days, {required bool isStart}) {
+  // ----------------------------------------------------------- date & time
+
+  void _setStart(DateTime start) {
+    final length = wallMinutesBetween(_start, _end);
     setState(() {
-      if (isStart) {
-        _startTime = _startTime.add(Duration(days: days));
-        if (_endTime.isBefore(_startTime) || _endTime.isAtSameMomentAs(_startTime)) {
-          _endTime = _startTime.add(const Duration(hours: 1));
-        }
-      } else {
-        _endTime = _endTime.add(Duration(days: days));
-        if (_endTime.isBefore(_startTime) || _endTime.isAtSameMomentAs(_startTime)) {
-          _endTime = _startTime.add(const Duration(hours: 1));
-        }
-      }
+      _start = start;
+      _end = addWallMinutes(start, length > 0 ? length : 60);
     });
   }
 
-  Future<void> _showDatePicker({required bool isStart}) async {
-    final currentDate = isStart ? _startTime : _endTime;
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: currentDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-    );
-    if (picked != null) {
-      final currentDateOnly = DateTime(currentDate.year, currentDate.month, currentDate.day);
-      final diff = picked.difference(currentDateOnly).inDays;
-      if (diff != 0) {
-        _adjustDate(diff, isStart: isStart);
-      }
-    }
+  void _setEnd(DateTime end) {
+    setState(() {
+      _end = end;
+      if (!_end.isAfter(_start)) _end = addWallMinutes(_start, 15);
+    });
   }
 
-  Future<bool?> _showEditRecurringDialog() {
-    return showDialog<bool>(
+  DateTime _withDate(DateTime t, LocalDate date) => date.at(t.hour, t.minute);
+
+  Future<void> _pickDate({required bool start}) async {
+    final current = start ? _start : _end;
+    final now = DateTime.now();
+    DateTime earlier(DateTime a, DateTime b) => a.isBefore(b) ? a : b;
+    DateTime later(DateTime a, DateTime b) => a.isAfter(b) ? a : b;
+    final picked = await showDatePicker(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Recurring Task'),
-        content: const Text(
-          'Do you want to edit only this instance or all future instances?',
+      initialDate: current,
+      firstDate: earlier(current, DateTime(now.year - 5)),
+      lastDate: later(current, DateTime(now.year + 10)),
+    );
+    if (picked == null) return;
+    final date = LocalDate.of(picked);
+    start ? _setStart(_withDate(_start, date)) : _setEnd(_withDate(_end, date));
+  }
+
+  Future<void> _pickTime({required bool start}) async {
+    final current = start ? _start : _end;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(current),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          alwaysUse24HourFormat: ref.read(settingsProvider).use24HourFormat,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('This instance only'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('All future instances'),
-          ),
-        ],
+        child: child!,
       ),
+    );
+    if (picked == null) return;
+    final t = LocalDate.of(current).at(picked.hour, picked.minute);
+    start ? _setStart(t) : _setEnd(t);
+  }
+
+  void _shiftDay(int days, {required bool start}) {
+    final current = start ? _start : _end;
+    final t = _withDate(current, LocalDate.of(current).addDays(days));
+    start ? _setStart(t) : _setEnd(t);
+  }
+
+  // ----------------------------------------------------------------- save
+
+  void _snack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 
   Future<void> _save() async {
-    final title = _titleController.text.trim();
-
-    if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a task title'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    if (_saving) return;
+    final draft = _draft();
+    if (draft.title.isEmpty) {
+      _snack('Give the task a name');
+      return;
+    }
+    if (!draft.endTime.isAfter(draft.startTime)) {
+      _snack('The task has to end after it starts');
       return;
     }
 
-    if (_endTime.isBefore(_startTime) || _endTime.isAtSameMomentAs(_startTime)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('End time must be after start time'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
+    final service = ref.read(taskServiceProvider);
+    final original = widget.task;
+    setState(() => _saving = true);
+    if (draft.reminderMinutes != null &&
+        ref.read(settingsProvider).notificationsEnabled) {
+      // First reminder: this is when the system asks for permission.
+      await ref.read(reminderCoordinatorProvider).ensurePermission();
+      if (!mounted) return;
     }
-
-    final now = DateTime.now();
-    final repository = ref.read(taskRepositoryProvider);
-    final description = _descriptionController.text.trim();
-    final notes = _notesController.text.trim();
-
-    if (_isEditing && widget.task!.recurringTemplateId != null) {
-      final editAll = await _showEditRecurringDialog();
-      if (editAll == null) return;
-
-      if (editAll) {
-        final templateId = widget.task!.recurringTemplateId!;
-        final originalStartTime = widget.task!.startTime;
-        await repository.updateFutureByTemplateId(
-          templateId,
-          originalStartTime,
-          (existingTask) {
-            final taskDuration = _endTime.difference(_startTime);
-            final newEndTime = DateTime(
-              existingTask.startTime.year,
-              existingTask.startTime.month,
-              existingTask.startTime.day,
-              _startTime.hour,
-              _startTime.minute,
-            ).add(taskDuration);
-
-            return existingTask.copyWith(
-              title: title,
-              description: description.isEmpty ? null : description,
-              startTime: DateTime(
-                existingTask.startTime.year,
-                existingTask.startTime.month,
-                existingTask.startTime.day,
-                _startTime.hour,
-                _startTime.minute,
-              ),
-              endTime: newEndTime,
-              isImportant: _isImportant,
-              reminderMinutes: _reminderMinutes,
-              notes: notes.isEmpty ? null : notes,
-              category: _category,
-              updatedAt: now,
-            );
-          },
-        );
-        ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
-
-        if (mounted) {
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('All future instances updated'),
-              behavior: SnackBarBehavior.floating,
-            ),
+    try {
+      if (original == null) {
+        await service.create(draft);
+      } else {
+        var scope = EditScope.all;
+        if (original.isOccurrence) {
+          final ruleChanged = draft.recurrence != original.recurrence;
+          final chosen = await showEditScopeDialog(
+            context,
+            verb: 'change',
+            allowAll: true,
           );
+          if (chosen == null) return;
+          scope = chosen;
+          if (scope == EditScope.thisOnly && ruleChanged) {
+            // A single occurrence can't have its own pattern.
+            scope = EditScope.thisAndFuture;
+          }
         }
-        return;
+        await service.update(original, draft, scope);
       }
-    }
-
-    final task = Task(
-      id: widget.task?.id ?? const Uuid().v4(),
-      title: title,
-      description: description.isEmpty ? null : description,
-      startTime: _startTime,
-      endTime: _endTime,
-      isImportant: _isImportant,
-      isCompleted: widget.task?.isCompleted ?? false,
-      reminderMinutes: _reminderMinutes,
-      recurringPattern: _recurringPattern,
-      recurringTemplateId: widget.task?.recurringTemplateId,
-      notes: notes.isEmpty ? null : notes,
-      attachmentPath: widget.task?.attachmentPath,
-      color: widget.task?.color,
-      category: _category,
-      createdAt: widget.task?.createdAt ?? now,
-      updatedAt: now,
-    );
-
-    if (!_isEditing && _recurringPattern != null) {
-      final instances = RecurringTaskService.generateInstances(task);
-      await repository.saveAll(instances);
-      ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
-
-      if (mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Created ${instances.length} recurring tasks'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-      return;
-    }
-
-    await repository.save(task);
-    ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
-
-    if (mounted) {
+      if (!mounted) return;
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_isEditing ? 'Task updated' : 'Task created'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
-  void _delete() {
-    showDialog(
+  Future<void> _delete() async {
+    final deleted = await TaskActions(ref).delete(context, widget.task!);
+    if (deleted && mounted) Navigator.of(context).pop();
+  }
+
+  Future<bool> _confirmDiscard() async {
+    final discard = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Task'),
-        content: const Text('Are you sure you want to delete this task?'),
+        title: const Text('Discard changes?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep editing'),
           ),
           TextButton(
-            onPressed: () async {
-              await ref.read(taskRepositoryProvider).delete(widget.task!.id);
-              ref.read(taskNotifierProvider.notifier).notifyTasksChanged();
-
-              if (context.mounted) {
-                Navigator.of(context).pop(); // Close dialog
-                Navigator.of(context).pop(); // Close detail screen
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Task deleted'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Discard'),
           ),
         ],
       ),
     );
+    return discard ?? false;
   }
+
+  String _reminderLabel(int minutes) => switch (minutes) {
+    0 => 'At start time',
+    60 => '1 hour before',
+    120 => '2 hours before',
+    1440 => '1 day before',
+    _ => '$minutes minutes before',
+  };
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Task' : 'New Task'),
-        actions: [
-          if (_isEditing)
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: _delete,
-              tooltip: 'Delete task',
-            ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Title field
-            TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                hintText: 'Enter task title',
-                border: OutlineInputBorder(),
+    final use24Hour = ref.watch(
+      settingsProvider.select((s) => s.use24HourFormat),
+    );
+    final occurrence = widget.task?.isOccurrence ?? false;
+    final reminderChoices = {..._reminderOptions, ?_reminderMinutes}.toList()
+      ..sort();
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (!_isDirty || await _confirmDiscard()) {
+          if (context.mounted) Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_isEditing ? 'Edit task' : 'New task'),
+          actions: [
+            if (_isEditing)
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: _delete,
+                tooltip: 'Delete task',
               ),
-              textCapitalization: TextCapitalization.sentences,
-              autofocus: !_isEditing,
-            ),
-            const SizedBox(height: 16),
-
-            // Start date & time group
-            _DateTimeGroup(
-              label: 'Start',
-              date: _startTime,
-              formattedTime: _formatTime(_startTime),
-              onDateChanged: (days) => _adjustDate(days, isStart: true),
-              onDateTap: () => _showDatePicker(isStart: true),
-              onTimeTap: () => _selectTime(true),
-            ),
-            const SizedBox(height: 12),
-
-            // End date & time group
-            _DateTimeGroup(
-              label: 'End',
-              date: _endTime,
-              formattedTime: _formatTime(_endTime),
-              onDateChanged: (days) => _adjustDate(days, isStart: false),
-              onDateTap: () => _showDatePicker(isStart: false),
-              onTimeTap: () => _selectTime(false),
-            ),
-            const SizedBox(height: 16),
-
-            // Priority toggle
-            SwitchListTile(
-              title: const Text('Important'),
-              subtitle: const Text('Mark this task as high priority'),
-              value: _isImportant,
-              onChanged: (value) {
-                setState(() => _isImportant = value);
-              },
-              secondary: Icon(
-                _isImportant ? Icons.star : Icons.star_border,
-                color: _isImportant
-                    ? Theme.of(context).colorScheme.tertiary
-                    : null,
-              ),
-            ),
-            const Divider(),
-
-            // Description field
-            TextField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                hintText: 'Add more details (optional)',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-              textCapitalization: TextCapitalization.sentences,
-            ),
-            const SizedBox(height: 16),
-
-            // Reminder dropdown
-            DropdownButtonFormField<int?>(
-              initialValue: _reminderMinutes,
-              decoration: const InputDecoration(
-                labelText: 'Reminder',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.notifications_outlined),
-              ),
-              items: const [
-                DropdownMenuItem(value: null, child: Text('No reminder')),
-                DropdownMenuItem(value: 5, child: Text('5 minutes before')),
-                DropdownMenuItem(value: 10, child: Text('10 minutes before')),
-                DropdownMenuItem(value: 15, child: Text('15 minutes before')),
-                DropdownMenuItem(value: 30, child: Text('30 minutes before')),
-                DropdownMenuItem(value: 60, child: Text('1 hour before')),
-              ],
-              onChanged: (value) {
-                setState(() => _reminderMinutes = value);
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Recurring dropdown
-            DropdownButtonFormField<String?>(
-              initialValue: _recurringPattern,
-              decoration: const InputDecoration(
-                labelText: 'Repeat',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.repeat),
-              ),
-              items: const [
-                DropdownMenuItem(value: null, child: Text('Does not repeat')),
-                DropdownMenuItem(value: 'daily', child: Text('Daily')),
-                DropdownMenuItem(value: 'weekdays', child: Text('Weekdays')),
-                DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
-                DropdownMenuItem(value: 'fortnightly', child: Text('Fortnightly')),
-                DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
-                DropdownMenuItem(value: 'bimonthly', child: Text('Every 2 Months')),
-                DropdownMenuItem(value: 'quarterly', child: Text('Quarterly')),
-                DropdownMenuItem(value: 'yearly', child: Text('Yearly')),
-              ],
-              onChanged: (value) {
-                setState(() => _recurringPattern = value);
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Category selector
-            CategorySelector(
-              value: _category,
-              onChanged: (value) {
-                setState(() => _category = value ?? TaskCategory.none);
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Notes field
-            TextField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Notes',
-                hintText: 'Additional notes (optional)',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 4,
-              textCapitalization: TextCapitalization.sentences,
-            ),
-            const SizedBox(height: 16),
-
-            // Attachment button
-            OutlinedButton.icon(
-              onPressed: () {
-                // TODO: Implement image picker
-              },
-              icon: const Icon(Icons.attach_file),
-              label: const Text('Add attachment'),
-            ),
-            const SizedBox(height: 24),
-
-            // Save button
-            FilledButton(
-              onPressed: _save,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(
-                  _isEditing ? 'Save Changes' : 'Create Task',
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ),
+            TextButton(
+              onPressed: _saving ? null : _save,
+              child: const Text('Save'),
             ),
           ],
+        ),
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              TextField(
+                controller: _title,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  hintText: 'What needs to happen?',
+                  border: OutlineInputBorder(),
+                ),
+                textCapitalization: TextCapitalization.sentences,
+                textInputAction: TextInputAction.done,
+                autofocus: !_isEditing,
+                onSubmitted: (_) => _save(),
+              ),
+              const SizedBox(height: 16),
+              _DateTimeGroup(
+                label: 'Starts',
+                time: _start,
+                use24Hour: use24Hour,
+                onShiftDay: (d) => _shiftDay(d, start: true),
+                onDateTap: () => _pickDate(start: true),
+                onTimeTap: () => _pickTime(start: true),
+              ),
+              const SizedBox(height: 12),
+              _DateTimeGroup(
+                label: 'Ends',
+                time: _end,
+                use24Hour: use24Hour,
+                onShiftDay: (d) => _shiftDay(d, start: false),
+                onDateTap: () => _pickDate(start: false),
+                onTimeTap: () => _pickTime(start: false),
+              ),
+              const SizedBox(height: 16),
+              RecurrencePicker(
+                value: _recurrence,
+                start: LocalDate.of(_start),
+                onChanged: (r) => setState(() => _recurrence = r),
+              ),
+              if (occurrence)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, left: 12),
+                  child: Text(
+                    'You\'ll be asked whether changes apply to just this '
+                    'task or the rest of the series.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int?>(
+                initialValue: _reminderMinutes,
+                decoration: const InputDecoration(
+                  labelText: 'Reminder',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.notifications_outlined),
+                ),
+                items: [
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('No reminder'),
+                  ),
+                  for (final m in reminderChoices)
+                    DropdownMenuItem(value: m, child: Text(_reminderLabel(m))),
+                ],
+                onChanged: (v) => setState(() => _reminderMinutes = v),
+              ),
+              const SizedBox(height: 16),
+              CategorySelector(
+                value: _category,
+                onChanged: (v) =>
+                    setState(() => _category = v ?? TaskCategory.none),
+              ),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                title: const Text('Important'),
+                value: _important,
+                onChanged: (v) => setState(() => _important = v),
+                secondary: Icon(
+                  _important ? Icons.star : Icons.star_border,
+                  color: _important
+                      ? Theme.of(context).colorScheme.tertiary
+                      : null,
+                ),
+              ),
+              if (_isEditing)
+                SwitchListTile(
+                  title: const Text('Done'),
+                  value: _completed,
+                  onChanged: (v) => setState(() => _completed = v),
+                  secondary: Icon(
+                    _completed
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
+                  ),
+                ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _description,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
+                minLines: 2,
+                maxLines: 5,
+                textCapitalization: TextCapitalization.sentences,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _notes,
+                decoration: const InputDecoration(
+                  labelText: 'Notes',
+                  hintText: 'Instructions for whoever picks this up',
+                  border: OutlineInputBorder(),
+                ),
+                minLines: 2,
+                maxLines: 8,
+                textCapitalization: TextCapitalization.sentences,
+              ),
+              const SizedBox(height: 16),
+              if (_attachment != null)
+                TaskPhotoThumbnail(
+                  reference: _attachment!,
+                  onRemove: () => setState(() => _attachment = null),
+                )
+              else
+                OutlinedButton.icon(
+                  onPressed: _addPhoto,
+                  icon: const Icon(Icons.add_a_photo_outlined),
+                  label: const Text('Add a photo'),
+                ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: _saving ? null : _save,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text(
+                    _isEditing ? 'Save changes' : 'Create task',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -542,90 +489,73 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
 class _DateTimeGroup extends StatelessWidget {
   final String label;
-  final DateTime date;
-  final String formattedTime;
-  final void Function(int days) onDateChanged;
+  final DateTime time;
+  final bool use24Hour;
+  final ValueChanged<int> onShiftDay;
   final VoidCallback onDateTap;
   final VoidCallback onTimeTap;
 
   const _DateTimeGroup({
     required this.label,
-    required this.date,
-    required this.formattedTime,
-    required this.onDateChanged,
+    required this.time,
+    required this.use24Hour,
+    required this.onShiftDay,
     required this.onDateTap,
     required this.onTimeTap,
   });
 
-  String _formatDateCompact(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final targetDate = DateTime(date.year, date.month, date.day);
-    final difference = targetDate.difference(today).inDays;
-
-    if (difference == 0) return 'Today';
-    if (difference == 1) return 'Tomorrow';
-    if (difference == -1) return 'Yesterday';
-
-    return DateFormat('EEE, MMM d').format(date);
-  }
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final date = TimeFormatter.formatDateCompact(time);
+    final clock = TimeFormatter.formatTime(time, use24HourFormat: use24Hour);
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).dividerColor),
+        border: Border.all(color: theme.dividerColor),
         borderRadius: BorderRadius.circular(12),
       ),
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            padding: const EdgeInsets.only(left: 4, bottom: 4),
             child: Text(
               label,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-            child: Row(
-              children: [
-                // Date section
-                Expanded(
-                  flex: 3,
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.chevron_left),
+                tooltip: 'Previous day',
+                onPressed: () => onShiftDay(-1),
+              ),
+              Expanded(
+                flex: 3,
+                child: Semantics(
+                  button: true,
+                  label: '$label date, $date',
+                  excludeSemantics: true,
                   child: InkWell(
                     onTap: onDateTap,
                     borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                       child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Icon(Icons.calendar_today, size: 18),
                           const SizedBox(width: 8),
-                          Expanded(
+                          Flexible(
                             child: Text(
-                              _formatDateCompact(date),
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                          ),
-                          InkWell(
-                            onTap: () => onDateChanged(-1),
-                            borderRadius: BorderRadius.circular(16),
-                            child: const Padding(
-                              padding: EdgeInsets.all(4),
-                              child: Icon(Icons.chevron_left, size: 20),
-                            ),
-                          ),
-                          InkWell(
-                            onTap: () => onDateChanged(1),
-                            borderRadius: BorderRadius.circular(16),
-                            child: const Padding(
-                              padding: EdgeInsets.all(4),
-                              child: Icon(Icons.chevron_right, size: 20),
+                              date,
+                              style: theme.textTheme.titleMedium,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -633,35 +563,43 @@ class _DateTimeGroup extends StatelessWidget {
                     ),
                   ),
                 ),
-                Container(
-                  width: 1,
-                  height: 32,
-                  color: Theme.of(context).dividerColor,
-                ),
-                // Time section
-                Expanded(
-                  flex: 2,
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                tooltip: 'Next day',
+                onPressed: () => onShiftDay(1),
+              ),
+              Container(width: 1, height: 32, color: theme.dividerColor),
+              Expanded(
+                flex: 2,
+                child: Semantics(
+                  button: true,
+                  label: '$label time, $clock',
+                  excludeSemantics: true,
                   child: InkWell(
                     onTap: onTimeTap,
                     borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Icon(Icons.access_time, size: 18),
                           const SizedBox(width: 8),
-                          Text(
-                            formattedTime,
-                            style: Theme.of(context).textTheme.titleMedium,
+                          Flexible(
+                            child: Text(
+                              clock,
+                              style: theme.textTheme.titleMedium,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),

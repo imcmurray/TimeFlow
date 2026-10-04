@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cron_timeflow/data/repositories/task_repository.dart';
-import 'package:cron_timeflow/domain/entities/task.dart';
+import 'package:timeflow/data/repositories/task_repository.dart';
+import 'package:timeflow/domain/entities/task.dart';
 
 /// Web implementation using SharedPreferences with JSON storage.
 class TaskRepositoryImpl implements TaskRepository {

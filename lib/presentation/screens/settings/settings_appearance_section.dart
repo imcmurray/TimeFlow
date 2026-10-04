@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cron_timeflow/presentation/providers/settings_provider.dart';
-import 'package:cron_timeflow/presentation/screens/settings/section_header.dart';
+import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/screens/settings/section_header.dart';
 
 /// Appearance settings: theme, density, task direction, 24-hour time.
 class SettingsAppearanceSection extends ConsumerWidget {

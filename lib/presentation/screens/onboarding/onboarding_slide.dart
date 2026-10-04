@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cron_timeflow/core/theme/app_colors.dart';
+import 'package:timeflow/core/theme/app_colors.dart';
 
 /// Base template for an onboarding slide with icon, title, tagline, and
 /// description.

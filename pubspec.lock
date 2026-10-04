@@ -233,14 +233,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.15.0"
-  cron_expression_parser:
-    dependency: "direct main"
-    description:
-      name: cron_expression_parser
-      sha256: "8f90b3e5e603a4739e85e1d4173d7b4a336d167eaad0559c0956f0aa599aa8f7"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.0"
   cross_file:
     dependency: transitive
     description:
@@ -257,14 +249,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.7"
-  csv:
-    dependency: "direct main"
-    description:
-      name: csv
-      sha256: c6aa2679b2a18cb57652920f674488d89712efaf4d3fdf2e537215b35fc19d6c
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.0.0"
   cupertino_icons:
     dependency: "direct main"
     description:

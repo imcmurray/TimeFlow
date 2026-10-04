@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cron_timeflow/core/theme/app_colors.dart';
-import 'package:cron_timeflow/presentation/providers/settings_provider.dart';
-import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
+import 'package:timeflow/core/theme/app_colors.dart';
+import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/utils/time_formatter.dart';
 
 /// NOW line that scrolls with the timeline content.
 /// Long-press and drag to change where on the viewport the NOW line appears.

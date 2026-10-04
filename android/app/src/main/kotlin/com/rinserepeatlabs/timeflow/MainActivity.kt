@@ -1,4 +1,4 @@
-package com.rinserepeatlabs.cron_timeflow
+package com.rinserepeatlabs.timeflow
 
 import io.flutter.embedding.android.FlutterActivity
 

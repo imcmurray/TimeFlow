@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cron_timeflow/presentation/providers/settings_provider.dart';
-import 'package:cron_timeflow/presentation/screens/settings/section_header.dart';
+import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/screens/settings/section_header.dart';
 
 /// A location preset with name and coordinates.
 class LocationPreset {

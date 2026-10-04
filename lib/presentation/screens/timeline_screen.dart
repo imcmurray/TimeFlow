@@ -4,17 +4,13 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cron_timeflow/core/plugins/plugin_interface.dart';
-import 'package:cron_timeflow/core/plugins/plugin_state_provider.dart';
-import 'package:cron_timeflow/presentation/providers/settings_provider.dart';
-import 'package:cron_timeflow/presentation/screens/plugin_marketplace_screen.dart';
-import 'package:cron_timeflow/presentation/widgets/timeline_view.dart';
-import 'package:cron_timeflow/presentation/widgets/calendar_overview.dart';
-import 'package:cron_timeflow/presentation/screens/task_detail_screen.dart';
-import 'package:cron_timeflow/presentation/screens/settings_screen.dart';
-import 'package:cron_timeflow/presentation/screens/share_screen.dart';
-import 'package:cron_timeflow/presentation/screens/timeline_share_screen.dart';
-import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
+import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/widgets/timeline_view.dart';
+import 'package:timeflow/presentation/widgets/calendar_overview.dart';
+import 'package:timeflow/presentation/screens/task_detail_screen.dart';
+import 'package:timeflow/presentation/screens/settings_screen.dart';
+import 'package:timeflow/presentation/screens/share_screen.dart';
+import 'package:timeflow/presentation/utils/time_formatter.dart';
 
 /// View mode for the timeline screen.
 enum TimelineViewMode { day, calendar }
@@ -250,63 +246,16 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
             ),
           ),
           actions: [
-            // Dynamic plugin AppBar actions
-            ...ref.watch(enabledPluginsProvider).expand((plugin) => plugin
-                .uiExtensions
-                .where((ext) =>
-                    ext.extensionPoint == UIExtensionPoint.appBarAction)
-                .map((ext) => ext.builder(context, ref))),
-            // Plugin marketplace
             IconButton(
-              icon: const Icon(Icons.extension_outlined),
+              icon: const Icon(Icons.share_outlined),
+              tooltip: 'Share',
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => const PluginMarketplaceScreen(),
+                    builder: (context) => ShareScreen(date: _visibleDate),
                   ),
                 );
               },
-              tooltip: 'Plugins',
-            ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.share_outlined),
-              tooltip: 'Share',
-              onSelected: (value) {
-                switch (value) {
-                  case 'tasks':
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => ShareScreen(date: _visibleDate),
-                      ),
-                    );
-                  case 'timeline':
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const TimelineShareScreen(),
-                      ),
-                    );
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'tasks',
-                  child: ListTile(
-                    leading: Icon(Icons.task_outlined),
-                    title: Text('Share Tasks'),
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'timeline',
-                  child: ListTile(
-                    leading: Icon(Icons.timeline),
-                    title: Text('Share Timeline'),
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ],
             ),
             IconButton(
               icon: const Icon(Icons.settings_outlined),

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cron_timeflow/services/sun_times_service.dart';
+import 'package:timeflow/services/sun_times_service.dart';
 
 void main() {
   group('SunTimesService', () {

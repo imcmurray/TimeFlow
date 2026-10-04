@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cron_timeflow/presentation/utils/day_label_formatter.dart';
+import 'package:timeflow/presentation/utils/day_label_formatter.dart';
 
 /// A simpler inline day divider with sunrise/sunset icon and gradient band.
 class SimpleDayDivider extends StatelessWidget {

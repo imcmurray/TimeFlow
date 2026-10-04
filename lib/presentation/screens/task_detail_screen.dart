@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cron_timeflow/domain/entities/task.dart';
-import 'package:cron_timeflow/domain/entities/task_category.dart';
-import 'package:cron_timeflow/presentation/providers/settings_provider.dart';
-import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
-import 'package:cron_timeflow/presentation/providers/task_provider.dart';
-import 'package:cron_timeflow/services/recurring_task_service.dart';
+import 'package:timeflow/domain/entities/task.dart';
+import 'package:timeflow/domain/entities/task_category.dart';
+import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/utils/time_formatter.dart';
+import 'package:timeflow/presentation/providers/task_provider.dart';
+import 'package:timeflow/services/recurring_task_service.dart';
 import 'package:uuid/uuid.dart';
 
 /// Full-screen modal for task creation and editing.

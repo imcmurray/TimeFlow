@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:cron_timeflow/build_info.dart';
-import 'package:cron_timeflow/core/plugins/plugin_state_provider.dart';
-import 'package:cron_timeflow/presentation/screens/plugin_marketplace_screen.dart';
-import 'package:cron_timeflow/presentation/screens/settings/section_header.dart';
+import 'package:timeflow/build_info.dart';
+import 'package:timeflow/presentation/screens/settings/section_header.dart';
 
-/// Plugins and about settings: marketplace, app info, support, legal.
+/// About settings: app info, support, legal.
 class SettingsAboutSection extends ConsumerWidget {
   const SettingsAboutSection({super.key});
 
@@ -15,26 +13,6 @@ class SettingsAboutSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
-        // Plugins
-        const SectionHeader(title: 'Plugins'),
-        ListTile(
-          leading: const Icon(Icons.extension_outlined),
-          title: const Text('Plugin Marketplace'),
-          subtitle: Text(
-            '${ref.watch(enabledPluginsProvider).length} active',
-          ),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const PluginMarketplaceScreen(),
-              ),
-            );
-          },
-        ),
-
-        const Divider(),
-
         // About
         const SectionHeader(title: 'About'),
         ListTile(

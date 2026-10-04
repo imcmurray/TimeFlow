@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:cron_timeflow/presentation/utils/day_label_formatter.dart';
+import 'package:timeflow/presentation/utils/day_label_formatter.dart';
 
 // Re-export split-out classes so existing imports still work.
-export 'package:cron_timeflow/presentation/widgets/simple_day_divider.dart';
-export 'package:cron_timeflow/presentation/widgets/day_watermark.dart';
+export 'package:timeflow/presentation/widgets/simple_day_divider.dart';
+export 'package:timeflow/presentation/widgets/day_watermark.dart';
 
 /// Visual marker indicating day boundaries with sunrise/sunset theming.
 ///

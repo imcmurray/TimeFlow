@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cron_timeflow/data/repositories/task_repository.dart';
-import 'package:cron_timeflow/domain/entities/task.dart';
+import 'package:timeflow/data/repositories/task_repository.dart';
+import 'package:timeflow/domain/entities/task.dart';
 
 /// Represents a date range for fetching tasks.
 @immutable

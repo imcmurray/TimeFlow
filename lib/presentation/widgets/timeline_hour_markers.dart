@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cron_timeflow/core/theme/app_colors.dart';
-import 'package:cron_timeflow/presentation/providers/settings_provider.dart';
-import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
-import 'package:cron_timeflow/presentation/utils/timeline_offset.dart';
-import 'package:cron_timeflow/services/sun_times_service.dart';
+import 'package:timeflow/core/theme/app_colors.dart';
+import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/utils/time_formatter.dart';
+import 'package:timeflow/presentation/utils/timeline_offset.dart';
+import 'package:timeflow/services/sun_times_service.dart';
 
 /// Displays hour markers for multiple days with sunrise/sunset indicators.
 class HourMarkersMultiDay extends ConsumerWidget {

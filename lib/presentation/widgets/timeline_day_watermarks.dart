@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cron_timeflow/domain/entities/task.dart';
-import 'package:cron_timeflow/presentation/providers/settings_provider.dart';
-import 'package:cron_timeflow/presentation/providers/task_provider.dart';
-import 'package:cron_timeflow/presentation/utils/timeline_offset.dart';
-import 'package:cron_timeflow/presentation/widgets/day_boundary_marker.dart';
+import 'package:timeflow/domain/entities/task.dart';
+import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/providers/task_provider.dart';
+import 'package:timeflow/presentation/utils/timeline_offset.dart';
+import 'package:timeflow/presentation/widgets/day_boundary_marker.dart';
 
 /// Displays large watermark dates in the background of each day.
 /// Adjusts position based on task overlap to avoid covering events.

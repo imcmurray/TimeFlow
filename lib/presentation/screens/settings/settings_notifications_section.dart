@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cron_timeflow/core/plugins/plugin_state_provider.dart';
-import 'package:cron_timeflow/presentation/providers/settings_provider.dart';
-import 'package:cron_timeflow/presentation/screens/settings/section_header.dart';
-import 'package:cron_timeflow/services/reminder_sound_service.dart';
+import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/screens/settings/section_header.dart';
+import 'package:timeflow/services/reminder_sound_service.dart';
 
 /// Notifications and event alert settings.
 class SettingsNotificationsSection extends ConsumerWidget {
@@ -67,47 +66,6 @@ class SettingsNotificationsSection extends ConsumerWidget {
 
         const Divider(),
 
-        // Event Alerts
-        const SectionHeader(title: 'Event Alerts'),
-        SwitchListTile(
-          secondary: const Icon(Icons.notifications_active),
-          title: const Text('Now-Line Event Alerts'),
-          subtitle: const Text('Alert when plugin events reach the now line'),
-          value: ref.watch(settingsProvider).eventCrossingAlertEnabled,
-          onChanged: (value) {
-            ref
-                .read(settingsProvider.notifier)
-                .setEventCrossingAlertEnabled(value);
-          },
-        ),
-        // Per-plugin crossing alert toggles
-        ...ref.watch(enabledPluginsProvider).map((plugin) {
-          final crossingState = ref.watch(pluginCrossingAlertStateProvider);
-          final enabled = crossingState[plugin.id] ?? true;
-          return SwitchListTile(
-            secondary: const SizedBox(width: 24),
-            title: Text(plugin.name),
-            value: enabled &&
-                ref.watch(settingsProvider).eventCrossingAlertEnabled,
-            onChanged: ref.watch(settingsProvider).eventCrossingAlertEnabled
-                ? (value) {
-                    ref
-                        .read(pluginCrossingAlertStateProvider.notifier)
-                        .setEnabled(plugin.id, value);
-                  }
-                : null,
-          );
-        }),
-        ListTile(
-          leading: const Icon(Icons.music_note),
-          title: const Text('Event Alert Sound'),
-          subtitle: Text(ReminderSoundService.getLabel(
-              ref.watch(settingsProvider).eventCrossingAlertSound)),
-          enabled: ref.watch(settingsProvider).eventCrossingAlertEnabled,
-          onTap: ref.watch(settingsProvider).eventCrossingAlertEnabled
-              ? () => _showEventAlertSoundPicker(context, ref)
-              : null,
-        ),
       ],
     );
   }
@@ -166,50 +124,6 @@ class SettingsNotificationsSection extends ConsumerWidget {
               ),
               onTap: () {
                 ref.read(settingsProvider.notifier).setReminderSound(sound);
-                Navigator.pop(context);
-              },
-            );
-          }).toList(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showEventAlertSoundPicker(BuildContext context, WidgetRef ref) {
-    final currentSound = ref.read(settingsProvider).eventCrossingAlertSound;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Choose Event Alert Sound'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: ReminderSoundService.availableSounds.map((sound) {
-            return ListTile(
-              title: Text(ReminderSoundService.getLabel(sound)),
-              leading: Radio<String>(
-                value: sound,
-                groupValue: currentSound,
-                onChanged: (value) {
-                  ref
-                      .read(settingsProvider.notifier)
-                      .setEventCrossingAlertSound(value!);
-                  Navigator.pop(context);
-                },
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.play_arrow),
-                onPressed: () => ReminderSoundService.play(sound),
-              ),
-              onTap: () {
-                ref
-                    .read(settingsProvider.notifier)
-                    .setEventCrossingAlertSound(sound);
                 Navigator.pop(context);
               },
             );

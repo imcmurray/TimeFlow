@@ -1,4 +1,4 @@
-name: cron_timeflow
+name: timeflow
 description: Experience time as a gentle flowing river, not a pressure cooker. A revolutionary daily schedule app that transforms how you experience time.
 publish_to: 'none'
 version: 1.0.0+1
@@ -50,9 +50,6 @@ dependencies:
   # Web platform interop (used by file_export_web.dart)
   web: ^1.1.0
 
-  # CronViz plugin
-  csv: ^6.0.0
-  cron_expression_parser: ^1.0.0
 
 dev_dependencies:
   flutter_test:

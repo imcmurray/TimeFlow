@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
-import 'package:cron_timeflow/presentation/widgets/priority_column_card.dart';
+import 'package:timeflow/presentation/utils/time_formatter.dart';
+import 'package:timeflow/presentation/widgets/priority_column_card.dart';
 
 /// Preview widget shown during long-press task creation.
 /// Displays a semi-transparent box with the task duration.

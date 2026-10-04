@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cron_timeflow/presentation/utils/timeline_offset.dart';
-import 'package:cron_timeflow/presentation/widgets/day_boundary_marker.dart';
+import 'package:timeflow/presentation/utils/timeline_offset.dart';
+import 'package:timeflow/presentation/widgets/day_boundary_marker.dart';
 
 /// Displays day dividers at midnight boundaries.
 class DayDividers extends StatelessWidget {

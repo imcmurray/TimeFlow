@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cron_timeflow/core/theme/app_colors.dart';
-import 'package:cron_timeflow/presentation/providers/settings_provider.dart';
-import 'package:cron_timeflow/presentation/screens/onboarding/onboarding_slide.dart';
-import 'package:cron_timeflow/presentation/screens/onboarding/onboarding_slides.dart';
-import 'package:cron_timeflow/presentation/screens/timeline_screen.dart';
+import 'package:timeflow/core/theme/app_colors.dart';
+import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/screens/onboarding/onboarding_slide.dart';
+import 'package:timeflow/presentation/screens/onboarding/onboarding_slides.dart';
+import 'package:timeflow/presentation/screens/timeline_screen.dart';
 
 /// Onboarding screen shown on first app launch.
 ///

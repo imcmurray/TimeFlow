@@ -1,5 +1,5 @@
 import 'package:uuid/uuid.dart';
-import 'package:cron_timeflow/domain/entities/task.dart';
+import 'package:timeflow/domain/entities/task.dart';
 
 /// Service for generating recurring task instances from a template task.
 class RecurringTaskService {

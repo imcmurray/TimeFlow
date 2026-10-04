@@ -2,10 +2,10 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cron_timeflow/domain/entities/task.dart';
-import 'package:cron_timeflow/presentation/utils/time_formatter.dart';
-import 'package:cron_timeflow/presentation/widgets/reminder_line.dart';
-import 'package:cron_timeflow/presentation/widgets/task_card.dart';
+import 'package:timeflow/domain/entities/task.dart';
+import 'package:timeflow/presentation/utils/time_formatter.dart';
+import 'package:timeflow/presentation/widgets/reminder_line.dart';
+import 'package:timeflow/presentation/widgets/task_card.dart';
 
 /// A modal that shows expanded view of merged/overlapping tasks.
 ///

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cron_timeflow/core/theme/app_colors.dart';
-import 'package:cron_timeflow/presentation/screens/onboarding/onboarding_slide.dart';
+import 'package:timeflow/core/theme/app_colors.dart';
+import 'package:timeflow/presentation/screens/onboarding/onboarding_slide.dart';
 
 /// Welcome slide introducing TimeFlow.
 class WelcomeSlide extends StatelessWidget {

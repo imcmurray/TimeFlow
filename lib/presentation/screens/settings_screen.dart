@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cron_timeflow/presentation/screens/settings/settings_appearance_section.dart';
-import 'package:cron_timeflow/presentation/screens/settings/settings_location_section.dart';
-import 'package:cron_timeflow/presentation/screens/settings/settings_task_creation_section.dart';
-import 'package:cron_timeflow/presentation/screens/settings/settings_notifications_section.dart';
-import 'package:cron_timeflow/presentation/screens/settings/settings_data_section.dart';
-import 'package:cron_timeflow/presentation/screens/settings/settings_about_section.dart';
+import 'package:timeflow/presentation/screens/settings/settings_appearance_section.dart';
+import 'package:timeflow/presentation/screens/settings/settings_location_section.dart';
+import 'package:timeflow/presentation/screens/settings/settings_task_creation_section.dart';
+import 'package:timeflow/presentation/screens/settings/settings_notifications_section.dart';
+import 'package:timeflow/presentation/screens/settings/settings_data_section.dart';
+import 'package:timeflow/presentation/screens/settings/settings_about_section.dart';
 
 /// Settings screen for app preferences and customization.
 ///

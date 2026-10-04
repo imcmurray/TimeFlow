@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cron_timeflow/presentation/providers/task_provider.dart';
+import 'package:timeflow/presentation/providers/task_provider.dart';
 
 /// Calendar overview showing multiple months for quick date navigation.
 ///

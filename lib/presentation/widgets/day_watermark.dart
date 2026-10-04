@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:cron_timeflow/services/holidays_service.dart';
+import 'package:timeflow/services/holidays_service.dart';
 
 /// Large watermark date displayed in the background of each day.
 /// Shows a big day number that's semi-transparent so tasks can overlay it.

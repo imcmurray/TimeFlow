@@ -1,4 +1,4 @@
-import 'package:cron_timeflow/data/repositories/task_repository.dart';
+import 'package:timeflow/data/repositories/task_repository.dart';
 
 /// Stub implementation - should never be used at runtime.
 /// Conditional imports will select the correct platform implementation.

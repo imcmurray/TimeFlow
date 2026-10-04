@@ -1,22 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cron_timeflow/core/theme/app_colors.dart';
-import 'package:cron_timeflow/core/plugins/plugin_interface.dart';
-import 'package:cron_timeflow/core/plugins/plugin_state_provider.dart';
-import 'package:cron_timeflow/core/plugins/widgets/event_detail_popup.dart';
-import 'package:cron_timeflow/core/plugins/plugin_providers.dart';
-import 'package:cron_timeflow/presentation/providers/settings_provider.dart';
-import 'package:cron_timeflow/presentation/widgets/time_of_day_background.dart';
-import 'package:cron_timeflow/presentation/utils/timeline_offset.dart';
-import 'package:cron_timeflow/presentation/widgets/timeline_day_dividers.dart';
-import 'package:cron_timeflow/presentation/widgets/timeline_day_watermarks.dart';
-import 'package:cron_timeflow/presentation/widgets/timeline_hour_markers.dart';
-import 'package:cron_timeflow/presentation/widgets/timeline_now_line_scrollable.dart';
-import 'package:cron_timeflow/presentation/widgets/timeline_plugin_events_layer.dart';
-import 'package:cron_timeflow/presentation/widgets/timeline_task_cards_layer.dart';
-import 'package:cron_timeflow/services/reminder_sound_service.dart';
+import 'package:timeflow/core/theme/app_colors.dart';
+import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/providers/task_provider.dart';
+import 'package:timeflow/presentation/widgets/time_of_day_background.dart';
+import 'package:timeflow/presentation/utils/timeline_offset.dart';
+import 'package:timeflow/presentation/widgets/timeline_day_dividers.dart';
+import 'package:timeflow/presentation/widgets/timeline_day_watermarks.dart';
+import 'package:timeflow/presentation/widgets/timeline_hour_markers.dart';
+import 'package:timeflow/presentation/widgets/timeline_now_line_scrollable.dart';
+import 'package:timeflow/presentation/widgets/timeline_task_cards_layer.dart';
 
 /// The main scrollable timeline widget with continuous multi-day flow.
 ///
@@ -66,10 +60,6 @@ class TimelineViewState extends ConsumerState<TimelineView>
   DateTime? _lastReportedVisibleDate;
   DateTime _currentTime = DateTime.now();
   DateTime _lastUpdateTime = DateTime.now();
-
-  // Now-line crossing alert tracking
-  final Set<String> _alertedEventIds = {};
-  DateTime _previousTickTime = DateTime.now();
 
   /// Default height in pixels per hour of timeline (1x zoom).
   static const double defaultHourHeight = 80.0;
@@ -125,7 +115,6 @@ class TimelineViewState extends ConsumerState<TimelineView>
         _currentTime = DateTime.now();
         _lastUpdateTime = DateTime.now();
       });
-      _checkEventCrossings();
     });
   }
 
@@ -134,8 +123,6 @@ class TimelineViewState extends ConsumerState<TimelineView>
       _referenceDate.subtract(Duration(days: _daysLoadedBefore)),
       _referenceDate.add(Duration(days: _daysLoadedAfter)),
     );
-    // Clear crossing alert history when range changes
-    _alertedEventIds.clear();
   }
 
   @override
@@ -197,63 +184,6 @@ class TimelineViewState extends ConsumerState<TimelineView>
           );
         }
       }
-    }
-  }
-
-  /// Checks if any plugin events have crossed the now line since the last tick.
-  void _checkEventCrossings() {
-    final settings = ref.read(settingsProvider);
-    if (!settings.eventCrossingAlertEnabled) return;
-
-    final now = _currentTime;
-    final previous = _previousTickTime;
-    _previousTickTime = now;
-
-    // Skip if time went backwards (e.g. manual clock change)
-    if (!now.isAfter(previous)) return;
-
-    final plugins = ref.read(enabledPluginsProvider);
-    final crossingAlertState = ref.read(pluginCrossingAlertStateProvider);
-    final registry = ref.read(pluginRegistryProvider);
-
-    for (final plugin in plugins) {
-      if (!(crossingAlertState[plugin.id] ?? true)) continue;
-
-      final provider = plugin.eventsProviderFor(_loadedRange);
-      if (provider == null) continue;
-
-      final eventsAsync = ref.read(provider);
-      eventsAsync.whenData((events) {
-        for (final event in events) {
-          if (_alertedEventIds.contains(event.id)) continue;
-
-          // Event crosses NOW if startTime is in (previous, now]
-          if (event.startTime.isAfter(previous) &&
-              !event.startTime.isAfter(now)) {
-            _alertedEventIds.add(event.id);
-            _fireEventCrossingAlert(
-                event, registry.getById(event.pluginId) ?? plugin);
-          }
-        }
-      });
-    }
-  }
-
-  /// Fires a now-line crossing alert: plays sound, haptic feedback, shows popup.
-  void _fireEventCrossingAlert(TimelineEvent event, TimeFlowPlugin plugin) {
-    final settings = ref.read(settingsProvider);
-
-    // Play sound
-    if (settings.reminderSoundEnabled) {
-      ReminderSoundService.play(settings.eventCrossingAlertSound);
-    }
-
-    // Haptic feedback
-    HapticFeedback.mediumImpact();
-
-    // Show detail popup
-    if (mounted) {
-      showEventDetailPopup(context, event);
     }
   }
 
@@ -600,22 +530,6 @@ class TimelineViewState extends ConsumerState<TimelineView>
                   top: 0,
                   bottom: 0,
                   child: TaskCardsLayerMultiDay(
-                    hourHeight: _hourHeight,
-                    upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
-                    referenceDate: _referenceDate,
-                    daysLoadedBefore: _daysLoadedBefore,
-                    daysLoadedAfter: _daysLoadedAfter,
-                    loadedRange: _loadedRange,
-                  ),
-                ),
-
-                // Plugin events layer (ServerFlow dots/bars)
-                Positioned(
-                  left: 70,
-                  right: 16,
-                  top: 0,
-                  bottom: 0,
-                  child: PluginEventsLayer(
                     hourHeight: _hourHeight,
                     upcomingTasksAboveNow: widget.upcomingTasksAboveNow,
                     referenceDate: _referenceDate,

@@ -1,35 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cron_timeflow/core/plugins/plugin_providers.dart';
-import 'package:cron_timeflow/core/plugins/plugin_registry.dart';
-import 'package:cron_timeflow/core/theme/app_theme.dart';
-import 'package:cron_timeflow/plugins/server_flow/server_flow_plugin.dart';
-import 'package:cron_timeflow/plugins/weather_flow/weather_flow_plugin.dart';
-import 'package:cron_timeflow/plugins/quote_flow/quote_flow_plugin.dart';
-import 'package:cron_timeflow/presentation/providers/settings_provider.dart';
-import 'package:cron_timeflow/presentation/screens/onboarding_screen.dart';
-import 'package:cron_timeflow/presentation/screens/timeline_screen.dart';
+import 'package:timeflow/core/theme/app_theme.dart';
+import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/screens/onboarding_screen.dart';
+import 'package:timeflow/presentation/screens/timeline_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final registry = PluginRegistry();
-  final plugins = [
-    ServerFlowPlugin(),
-    WeatherFlowPlugin(),
-    QuoteFlowPlugin(),
-  ];
-
-  for (final plugin in plugins) {
-    registry.register(plugin);
-    await plugin.initialize();
-  }
-
   runApp(
     ProviderScope(
-      overrides: [
-        pluginRegistryProvider.overrideWithValue(registry),
-      ],
       child: const TimeFlowApp(),
     ),
   );

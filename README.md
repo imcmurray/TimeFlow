@@ -1,191 +1,93 @@
 <p align="center">
-  <img src="assets/images/timeflow-logo.png" alt="TimeFlow Logo" width="128" height="128">
+  <img src="assets/images/timeflow-logo.png" alt="" width="112" height="112">
 </p>
 
-[![Deploy to GitHub Pages](https://github.com/imcmurray/TimeFlow/actions/workflows/deploy.yml/badge.svg)](https://github.com/imcmurray/TimeFlow/actions/workflows/deploy.yml)
+<h1 align="center">TimeFlow</h1>
 
-# TimeFlow
+<p align="center"><em>Your day as a gentle river, not a pressure cooker.</em></p>
 
-> Experience time as a gentle flowing river, not a pressure cooker
+<p align="center">
+  <a href="https://imcmurray.github.io/TimeFlow/">Open the web app</a> ·
+  <a href="https://github.com/imcmurray/TimeFlow/releases">Download for Android</a> ·
+  <a href="https://imcmurray.github.io/TimeFlow/privacy.html">Privacy</a>
+</p>
 
-TimeFlow is a revolutionary daily schedule app that transforms how you experience time. Instead of static grids or stressful lists, your day flows like a gentle river toward a fixed "NOW" line. As real minutes pass, tasks automatically scroll down, creating a calming, intuitive sense of progress.
+TimeFlow shows your schedule as a vertical river. A NOW line stays put on the
+screen while your tasks drift toward it and flow past as real minutes go by,
+so you always see what's happening now, what's coming, and what's behind you.
 
-## Key Features
+## What it does
 
-- **Dynamic Real-Time Timeline** - Auto-scrolls to keep current time aligned with the prominent "NOW" line
-- **Visual Time Zones** - Upcoming tasks above, current tasks at NOW, completed tasks below
-- **Elegant Task Cards** - Flowing downward through time, positioned by start/end times
-- **Rich Task Management** - Priority levels, reminders, notes, and attachments
-- **One-Tap Sharing** - Easy schedule handoff to caregivers, sitters, or team members
-- **Beautiful Animations** - Fluid, natural transitions that make time feel like water
-- **Local Notifications** - Never miss an upcoming task
-- **Offline-First** - Full functionality with local persistence
+- **A living timeline.** The view follows the present on its own; scroll away
+  to look ahead or back, tap *Jump to now* to return. Days run together with
+  sunrise and sunset marked, and pinch (or Ctrl+scroll) zooms.
+- **Tasks that fit real life.** Times, notes, a photo, a category, an
+  "important" flag. Long-press empty space to create a task right there, or
+  long-press a task to drag it somewhere else. Swipe right when it's done,
+  left to delete (with undo).
+- **Repeats done properly.** Daily, weekdays, weekly on chosen days, every N
+  weeks, monthly, yearly, with an optional end date. Change or delete just one
+  occurrence, that one and the rest, or the whole series.
+- **Gentle reminders.** Real notifications on Android, delivered even when the
+  app is closed, with *Done* and *Snooze* buttons. The desktop and web
+  versions remind you while they're open.
+- **Hand over your day.** Share a day or a week with a pet sitter, caregiver or
+  family member as a link. They open it in any browser and see the same live,
+  read-only river, with nothing to install and no account. The schedule
+  travels inside the link and is never uploaded.
+- **Private by design.** Everything stays on your device. No accounts, no
+  servers, no analytics, no ads. Back up and restore with a file whenever you
+  like.
 
-## Use Cases
+## Platforms
 
-- **Pet Owners**: Share your dog's daily routine with a pet sitter
-- **Busy Professionals**: Feel calm progress instead of time pressure
-- **Parents**: Manage family schedules visually
-- **Caregivers**: Track medical routines and appointments
-- **ADHD Support**: Visual representation of time passing
+| Platform | Status |
+|---|---|
+| Android | Main release; Play Store submission in progress, signed APKs on [Releases](https://github.com/imcmurray/TimeFlow/releases) |
+| Web (installable app, works offline) | [imcmurray.github.io/TimeFlow](https://imcmurray.github.io/TimeFlow/) |
+| Linux, Windows, macOS | Experimental builds attached to releases (unsigned) |
+| iOS | Not yet |
 
-## Tech Stack
+## Development
 
-- **Framework**: Flutter (cross-platform mobile - iOS & Android)
-- **Architecture**: Clean Architecture with Repository pattern
-- **State Management**: Riverpod
-- **Database**: SQLite via drift (offline-first storage)
-- **Animations**: Flutter animation framework with custom ScrollController
-- **Notifications**: flutter_local_notifications
-
-## Getting Started
-
-### Prerequisites
-
-1. **Flutter SDK** (3.0+)
-   - Install from: https://docs.flutter.dev/get-started/install
-
-2. **Xcode** (for iOS development on macOS)
-   - Install from Mac App Store
-
-3. **Android Studio** (for Android development)
-   - Install from: https://developer.android.com/studio
-
-### Quick Start
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd TaskRiver
-
-# Run the setup script
-./init.sh
-```
-
-The `init.sh` script will:
-1. Verify Flutter installation
-2. Run `flutter doctor` to check dependencies
-3. Get Flutter packages
-4. Launch an emulator/simulator if needed
-5. Start the app with hot reload
-
-### Manual Setup
+TimeFlow is a Flutter app (Dart 3.9+, Flutter 3.44). State is Riverpod, storage
+is SQLite through [drift](https://drift.simonbinder.eu/) on every platform
+(WebAssembly + IndexedDB on the web).
 
 ```bash
-# Check Flutter installation
-flutter doctor
-
-# Get dependencies
 flutter pub get
-
-# Run on connected device/emulator
-flutter run
+flutter run -d linux            # or chrome, or an Android device
+flutter analyze                 # CI requires zero issues
+TZ=America/Denver flutter test  # the DST tests need a zone with DST
 ```
 
-## Project Structure
+After changing a drift table: `dart run build_runner build`, bump
+`schemaVersion`, write the migration, and dump a schema snapshot with
+`dart run drift_dev make-migrations` so the migration tests cover it.
+
+### Layout
 
 ```
-timeflow/
-├── lib/
-│   ├── main.dart                 # App entry point
-│   ├── core/                     # Core utilities and constants
-│   │   ├── theme/                # App themes and styling
-│   │   └── utils/                # Helper functions
-│   ├── data/                     # Data layer
-│   │   ├── models/               # Data models
-│   │   ├── repositories/         # Repository implementations
-│   │   └── datasources/          # Local database
-│   ├── domain/                   # Business logic
-│   │   ├── entities/             # Domain entities
-│   │   └── usecases/             # Use cases
-│   └── presentation/             # UI layer
-│       ├── screens/              # App screens
-│       ├── widgets/              # Reusable widgets
-│       └── providers/            # State management
-├── test/                         # Unit and widget tests
-├── integration_test/             # Integration tests
-├── assets/                       # Images, fonts, etc.
-├── pubspec.yaml                  # Dependencies
-└── init.sh                       # Development setup script
+lib/
+  domain/        entities (Task, RecurrenceRule), wall-clock time, series
+                 expansion, reminder planning, share-link codec
+  data/          drift database, repository, migrations, backup format
+  services/      task operations (edit scopes), notifications, sun times,
+                 holidays
+  presentation/  timeline (geometry, layout, layers), screens, providers
+test/            unit, migration (drift schema snapshots) and widget tests
+docs/            vision, original spec, release and store notes
 ```
 
-## UI Design
+### Releases
 
-### Color Scheme
-
-| Role | Light | Dark |
-|------|-------|------|
-| Primary | Soft blues (#E3F2FD, #42A5F5) | Muted blues |
-| Secondary | Gentle greens (#E8F5E9, #66BB6A) | Muted greens |
-| Accent | Warm coral (#FFCCBC, #FF7043) | Coral |
-| Background | Off-white (#FAFAFA) | Dark gray |
-| Text | Charcoal (#212121, #757575) | Light gray |
-
-### Key UI Elements
-
-- Full-screen vertical ScrollView as main canvas
-- Thin timeline on left with subtle hour markers
-- Bold horizontal NOW line at 70-80% down screen with soft glow
-- Task cards with rounded corners, subtle shadows
-- Card height proportional to task duration
-- Floating Action Button for quick task addition
-
-## Development Commands
-
-While running `flutter run`:
-
-| Key | Action |
-|-----|--------|
-| `r` | Hot reload (rebuild UI) |
-| `R` | Hot restart (restart app) |
-| `h` | Help / list commands |
-| `d` | Detach (leave app running) |
-| `q` | Quit |
-| `o` | Open DevTools |
-| `p` | Toggle debug paint |
-
-## Testing
-
-```bash
-# Run unit tests
-flutter test
-
-# Run integration tests
-flutter test integration_test
-
-# Run with coverage
-flutter test --coverage
-```
-
-## Building for Production
-
-```bash
-# Build for Android
-flutter build apk --release
-flutter build appbundle --release
-
-# Build for iOS
-flutter build ios --release
-```
-
-## Feature Progress
-
-Features are tracked via a SQLite database (`features.db`). Use the feature management API to:
-- Get next feature to implement
-- Mark features as passing
-- Track overall progress
-
-## Contributing
-
-1. Get the next feature from the feature list
-2. Implement the feature following Clean Architecture
-3. Write tests for the feature
-4. Mark the feature as passing when complete
+Every push to `main` runs analyze and tests, then deploys the web app to
+GitHub Pages and builds a signed Android bundle. Tagging `vX.Y.Z` (matching
+the version in `pubspec.yaml`) publishes a GitHub release with the APK and
+desktop builds, and uploads the bundle to Play's internal track once the
+`PLAY_SERVICE_ACCOUNT_JSON` secret is set. See
+[docs/RELEASING.md](docs/RELEASING.md).
 
 ## License
 
-This project is licensed under [CC BY-NC-SA 4.0](LICENSE) (Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International).
-
----
-
-*TimeFlow - Because time should flow, not stress.*
+Copyright © 2026 Ian McMurray. See [LICENSE](LICENSE).

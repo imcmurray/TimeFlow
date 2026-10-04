@@ -51,8 +51,8 @@ class OnboardingSlide extends StatelessWidget {
                 tagline,
                 style: TextStyle(
                   fontSize: 18,
-                  color: AppColors.primaryBlue,
-                  fontWeight: FontWeight.w500,
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -141,7 +141,6 @@ class OnboardingNavigation extends StatelessWidget {
               FilledButton(
                 onPressed: onNext,
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primaryBlue,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 32,
                     vertical: 12,

@@ -37,7 +37,7 @@ class TaskLayer extends ConsumerStatefulWidget {
 class _TaskLayerState extends ConsumerState<TaskLayer> {
   /// Narrower than this, overlapping tasks merge into one confluence card.
   static const _minColumnWidth = 120.0;
-  static const _minCardHeight = 22.0;
+  static const _minCardHeight = 30.0;
   static const _longPressDelay = Duration(milliseconds: 500);
   static const _moveSnapMinutes = 5;
 

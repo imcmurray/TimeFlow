@@ -90,4 +90,5 @@ desktop builds, and uploads the bundle to Play's internal track once the
 
 ## License
 
-Copyright © 2026 Ian McMurray. See [LICENSE](LICENSE).
+[MIT](LICENSE) © 2024–2026 Ian McMurray. The bundled Nunito font is under the
+SIL Open Font License (`assets/fonts/OFL.txt`).

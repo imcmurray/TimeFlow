@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/timeline/now_chip.dart';
 import 'package:timeflow/presentation/timeline/timeline_view.dart';
 import 'package:timeflow/presentation/widgets/calendar_overview.dart';
 import 'package:timeflow/presentation/widgets/timeline_long_press_hint_tooltip.dart';
@@ -30,7 +31,7 @@ class TimelineScreen extends ConsumerStatefulWidget {
 
 class _TimelineScreenState extends ConsumerState<TimelineScreen> {
   DateTime _visibleDate = DateTime.now();
-  bool _isNowLineVisible = true;
+  OffscreenNow? _offscreenNow;
   final GlobalKey<TimelineViewState> _timelineKey = GlobalKey();
 
   TimelineViewMode _viewMode = TimelineViewMode.day;
@@ -135,10 +136,8 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
     });
   }
 
-  void _onNowLineVisibilityChanged(bool isVisible) {
-    setState(() {
-      _isNowLineVisible = isVisible;
-    });
+  void _onOffscreenNowChanged(OffscreenNow? now) {
+    setState(() => _offscreenNow = now);
   }
 
   void _jumpToNow() {
@@ -311,8 +310,7 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                             key: _timelineKey,
                             initialDate: _selectedDateFromCalendar,
                             onVisibleDateChanged: _onVisibleDateChanged,
-                            onNowLineVisibilityChanged:
-                                _onNowLineVisibilityChanged,
+                            onOffscreenNowChanged: _onOffscreenNowChanged,
                             onZoomChanged: _onZoomChanged,
                           ),
                         ),
@@ -335,16 +333,16 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                     .setHasSeenLongPressHint(true),
               ),
 
-            // Jump to NOW button (bottom left, only in day view when NOW line not visible)
-            if (_viewMode == TimelineViewMode.day && !_isNowLineVisible)
+            // While NOW is off screen, a chip on its side of the timeline
+            // says how far away it is and jumps back.
+            if (_viewMode == TimelineViewMode.day && _offscreenNow != null)
               Positioned(
-                left: 16,
-                bottom: 16,
-                child: FloatingActionButton(
-                  heroTag: 'jumpToNow',
-                  onPressed: _jumpToNow,
-                  tooltip: 'Jump to now',
-                  child: const Icon(Icons.my_location),
+                left: 0,
+                right: 0,
+                top: _offscreenNow!.above ? 12 : null,
+                bottom: _offscreenNow!.above ? null : 24,
+                child: Center(
+                  child: NowChip(now: _offscreenNow!, onTap: _jumpToNow),
                 ),
               ),
           ],

@@ -29,6 +29,40 @@ abstract final class TimelineLayout {
   static const contentRight = 16.0;
 }
 
+/// Where NOW is when it's off screen.
+@immutable
+class OffscreenNow {
+  /// NOW is above the visible area (otherwise below).
+  final bool above;
+
+  /// How far the middle of the screen is from NOW, e.g. "3 h ahead".
+  final String distance;
+
+  const OffscreenNow({required this.above, required this.distance});
+
+  @override
+  bool operator ==(Object other) =>
+      other is OffscreenNow &&
+      other.above == above &&
+      other.distance == distance;
+
+  @override
+  int get hashCode => Object.hash(above, distance);
+}
+
+/// "45 min ahead", "3 h back", "2 days ahead": how far [viewed] is from
+/// [now], in the largest sensible unit.
+String describeDistanceFromNow(DateTime now, DateTime viewed) {
+  final minutes = viewed.difference(now).inMinutes;
+  final direction = minutes >= 0 ? 'ahead' : 'back';
+  final m = minutes.abs();
+  if (m < 60) return '${m < 1 ? 1 : m} min $direction';
+  if (m < 24 * 60) return '${(m / 60).round()} h $direction';
+  final days = LocalDate.of(now).daysUntil(LocalDate.of(viewed)).abs();
+  final d = days < 1 ? 1 : days;
+  return d == 1 ? '1 day $direction' : '$d days $direction';
+}
+
 /// The scrolling river of time: a vertical timeline that keeps the NOW line
 /// at a fixed place on screen while tasks flow past it.
 ///
@@ -39,14 +73,17 @@ class TimelineView extends ConsumerStatefulWidget {
   /// Date to show first; null opens at NOW.
   final DateTime? initialDate;
   final ValueChanged<DateTime>? onVisibleDateChanged;
-  final ValueChanged<bool>? onNowLineVisibilityChanged;
+
+  /// Called with where NOW is while it's off screen, and null once it's
+  /// visible again.
+  final ValueChanged<OffscreenNow?>? onOffscreenNowChanged;
   final ValueChanged<double>? onZoomChanged;
 
   const TimelineView({
     super.key,
     this.initialDate,
     this.onVisibleDateChanged,
-    this.onNowLineVisibilityChanged,
+    this.onOffscreenNowChanged,
     this.onZoomChanged,
   });
 
@@ -78,6 +115,11 @@ class TimelineViewState extends ConsumerState<TimelineView>
   bool _following = true;
   bool _userScrolling = false;
   bool _nowVisible = true;
+  OffscreenNow? _reportedOffscreen;
+
+  /// True while the view moves itself (following NOW, zooming, jumping), so
+  /// the scrollbar only appears for the user's own scrolling.
+  bool _scrollingProgrammatically = false;
   LocalDate? _reportedDay;
 
   double get hourHeight => _geometry.hourHeight;
@@ -131,11 +173,23 @@ class TimelineViewState extends ConsumerState<TimelineView>
     if (state == AppLifecycleState.resumed) _onTick();
   }
 
+  /// Runs [move] without showing the scrollbar.
+  void _quietly(VoidCallback move) {
+    _scrollingProgrammatically = true;
+    try {
+      move();
+    } finally {
+      _scrollingProgrammatically = false;
+    }
+  }
+
   void _onTick() {
     if (!mounted) return;
     _now.value = DateTime.now();
     if (_following && !_userScrolling && _scroll.hasClients) {
-      _scroll.jumpTo(_nowScrollOffset());
+      _quietly(() => _scroll.jumpTo(_nowScrollOffset()));
+    } else {
+      _onScroll(); // NOW moved; refresh the off-screen distance.
     }
   }
 
@@ -171,7 +225,7 @@ class TimelineViewState extends ConsumerState<TimelineView>
         curve: Curves.easeInOut,
       );
     } else {
-      _scroll.jumpTo(target);
+      _quietly(() => _scroll.jumpTo(target));
     }
   }
 
@@ -204,7 +258,7 @@ class TimelineViewState extends ConsumerState<TimelineView>
         curve: Curves.easeInOut,
       );
     } else {
-      _scroll.jumpTo(target);
+      _quietly(() => _scroll.jumpTo(target));
     }
   }
 
@@ -230,7 +284,7 @@ class TimelineViewState extends ConsumerState<TimelineView>
     final anchorScreenY = _geometry.yOf(anchorTime) - _scroll.offset;
     setState(() => _geometry = _geometry.copyWith(hourHeight: newHeight));
     if (_scroll.hasClients) {
-      _scroll.jumpTo(_geometry.yOf(anchorTime) - anchorScreenY);
+      _quietly(() => _scroll.jumpTo(_geometry.yOf(anchorTime) - anchorScreenY));
     }
     widget.onZoomChanged?.call(newHeight);
     _saveZoom?.cancel();
@@ -263,11 +317,21 @@ class TimelineViewState extends ConsumerState<TimelineView>
       widget.onVisibleDateChanged?.call(centerDay.startOfDay);
     }
 
-    final nowY = _geometry.yOf(DateTime.now()) - top;
-    final visible = nowY >= 0 && nowY <= viewport;
-    if (visible != _nowVisible) {
-      _nowVisible = visible;
-      widget.onNowLineVisibilityChanged?.call(visible);
+    final now = DateTime.now();
+    final nowY = _geometry.yOf(now) - top;
+    _nowVisible = nowY >= 0 && nowY <= viewport;
+    final offscreen = _nowVisible
+        ? null
+        : OffscreenNow(
+            above: nowY < 0,
+            distance: describeDistanceFromNow(
+              now,
+              _geometry.timeAt(top + viewport / 2),
+            ),
+          );
+    if (offscreen != _reportedOffscreen) {
+      _reportedOffscreen = offscreen;
+      widget.onOffscreenNowChanged?.call(offscreen);
     }
   }
 
@@ -307,54 +371,67 @@ class TimelineViewState extends ConsumerState<TimelineView>
       isDark: isDark,
       child: NotificationListener<ScrollNotification>(
         onNotification: _onScrollNotification,
-        child: SingleChildScrollView(
-          controller: _scroll,
-          child: SizedBox(
-            height: geometry.totalHeight,
-            child: ValueListenableBuilder<DayRange>(
-              valueListenable: _visibleDays,
-              builder: (context, days, _) => Stack(
-                children: [
-                  Positioned(
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: TimelineLayout.gutter,
-                    child: HourMarkersLayer(geometry: geometry, days: days),
+        child: ScrollConfiguration(
+          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+          child: Scrollbar(
+            controller: _scroll,
+            // Only the user's own scrolling shows the scrollbar, not the view
+            // following NOW every few seconds.
+            notificationPredicate: (n) =>
+                n.depth == 0 && !_scrollingProgrammatically,
+            child: SingleChildScrollView(
+              controller: _scroll,
+              child: SizedBox(
+                height: geometry.totalHeight,
+                child: ValueListenableBuilder<DayRange>(
+                  valueListenable: _visibleDays,
+                  builder: (context, days, _) => Stack(
+                    children: [
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: TimelineLayout.gutter,
+                        child: HourMarkersLayer(geometry: geometry, days: days),
+                      ),
+                      Positioned(
+                        left: TimelineLayout.lineX,
+                        top: 0,
+                        bottom: 0,
+                        width: 2,
+                        child: ColoredBox(
+                          color: isDark
+                              ? AppColors.timelineDark
+                              : AppColors.timelineLight,
+                        ),
+                      ),
+                      DayDividersLayer(geometry: geometry, days: days),
+                      DayWatermarksLayer(geometry: geometry, days: days),
+                      Positioned(
+                        left: TimelineLayout.contentLeft,
+                        right: TimelineLayout.contentRight,
+                        top: 0,
+                        bottom: 0,
+                        child: TaskLayer(geometry: geometry, days: days),
+                      ),
+                      IgnorePointer(
+                        child: DayDividerOverlay(
+                          geometry: geometry,
+                          days: days,
+                        ),
+                      ),
+                      ValueListenableBuilder<DateTime>(
+                        valueListenable: _now,
+                        builder: (context, now, _) => NowLine(
+                          currentTime: now,
+                          y: geometry.yOf(now),
+                          scrollController: _scroll,
+                          onPositionChanged: jumpToNow,
+                        ),
+                      ),
+                    ],
                   ),
-                  Positioned(
-                    left: TimelineLayout.lineX,
-                    top: 0,
-                    bottom: 0,
-                    width: 2,
-                    child: ColoredBox(
-                      color: isDark
-                          ? AppColors.timelineDark
-                          : AppColors.timelineLight,
-                    ),
-                  ),
-                  DayDividersLayer(geometry: geometry, days: days),
-                  DayWatermarksLayer(geometry: geometry, days: days),
-                  Positioned(
-                    left: TimelineLayout.contentLeft,
-                    right: TimelineLayout.contentRight,
-                    top: 0,
-                    bottom: 0,
-                    child: TaskLayer(geometry: geometry, days: days),
-                  ),
-                  IgnorePointer(
-                    child: DayDividerOverlay(geometry: geometry, days: days),
-                  ),
-                  ValueListenableBuilder<DateTime>(
-                    valueListenable: _now,
-                    builder: (context, now, _) => NowLine(
-                      currentTime: now,
-                      y: geometry.yOf(now),
-                      scrollController: _scroll,
-                      onPositionChanged: jumpToNow,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),

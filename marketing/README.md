@@ -58,6 +58,11 @@ The 15×18 in T-shirt front only comes in 300 DPI. At 1500 DPI it would be
 marks from 256 to 4096 px, wordmarks at 1200, 2400 and 4800 px wide, stacked
 lockups at 1024 and 2048 px.
 
+## Beta testers
+
+Badges, stickers and banners for the timeflow-testers group ("Since v1.0.0
+(183)", "CAUTION: BETA TESTER" and friends) are in [testers/](testers/).
+
 ## Brand basics
 
 - **Name:** TimeFlow (one word, capital T and F). On the App Store it's listed as *TimeFlow Planner*.

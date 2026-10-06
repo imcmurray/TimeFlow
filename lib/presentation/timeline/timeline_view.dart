@@ -490,12 +490,6 @@ class TimelineViewState extends ConsumerState<TimelineView>
                           days: days,
                         ),
                       ),
-                      IgnorePointer(
-                        child: DayDividerOverlay(
-                          geometry: geometry,
-                          days: days,
-                        ),
-                      ),
                       ValueListenableBuilder<DateTime>(
                         valueListenable: _now,
                         builder: (context, now, _) => NowLine(

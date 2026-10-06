@@ -7,6 +7,8 @@ version is tagged, *Unreleased* becomes that version's notes.
 ## Unreleased
 
 ### App
+- The midnight divider no longer draws through task cards that span
+  midnight. (fixes #35)
 - Plugin marketplace is back, opt-in: Settings → Plugins. **ServerFlow**
   shows cron jobs imported from CSV on the timeline (schedules in local time
   by default, filter by host/category/user, alerts when a job reaches NOW);

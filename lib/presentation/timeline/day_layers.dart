@@ -48,43 +48,6 @@ class DayDividersLayer extends StatelessWidget {
   }
 }
 
-/// Dashed midnight lines drawn over task cards, so a task that runs past
-/// midnight still shows where the day changes.
-class DayDividerOverlay extends StatelessWidget {
-  final TimelineGeometry geometry;
-  final DayRange days;
-
-  const DayDividerOverlay({
-    super.key,
-    required this.geometry,
-    required this.days,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = isDark
-        ? Colors.white.withValues(alpha: 0.3)
-        : Colors.black.withValues(alpha: 0.2);
-    return Stack(
-      children: [
-        for (
-          var day = days.first;
-          !day.isAfter(days.last);
-          day = day.addDays(1)
-        )
-          Positioned(
-            top: geometry.yOfDayHour(day, 0) - 1,
-            left: TimelineLayout.contentLeft,
-            right: TimelineLayout.contentRight,
-            height: 2,
-            child: CustomPaint(painter: DashedLinePainter(color: color)),
-          ),
-      ],
-    );
-  }
-}
-
 /// Large date watermarks in the background of each day, placed in the
 /// earliest stretch of the morning that has no tasks.
 class DayWatermarksLayer extends ConsumerStatefulWidget {
@@ -190,26 +153,4 @@ class _DayWatermarksLayerState extends ConsumerState<DayWatermarksLayer> {
       ],
     );
   }
-}
-
-/// Paints a dashed horizontal line through the middle of its box.
-class DashedLinePainter extends CustomPainter {
-  final Color color;
-
-  DashedLinePainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round;
-    final y = size.height / 2;
-    for (double x = 0; x < size.width; x += 10) {
-      canvas.drawLine(Offset(x, y), Offset(x + 6, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant DashedLinePainter old) => old.color != color;
 }

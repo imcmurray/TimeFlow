@@ -22,6 +22,11 @@ version is tagged, *Unreleased* becomes that version's notes.
 - iOS project, signing (team 3UU2DT4DNW), privacy manifest, branded launch
   screen, App Store listing (as *TimeFlow Planner*) and screenshots. CI builds
   iOS unsigned on every PR. (#22, #26)
+- Done and Snooze on a reminder now take effect while TimeFlow is closed.
+  The notification plugin let iOS suspend the app before the background
+  handler had saved anything, so the task was only marked done once the app
+  was next opened. `AppDelegate` now holds a short background task for
+  action buttons. iOS-only; Android was unaffected. (#32)
 - Still to do: real-device check that reminders arrive with the app closed
   and that Done/Snooze work from the lock screen; first TestFlight build.
 

@@ -20,6 +20,9 @@ At the start of every session:
    work waiting for you. Issues are how instructions are handed over.
 
 While working:
+- **Commit as `Ian McMurray <ian.mcmurray@gmail.com>`.** This is a personal,
+  public repo: never commit with the court (`uscourts.gov`) address. Check with
+  `git config user.email` in a fresh clone and set it per repo if needed.
 - **Never push to `main`.** Branch from an up-to-date `main`, open a PR, let CI
   (analyze, tests, web, Android, iOS) pass, then merge. CI is what keeps the
   other machine's work from breaking.

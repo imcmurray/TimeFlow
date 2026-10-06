@@ -98,6 +98,7 @@ App Store Connect requires (smaller devices are scaled from these):
 | Device | Size | Folder |
 |---|---|---|
 | iPhone 6.9" | 1320 × 2868 | `screenshots/ios-iphone-6.9/` |
+| iPhone 6.5" | 1284 × 2778 | `screenshots/ios-iphone-6.5/` (scaled from 6.9"; the slot App Store Connect shows first) |
 | iPad 13" | 2064 × 2752 | `screenshots/ios-ipad-13/` |
 
 Order: 1 timeline, 2 welcome, 3 edit task, 4 share, 5 dark mode.

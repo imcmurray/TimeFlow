@@ -4,6 +4,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:timeflow/build_info.dart';
 import 'package:timeflow/core/app_links.dart';
+import 'package:timeflow/core/plugins/plugin_state_provider.dart';
+import 'package:timeflow/presentation/screens/plugin_marketplace_screen.dart';
 import 'package:timeflow/presentation/screens/settings/section_header.dart';
 
 /// The app's version and build number, e.g. "1.0.0 (42)".
@@ -20,6 +22,22 @@ class SettingsAboutSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
+        const SectionHeader(title: 'Plugins'),
+        ListTile(
+          leading: const Icon(Icons.extension_outlined),
+          title: const Text('Plugin marketplace'),
+          subtitle: Text(switch (ref.watch(enabledPluginsProvider).length) {
+            0 => 'Add more to your river: scheduled jobs, quotes…',
+            1 => '1 plugin on',
+            final n => '$n plugins on',
+          }),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const PluginMarketplaceScreen()),
+          ),
+        ),
+        const Divider(),
+
         // About
         const SectionHeader(title: 'About'),
         ListTile(

@@ -27,6 +27,15 @@ class BackupAttachment {
   const BackupAttachment(this.id, this.mimeType, this.bytes);
 }
 
+/// A value a plugin stored (e.g. ServerFlow's imported jobs), as JSON text.
+class BackupPluginValue {
+  final String pluginId;
+  final String key;
+  final String value;
+
+  const BackupPluginValue(this.pluginId, this.key, this.value);
+}
+
 /// Reads and writes TimeFlow backup files.
 ///
 /// Version 2 (current) stores rows as they are kept in the database: series
@@ -41,6 +50,7 @@ class BackupCodec {
   static String encode(
     List<StoredTask> rows, {
     List<BackupAttachment> attachments = const [],
+    List<BackupPluginValue> pluginData = const [],
     DateTime? exportedAt,
   }) {
     return const JsonEncoder.withIndent('  ').convert({
@@ -57,15 +67,26 @@ class BackupCodec {
               'data': base64.encode(a.bytes),
             },
         ],
+      if (pluginData.isNotEmpty)
+        'pluginData': [
+          for (final v in pluginData)
+            {'pluginId': v.pluginId, 'key': v.key, 'value': v.value},
+        ],
     });
   }
 
-  /// Parses a backup with its photos. Throws [BackupFormatException].
-  static ({List<StoredTask> rows, List<BackupAttachment> attachments})
+  /// Parses a backup with its photos and plugin data. Throws
+  /// [BackupFormatException].
+  static ({
+    List<StoredTask> rows,
+    List<BackupAttachment> attachments,
+    List<BackupPluginValue> pluginData,
+  })
   decodeBackup(String source, {required String Function() newId}) {
     final rows = decode(source, newId: newId);
     final data = jsonDecode(source) as Map<String, dynamic>;
     final list = (data['attachments'] as List?) ?? const [];
+    final plugins = (data['pluginData'] as List?) ?? const [];
     try {
       return (
         rows: rows,
@@ -75,6 +96,14 @@ class BackupCodec {
               a['id'] as String,
               a['mimeType'] as String,
               base64.decode(a['data'] as String),
+            ),
+        ],
+        pluginData: [
+          for (final v in plugins.cast<Map<String, dynamic>>())
+            BackupPluginValue(
+              v['pluginId'] as String,
+              v['key'] as String,
+              v['value'] as String,
             ),
         ],
       );

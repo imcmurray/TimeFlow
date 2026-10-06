@@ -1,7 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
+import 'package:timeflow/data/datasources/database_location_stub.dart'
+    if (dart.library.io) 'package:timeflow/data/datasources/database_location.dart'
+    as location;
 import 'package:timeflow/data/migrations/schema_v3_migration.dart';
 import 'package:timeflow/domain/time/wall_clock.dart';
 
@@ -77,30 +78,37 @@ class Attachments extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [Tasks, Attachments])
+/// Data stored by plugins, as JSON text under a plugin-chosen key.
+@DataClassName('PluginDataRow')
+class PluginData extends Table {
+  TextColumn get pluginId => text()();
+  TextColumn get key => text()();
+  TextColumn get value => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {pluginId, key};
+}
+
+@DriftDatabase(tables: [Tasks, Attachments, PluginData])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _open());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
       if (from < 3) await migrateToSchemaV3(this, m, from);
+      if (from < 4) await m.createTable(pluginData);
     },
   );
 
   static QueryExecutor _open() => driftDatabase(
     name: 'timeflow',
-    native: DriftNativeOptions(
-      // Keep the file name the app has always used.
-      databasePath: () async => p.join(
-        (await getApplicationDocumentsDirectory()).path,
-        'timeflow.db',
-      ),
-    ),
+    native: DriftNativeOptions(databasePath: location.databasePath),
     web: DriftWebOptions(
       sqlite3Wasm: Uri.parse('sqlite3.wasm'),
       driftWorker: Uri.parse('drift_worker.js'),

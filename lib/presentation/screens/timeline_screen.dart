@@ -4,6 +4,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timeflow/core/plugins/plugin_interface.dart';
+import 'package:timeflow/core/plugins/plugin_state_provider.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
 import 'package:timeflow/presentation/timeline/now_chip.dart';
 import 'package:timeflow/presentation/timeline/timeline_view.dart';
@@ -253,6 +255,11 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
             ),
           ),
           actions: [
+            // Actions contributed by enabled plugins (e.g. ServerFlow's filter).
+            for (final plugin in ref.watch(enabledPluginsProvider))
+              for (final ext in plugin.uiExtensions)
+                if (ext.extensionPoint == UIExtensionPoint.appBarAction)
+                  ext.builder(context, ref),
             IconButton(
               icon: const Icon(Icons.share_outlined),
               tooltip: 'Share',

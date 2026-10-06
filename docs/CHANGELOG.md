@@ -35,7 +35,10 @@ version is tagged, *Unreleased* becomes that version's notes.
 ### Web and docs
 - Support page (`web/support.html`); privacy policy covers iOS and names the
   publisher. (#26)
-- Marketing/press kit and beta-tester kit. (#28, #29)
+- Marketing/press kit and beta-tester kit. (#28, #29) Both were deleted by
+  mistake in #30's squash and are restored, now with vector SVGs of every
+  tester design, new "TimeFlow Tester" / "TimeFlow Beta Tester" badges, and
+  Ian's one-colour white/black logo SVGs.
 - Working agreement for multiple machines in `CLAUDE.md`; this changelog.
 - `main` is now protected for everyone (no direct pushes; PRs merge only
   after analyze/test, web, Android and iOS checks pass). See `CLAUDE.md`.

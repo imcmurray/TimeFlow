@@ -1,15 +1,21 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:timeflow/core/plugins/crossing_alerts.dart';
+import 'package:timeflow/core/plugins/plugin_interface.dart';
+import 'package:timeflow/core/plugins/plugin_state_provider.dart';
+import 'package:timeflow/services/reminder_sound_service.dart';
+import 'package:timeflow/presentation/timeline/timeline_tasks.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeflow/core/theme/app_colors.dart';
 import 'package:timeflow/domain/time/local_date.dart';
 import 'package:timeflow/presentation/providers/clock_provider.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
-import 'package:timeflow/presentation/providers/task_provider.dart';
 import 'package:timeflow/presentation/timeline/day_layers.dart';
 import 'package:timeflow/presentation/timeline/hour_markers_layer.dart';
 import 'package:timeflow/presentation/timeline/now_line.dart';
+import 'package:timeflow/presentation/timeline/plugin_events_layer.dart';
 import 'package:timeflow/presentation/timeline/task_layer.dart';
 import 'package:timeflow/presentation/timeline/timeline_geometry.dart';
 import 'package:timeflow/presentation/widgets/time_of_day_background.dart';
@@ -27,6 +33,9 @@ abstract final class TimelineLayout {
 
   /// Right margin of task cards.
   static const contentRight = 16.0;
+
+  /// Width of the plugin-indicator lane left of the cards, when plugins are on.
+  static const pluginLane = 22.0;
 }
 
 /// Where NOW is when it's off screen.
@@ -120,6 +129,9 @@ class TimelineViewState extends ConsumerState<TimelineView>
   /// True while the view moves itself (following NOW, zooming, jumping), so
   /// the scrollbar only appears for the user's own scrolling.
   bool _scrollingProgrammatically = false;
+
+  /// True during the app's own animated scrolls (jump to NOW, go to date).
+  bool _animating = false;
   LocalDate? _reportedDay;
 
   double get hourHeight => _geometry.hourHeight;
@@ -183,9 +195,47 @@ class TimelineViewState extends ConsumerState<TimelineView>
     }
   }
 
+  DateTime _lastCrossingCheck = DateTime.now();
+  final Set<String> _alertedEvents = {};
+
+  /// Alerts for plugin events (e.g. cron jobs) that reached NOW since the
+  /// last check, for plugins with crossing alerts on.
+  Future<void> _checkPluginCrossings(DateTime now) async {
+    final previous = _lastCrossingCheck;
+    _lastCrossingCheck = now;
+    final alertsOn = ref.read(pluginCrossingAlertStateProvider);
+    final window = taskWindowFor(DayRange.single(LocalDate.of(now)));
+    for (final plugin in ref.read(enabledPluginsProvider)) {
+      if (!(alertsOn[plugin.id] ?? true)) continue;
+      final provider = plugin.eventsProviderFor(window);
+      if (provider == null) continue;
+      final List<TimelineEvent> events;
+      try {
+        events = await ref.read(provider.future);
+      } catch (_) {
+        continue;
+      }
+      final crossed = detectCrossingEvents(
+        previous: previous,
+        now: now,
+        events: events,
+        alreadyAlerted: _alertedEvents,
+      );
+      if (crossed.isEmpty || !mounted) continue;
+      _alertedEvents.addAll(crossed.map((e) => e.id));
+      final settings = ref.read(settingsProvider);
+      if (settings.reminderSoundEnabled) {
+        ReminderSoundService.play(settings.reminderSound);
+      }
+      HapticFeedback.mediumImpact();
+      plugin.onEventTap?.call(context, crossed.first);
+    }
+  }
+
   void _onTick() {
     if (!mounted) return;
     _now.value = DateTime.now();
+    _checkPluginCrossings(_now.value);
     if (_following && !_userScrolling && _scroll.hasClients) {
       _quietly(() => _scroll.jumpTo(_nowScrollOffset()));
     } else {
@@ -219,14 +269,23 @@ class TimelineViewState extends ConsumerState<TimelineView>
     }
     final target = _nowScrollOffset();
     if (animated) {
-      _scroll.animateTo(
-        target,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
+      _animateTo(target);
     } else {
       _quietly(() => _scroll.jumpTo(target));
     }
+  }
+
+  /// An animated scroll the app makes itself, which must not count as the
+  /// user scrolling away from NOW.
+  void _animateTo(double target) {
+    _animating = true;
+    _scroll
+        .animateTo(
+          target,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        )
+        .whenComplete(() => _animating = false);
   }
 
   /// Scrolls back to NOW and resumes following it.
@@ -252,11 +311,7 @@ class TimelineViewState extends ConsumerState<TimelineView>
               _scroll.position.maxScrollExtent,
             );
     if (animated) {
-      _scroll.animateTo(
-        target,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
+      _animateTo(target);
     } else {
       _quietly(() => _scroll.jumpTo(target));
     }
@@ -336,7 +391,13 @@ class TimelineViewState extends ConsumerState<TimelineView>
   }
 
   bool _onScrollNotification(ScrollNotification n) {
-    if (n is ScrollStartNotification && n.dragDetails != null) {
+    if (n.depth != 0) return false;
+    // Any movement the app didn't make is the user's: touch drags, but also
+    // mouse wheels, trackpads, the scrollbar and the keyboard, none of which
+    // carry drag details. Scrolling away stops following NOW.
+    if (n is ScrollUpdateNotification &&
+        !_scrollingProgrammatically &&
+        !_animating) {
       _userScrolling = true;
       _following = false;
     } else if (n is ScrollEndNotification && _userScrolling) {
@@ -365,6 +426,11 @@ class TimelineViewState extends ConsumerState<TimelineView>
     final hour =
         ref.watch(minuteClockProvider).value?.hour ?? DateTime.now().hour;
     final geometry = _geometry;
+    // With plugins on, their indicators get their own lane beside the cards
+    // instead of sitting on the cards' edges.
+    final pluginLane = ref.watch(enabledPluginsProvider).isEmpty
+        ? 0.0
+        : TimelineLayout.pluginLane;
 
     return TimeOfDayBackground(
       hour: hour,
@@ -408,11 +474,21 @@ class TimelineViewState extends ConsumerState<TimelineView>
                       DayDividersLayer(geometry: geometry, days: days),
                       DayWatermarksLayer(geometry: geometry, days: days),
                       Positioned(
-                        left: TimelineLayout.contentLeft,
+                        left: TimelineLayout.contentLeft + pluginLane,
                         right: TimelineLayout.contentRight,
                         top: 0,
                         bottom: 0,
                         child: TaskLayer(geometry: geometry, days: days),
+                      ),
+                      Positioned(
+                        left: TimelineLayout.contentLeft,
+                        width: pluginLane,
+                        top: 0,
+                        bottom: 0,
+                        child: PluginEventsLayer(
+                          geometry: geometry,
+                          days: days,
+                        ),
                       ),
                       IgnorePointer(
                         child: DayDividerOverlay(

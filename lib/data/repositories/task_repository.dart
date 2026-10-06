@@ -268,6 +268,7 @@ class TaskRepository {
   Future<String> exportToJson() async {
     final rows = await _db.select(_tasks).get();
     final attachments = await _db.select(_db.attachments).get();
+    final pluginData = await _db.select(_db.pluginData).get();
     return BackupCodec.encode(
       [
         for (final r in rows)
@@ -276,6 +277,10 @@ class TaskRepository {
       attachments: [
         for (final a in attachments)
           BackupAttachment(a.id, a.mimeType, a.bytes),
+      ],
+      pluginData: [
+        for (final v in pluginData)
+          BackupPluginValue(v.pluginId, v.key, v.value),
       ],
     );
   }
@@ -295,6 +300,18 @@ class TaskRepository {
                 mimeType: a.mimeType,
                 bytes: a.bytes,
                 createdAt: DateTime.now(),
+              ),
+            );
+      }
+      for (final v in backup.pluginData) {
+        await _db
+            .into(_db.pluginData)
+            .insertOnConflictUpdate(
+              PluginDataCompanion.insert(
+                pluginId: v.pluginId,
+                key: v.key,
+                value: v.value,
+                updatedAt: DateTime.now(),
               ),
             );
       }

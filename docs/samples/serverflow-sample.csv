@@ -1,0 +1,9 @@
+host,command,start_time,user,category,duration,schedule,os
+web-01,/usr/local/bin/backup-site.sh,2026-01-01T02:30:00,root,backup,1200,30 2 * * *,linux
+web-01,certbot renew --quiet,2026-01-01T04:15:00,root,maintenance,60,15 4 * * *,linux
+db-01,pg_dump -Fc app > /backups/app.dump,2026-01-01T01:00:00,postgres,backup,2400,0 1 * * *,linux
+db-01,vacuumdb --all --analyze,2026-01-01T03:00:00,postgres,maintenance,900,0 3 * * 0,linux
+app-02,/opt/app/bin/send-digest-emails,2026-01-01T07:00:00,app,email,300,0 7 * * 1-5,linux
+app-02,/opt/app/bin/sync-inventory,2026-01-01T00:00:00,app,sync,180,0 */4 * * *,linux
+nas,rsync -a /photos /mnt/offsite,2026-01-01T23:00:00,ian,backup,3600,0 23 * * *,linux
+pi-cluster,ansible-playbook update.yml,2026-01-01T05:00:00,ian,maintenance,1800,0 5 * * 6,linux

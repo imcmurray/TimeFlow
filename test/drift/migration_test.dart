@@ -19,12 +19,14 @@ void main() {
 
   setUpAll(() => verifier = SchemaVerifier(GeneratedHelper()));
 
-  test('schema v2 upgrades to the v3 schema', () async {
-    final connection = await verifier.startAt(2);
-    final db = AppDatabase(connection);
-    await verifier.migrateAndValidate(db, 3);
-    await db.close();
-  });
+  for (final from in [2, 3]) {
+    test('schema v$from upgrades to the current schema', () async {
+      final connection = await verifier.startAt(from);
+      final db = AppDatabase(connection);
+      await verifier.migrateAndValidate(db, db.schemaVersion);
+      await db.close();
+    });
+  }
 
   group('v2 data', () {
     final created = DateTime(2026, 5, 1);

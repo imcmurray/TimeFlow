@@ -30,6 +30,8 @@ version is tagged, *Unreleased* becomes that version's notes.
   publisher. (#26)
 - Marketing/press kit and beta-tester kit. (#28, #29)
 - Working agreement for multiple machines in `CLAUDE.md`; this changelog.
+- `main` is now protected for everyone (no direct pushes; PRs merge only
+  after analyze/test, web, Android and iOS checks pass). See `CLAUDE.md`.
 
 ## 1.0.0 — 2026-10-04
 

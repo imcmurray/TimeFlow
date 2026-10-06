@@ -30,6 +30,44 @@ While working:
 - Before branching again after a while, pull `main` first. The other machine
   has probably merged something.
 
+### `main` is protected (this applies to everyone, Ian included)
+
+A repository ruleset ("Protect main") rejects direct pushes, force-pushes
+and deletion of `main`, and only allows merging a PR once these CI checks
+pass: **Analyze and test**, **Web build**, **Android build**, **iOS build
+(unsigned)**. There's no admin bypass, so a push straight to `main` fails
+with `GH013: Repository rule violations`. That's expected, not a problem
+with your credentials.
+
+The workflow:
+
+```bash
+git checkout main && git pull
+git checkout -b short-topic-name          # one branch per change
+# ...work, run analyze/tests/format locally, commit...
+git push -u origin short-topic-name
+gh pr create --fill                        # or a written title/body
+gh pr checks --watch                       # wait for the four checks
+gh pr merge --merge --delete-branch        # refuses until checks pass
+git checkout main && git pull
+```
+
+If you committed on `main` by accident and the push was rejected, move the
+commits to a branch instead of retrying:
+
+```bash
+git branch short-topic-name                # keep the commits
+git reset --hard origin/main               # put local main back
+git checkout short-topic-name && git push -u origin short-topic-name
+gh pr create --fill
+```
+
+A failing check blocks the merge: fix it on the same branch and push again.
+If a check fails for reasons outside your change (e.g. the macOS runner is
+down), comment on the PR or issue for Ian instead of working around it.
+Ian can switch the ruleset off temporarily in Settings → Rules in a real
+emergency; sessions shouldn't.
+
 ## Commands
 
 ```bash

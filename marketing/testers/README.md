@@ -4,15 +4,29 @@ Badges, stickers and banners for the **timeflow-testers** group: the people
 trying TimeFlow builds before everyone else. Same Nunito type and river
 blues as the rest of the kit, with a little more mischief.
 
-Regenerate (Docker needed; renders with Chromium):
+**The SVGs in `svg/` are the source.** Edit them in Inkscape (or any vector
+editor) as you like; nothing overwrites them. After editing, redraw the PNGs
+from them (Inkscape needed):
+
+```bash
+./scripts/render_tester_pngs.sh
+```
+
+To add a new design, or change the "since" build, run the full generator
+(Docker needed; renders with Chromium):
 
 ```bash
 SINCE_VERSION=1.0.0 SINCE_BUILD=183 ./scripts/generate_tester_assets.sh
 ```
 
+It creates the SVG only for designs that don't have one yet, then renders all
+the PNGs from the SVGs. `REGENERATE_SVG=1` replaces every SVG and **throws
+away hand edits**, so only use it when you mean to.
+
 `SINCE_VERSION` and `SINCE_BUILD` set the "Since vX (N)" text: the first
 build a tester received. The defaults are **v1.0.0 (183)**, the first
-TestFlight build. Make a set for a later cohort by changing them. The
+TestFlight build. Make a set for a later cohort by changing them (with
+`REGENERATE_SVG=1`, since the text is baked into the SVGs). The original
 designs live in `scripts/tester-assets/generate.mjs`.
 
 Every file has a transparent background and comes at 1× plus 2× (and 4× for

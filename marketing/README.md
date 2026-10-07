@@ -1,14 +1,22 @@
 # TimeFlow marketing and press kit
 
 Logos and artwork for T-shirts, merch, press and social media. Every file is a
-PNG generated from the logo SVG (`assets/branding/timeflow-logo.svg`) and the
-app's own typeface, Nunito, by:
+PNG generated from the logo SVGs (`assets/branding/timeflow-logo*.svg`) and
+the app's own typeface, Nunito, by:
 
 ```bash
-swift scripts/generate_marketing_assets.swift
+./scripts/generate_marketing_assets.sh
 ```
 
-Don't edit the PNGs by hand: change the script and run it again.
+It runs on Linux or macOS and needs Docker (Chromium lays the designs out),
+Inkscape, rsvg-convert and ImageMagick. Each design is drawn as vector art and
+rasterised to every size, so the big print files are as sharp as the small
+ones. Don't edit the PNGs by hand: change `scripts/marketing-assets/generate.mjs`
+and run it again.
+
+The one-colour files (white, black, blue) use the outline marks
+`timeflow-logo-white.svg` / `timeflow-logo-black.svg`, so the two halves of the
+mark stay distinct in a single ink.
 
 **Vector logos:** `logo/mark/timeflow-mark.svg` (full colour) and the one-colour
 `timeflow-mark-white.svg` / `timeflow-mark-black.svg`, which separate the two

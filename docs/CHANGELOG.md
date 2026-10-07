@@ -39,6 +39,13 @@ version is tagged, *Unreleased* becomes that version's notes.
   mistake in #30's squash and are restored, now with vector SVGs of every
   tester design, new "TimeFlow Tester" / "TimeFlow Beta Tester" badges, and
   Ian's one-colour white/black logo SVGs.
+- Tester kit: the SVGs in `marketing/testers/svg/` are now the source and are
+  never overwritten (hand edits are kept); `scripts/render_tester_pngs.sh`
+  redraws the PNGs from them. (fixes #39)
+- Marketing kit generator ported from Swift/AppKit to
+  `scripts/generate_marketing_assets.sh` (Docker + Inkscape), so it runs on
+  Linux too: **the Mac no longer needs to run it.** One-colour files now use
+  the outline marks; high-res print zip on *press-kit-1* refreshed. (fixes #39)
 - Working agreement for multiple machines in `CLAUDE.md`; this changelog.
 - `main` is now protected for everyone (no direct pushes; PRs merge only
   after analyze/test, web, Android and iOS checks pass). See `CLAUDE.md`.

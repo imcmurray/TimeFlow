@@ -269,6 +269,7 @@ class TaskRepository {
     final rows = await _db.select(_tasks).get();
     final attachments = await _db.select(_db.attachments).get();
     final pluginData = await _db.select(_db.pluginData).get();
+    final categories = await _db.select(_db.categories).get();
     return BackupCodec.encode(
       [
         for (final r in rows)
@@ -282,6 +283,7 @@ class TaskRepository {
         for (final v in pluginData)
           BackupPluginValue(v.pluginId, v.key, v.value),
       ],
+      categories: [for (final c in categories) c.toCategory()],
     );
   }
 
@@ -315,6 +317,12 @@ class TaskRepository {
               ),
             );
       }
+      // Categories with the same id are replaced; others are kept.
+      await _db.batch(
+        (b) => b.insertAllOnConflictUpdate(_db.categories, [
+          for (final c in backup.categories) categoryToCompanion(c),
+        ]),
+      );
       await importRows(backup.rows);
     });
     return backup.rows.where((r) => r.task.seriesId == null).length;

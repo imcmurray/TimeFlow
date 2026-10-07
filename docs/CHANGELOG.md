@@ -7,6 +7,16 @@ version is tagged, *Unreleased* becomes that version's notes.
 ## Unreleased
 
 ### App
+- **Your own categories** (fixes #24): Settings → Categories lists every
+  category with how many past, upcoming and repeating events use it. Add,
+  edit (name, colour, icon), reorder and remove them; long-press a category
+  (there, or in the task editor's picker) to rename it. Changing one that
+  events use asks whether to **update all events** or **save as a new
+  category**; removing one asks where its events go. Categories live in a
+  new `categories` table (**database schema 5**, built-ins seeded with their
+  old ids so existing tasks keep theirs), travel in backups, and travel in
+  share links in a way older versions still open (custom ones show as None
+  there).
 - The midnight divider no longer draws through task cards that span
   midnight. (fixes #35)
 - Plugin marketplace is back, opt-in: Settings → Plugins. **ServerFlow**

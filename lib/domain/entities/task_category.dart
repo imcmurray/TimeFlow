@@ -1,251 +1,273 @@
 import 'package:flutter/material.dart';
 
-/// Categories for organizing tasks by type of activity.
+/// A category people file tasks under, such as *Health* or *Deep Work*.
 ///
-/// Each category has an associated icon, color, and label
-/// to help users quickly identify the nature of their tasks.
-enum TaskCategory {
-  /// No specific category assigned.
-  none,
+/// Tasks refer to a category by [id]. The 11 built-ins keep the ids they had
+/// as enum values before 1.1 (`health`, `deepWork`, ...), so older task rows,
+/// backups and share links still match. Categories people add get a
+/// generated id. [none] is not stored: it's what a task without a category
+/// (or with one that no longer exists) shows as.
+@immutable
+class TaskCategory {
+  final String id;
+  final String name;
 
-  /// Deep, focused work requiring concentration.
-  deepWork,
+  /// Key into [categoryIcons].
+  final String icon;
 
-  /// Meetings and collaborative sessions.
-  meeting,
+  /// ARGB colour.
+  final int colorValue;
+  final int sortOrder;
 
-  /// Administrative tasks like email, paperwork.
-  admin,
+  /// One of the categories TimeFlow ships with (it can still be renamed,
+  /// recoloured or removed).
+  final bool builtIn;
 
-  /// Health and fitness activities.
-  health,
+  const TaskCategory({
+    required this.id,
+    required this.name,
+    required this.icon,
+    required this.colorValue,
+    this.sortOrder = 0,
+    this.builtIn = false,
+  });
 
-  /// Family and relationship time.
-  family,
+  static const noneId = 'none';
 
-  /// Learning and education.
-  learning,
+  static const none = TaskCategory(
+    id: noneId,
+    name: 'None',
+    icon: 'circle_outlined',
+    colorValue: 0xFF78909C,
+    builtIn: true,
+  );
 
-  /// Personal errands and chores.
-  personal,
+  bool get isNone => id == noneId;
 
-  /// Creative work and hobbies.
-  creative,
-
-  /// Travel and commute time.
-  travel,
-
-  /// Breaks and rest periods.
-  rest,
-}
-
-/// Extension providing display properties for TaskCategory.
-extension TaskCategoryExtension on TaskCategory {
   /// Display label for the category.
-  String get label {
-    switch (this) {
-      case TaskCategory.none:
-        return 'None';
-      case TaskCategory.deepWork:
-        return 'Deep Work';
-      case TaskCategory.meeting:
-        return 'Meeting';
-      case TaskCategory.admin:
-        return 'Admin';
-      case TaskCategory.health:
-        return 'Health';
-      case TaskCategory.family:
-        return 'Family';
-      case TaskCategory.learning:
-        return 'Learning';
-      case TaskCategory.personal:
-        return 'Personal';
-      case TaskCategory.creative:
-        return 'Creative';
-      case TaskCategory.travel:
-        return 'Travel';
-      case TaskCategory.rest:
-        return 'Rest';
-    }
-  }
+  String get label => name;
 
-  /// Icon representing the category.
-  IconData get icon {
-    switch (this) {
-      case TaskCategory.none:
-        return Icons.circle_outlined;
-      case TaskCategory.deepWork:
-        return Icons.psychology;
-      case TaskCategory.meeting:
-        return Icons.groups;
-      case TaskCategory.admin:
-        return Icons.mail_outline;
-      case TaskCategory.health:
-        return Icons.fitness_center;
-      case TaskCategory.family:
-        return Icons.family_restroom;
-      case TaskCategory.learning:
-        return Icons.school;
-      case TaskCategory.personal:
-        return Icons.person_outline;
-      case TaskCategory.creative:
-        return Icons.palette;
-      case TaskCategory.travel:
-        return Icons.directions_car;
-      case TaskCategory.rest:
-        return Icons.bedtime;
-    }
-  }
+  IconData get iconData => categoryIcons[icon] ?? Icons.label_outline;
 
-  /// Primary color for the category.
-  Color get color {
-    switch (this) {
-      case TaskCategory.none:
-        return const Color(0xFF78909C); // Blue grey
-      case TaskCategory.deepWork:
-        return const Color(0xFF5C6BC0); // Indigo
-      case TaskCategory.meeting:
-        return const Color(0xFF42A5F5); // Blue
-      case TaskCategory.admin:
-        return const Color(0xFF78909C); // Blue grey
-      case TaskCategory.health:
-        return const Color(0xFF66BB6A); // Green
-      case TaskCategory.family:
-        return const Color(0xFFFF7043); // Deep orange
-      case TaskCategory.learning:
-        return const Color(0xFFAB47BC); // Purple
-      case TaskCategory.personal:
-        return const Color(0xFF26A69A); // Teal
-      case TaskCategory.creative:
-        return const Color(0xFFEC407A); // Pink
-      case TaskCategory.travel:
-        return const Color(0xFFFFA726); // Orange
-      case TaskCategory.rest:
-        return const Color(0xFF8D6E63); // Brown
-    }
-  }
+  Color get color => Color(colorValue);
 
   /// Lighter variant of the category color (for backgrounds).
-  Color get lightColor {
-    return color.withValues(alpha: 0.15);
-  }
+  Color get lightColor => color.withValues(alpha: 0.15);
 
-  /// Serialize to string for storage.
-  String get value => name;
+  /// Whether name, icon and colour are the same as [other]'s.
+  bool looksLike(TaskCategory other) =>
+      name == other.name &&
+      icon == other.icon &&
+      colorValue == other.colorValue;
 
-  /// Parse from string.
-  static TaskCategory fromString(String? value) {
-    if (value == null) return TaskCategory.none;
-    try {
-      return TaskCategory.values.firstWhere(
-        (c) => c.name == value,
-        orElse: () => TaskCategory.none,
-      );
-    } catch (_) {
-      return TaskCategory.none;
-    }
-  }
-}
-
-/// Widget displaying a category chip/badge.
-class CategoryBadge extends StatelessWidget {
-  final TaskCategory category;
-  final bool compact;
-  final VoidCallback? onTap;
-
-  const CategoryBadge({
-    super.key,
-    required this.category,
-    this.compact = false,
-    this.onTap,
-  });
+  TaskCategory copyWith({
+    String? id,
+    String? name,
+    String? icon,
+    int? colorValue,
+    int? sortOrder,
+    bool? builtIn,
+  }) => TaskCategory(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    icon: icon ?? this.icon,
+    colorValue: colorValue ?? this.colorValue,
+    sortOrder: sortOrder ?? this.sortOrder,
+    builtIn: builtIn ?? this.builtIn,
+  );
 
   @override
-  Widget build(BuildContext context) {
-    if (category == TaskCategory.none) {
-      return const SizedBox.shrink();
-    }
-
-    final badge = Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 6 : 10,
-        vertical: compact ? 2 : 4,
-      ),
-      decoration: BoxDecoration(
-        color: category.lightColor,
-        borderRadius: BorderRadius.circular(compact ? 8 : 12),
-        border: Border.all(
-          color: category.color.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(category.icon, size: compact ? 12 : 16, color: category.color),
-          if (!compact) ...[
-            const SizedBox(width: 4),
-            Text(
-              category.label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: category.color,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-
-    if (onTap != null) {
-      return GestureDetector(onTap: onTap, child: badge);
-    }
-
-    return badge;
-  }
-}
-
-/// Dropdown selector for task categories.
-class CategorySelector extends StatelessWidget {
-  final TaskCategory value;
-  final ValueChanged<TaskCategory?> onChanged;
-
-  const CategorySelector({
-    super.key,
-    required this.value,
-    required this.onChanged,
-  });
+  bool operator ==(Object other) =>
+      other is TaskCategory &&
+      other.id == id &&
+      other.name == name &&
+      other.icon == icon &&
+      other.colorValue == colorValue &&
+      other.sortOrder == sortOrder &&
+      other.builtIn == builtIn;
 
   @override
-  Widget build(BuildContext context) {
-    return DropdownButtonFormField<TaskCategory>(
-      initialValue: value,
-      decoration: const InputDecoration(
-        labelText: 'Category',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.category_outlined),
-      ),
-      items: TaskCategory.values.map((category) {
-        return DropdownMenuItem(
-          value: category,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                category.icon,
-                size: 20,
-                color: category == TaskCategory.none
-                    ? Theme.of(context).colorScheme.onSurfaceVariant
-                    : category.color,
-              ),
-              const SizedBox(width: 12),
-              Text(category.label),
-            ],
-          ),
-        );
-      }).toList(),
-      onChanged: onChanged,
-    );
-  }
+  int get hashCode =>
+      Object.hash(id, name, icon, colorValue, sortOrder, builtIn);
+
+  @override
+  String toString() => 'TaskCategory($id, $name)';
 }
+
+/// The categories TimeFlow ships with, in their original order. The position
+/// of each id in [legacyCategoryOrder] is the index share links have always
+/// used, so it must never change.
+const builtInCategories = [
+  TaskCategory(
+    id: 'deepWork',
+    name: 'Deep Work',
+    icon: 'psychology',
+    colorValue: 0xFF5C6BC0,
+    sortOrder: 0,
+    builtIn: true,
+  ),
+  TaskCategory(
+    id: 'meeting',
+    name: 'Meeting',
+    icon: 'groups',
+    colorValue: 0xFF42A5F5,
+    sortOrder: 1,
+    builtIn: true,
+  ),
+  TaskCategory(
+    id: 'admin',
+    name: 'Admin',
+    icon: 'mail_outline',
+    colorValue: 0xFF78909C,
+    sortOrder: 2,
+    builtIn: true,
+  ),
+  TaskCategory(
+    id: 'health',
+    name: 'Health',
+    icon: 'fitness_center',
+    colorValue: 0xFF66BB6A,
+    sortOrder: 3,
+    builtIn: true,
+  ),
+  TaskCategory(
+    id: 'family',
+    name: 'Family',
+    icon: 'family_restroom',
+    colorValue: 0xFFFF7043,
+    sortOrder: 4,
+    builtIn: true,
+  ),
+  TaskCategory(
+    id: 'learning',
+    name: 'Learning',
+    icon: 'school',
+    colorValue: 0xFFAB47BC,
+    sortOrder: 5,
+    builtIn: true,
+  ),
+  TaskCategory(
+    id: 'personal',
+    name: 'Personal',
+    icon: 'person_outline',
+    colorValue: 0xFF26A69A,
+    sortOrder: 6,
+    builtIn: true,
+  ),
+  TaskCategory(
+    id: 'creative',
+    name: 'Creative',
+    icon: 'palette',
+    colorValue: 0xFFEC407A,
+    sortOrder: 7,
+    builtIn: true,
+  ),
+  TaskCategory(
+    id: 'travel',
+    name: 'Travel',
+    icon: 'directions_car',
+    colorValue: 0xFFFFA726,
+    sortOrder: 8,
+    builtIn: true,
+  ),
+  TaskCategory(
+    id: 'rest',
+    name: 'Rest',
+    icon: 'bedtime',
+    colorValue: 0xFF8D6E63,
+    sortOrder: 9,
+    builtIn: true,
+  ),
+];
+
+/// Category ids in the order of the pre-1.1 enum, whose index share links
+/// carry.
+const legacyCategoryOrder = [
+  'none',
+  'deepWork',
+  'meeting',
+  'admin',
+  'health',
+  'family',
+  'learning',
+  'personal',
+  'creative',
+  'travel',
+  'rest',
+];
+
+/// The built-in with [id] as it ships, or null.
+TaskCategory? builtInCategory(String id) {
+  for (final c in builtInCategories) {
+    if (c.id == id) return c;
+  }
+  return null;
+}
+
+/// Icons people can pick for a category. Keyed by name (stored in the
+/// database) rather than code point so icon tree shaking keeps working.
+const categoryIcons = <String, IconData>{
+  'circle_outlined': Icons.circle_outlined,
+  'psychology': Icons.psychology,
+  'groups': Icons.groups,
+  'mail_outline': Icons.mail_outline,
+  'fitness_center': Icons.fitness_center,
+  'family_restroom': Icons.family_restroom,
+  'school': Icons.school,
+  'person_outline': Icons.person_outline,
+  'palette': Icons.palette,
+  'directions_car': Icons.directions_car,
+  'bedtime': Icons.bedtime,
+  'work_outline': Icons.work_outline,
+  'home_outlined': Icons.home_outlined,
+  'laptop': Icons.laptop,
+  'code': Icons.code,
+  'phone': Icons.phone,
+  'event': Icons.event,
+  'shopping_cart': Icons.shopping_cart_outlined,
+  'restaurant': Icons.restaurant,
+  'local_cafe': Icons.local_cafe_outlined,
+  'cleaning_services': Icons.cleaning_services_outlined,
+  'yard': Icons.yard_outlined,
+  'build': Icons.build_outlined,
+  'savings': Icons.savings_outlined,
+  'directions_run': Icons.directions_run,
+  'self_improvement': Icons.self_improvement,
+  'spa': Icons.spa_outlined,
+  'medical_services': Icons.medical_services_outlined,
+  'medication': Icons.medication_outlined,
+  'child_care': Icons.child_care,
+  'pets': Icons.pets,
+  'favorite': Icons.favorite_border,
+  'celebration': Icons.celebration_outlined,
+  'volunteer_activism': Icons.volunteer_activism_outlined,
+  'church': Icons.church_outlined,
+  'menu_book': Icons.menu_book,
+  'music_note': Icons.music_note,
+  'brush': Icons.brush_outlined,
+  'videogame': Icons.sports_esports_outlined,
+  'sports_soccer': Icons.sports_soccer,
+  'park': Icons.park_outlined,
+  'flight': Icons.flight,
+  'star': Icons.star_border,
+};
+
+/// Colours offered when adding or editing a category.
+const categoryColors = <int>[
+  0xFF5C6BC0, // indigo
+  0xFF42A5F5, // blue
+  0xFF26C6DA, // cyan
+  0xFF26A69A, // teal
+  0xFF66BB6A, // green
+  0xFF9CCC65, // light green
+  0xFFFFCA28, // amber
+  0xFFFFA726, // orange
+  0xFFFF7043, // deep orange
+  0xFFEF5350, // red
+  0xFFEC407A, // pink
+  0xFFAB47BC, // purple
+  0xFF7E57C2, // deep purple
+  0xFF8D6E63, // brown
+  0xFF78909C, // blue grey
+  0xFF616161, // grey
+];

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:timeflow/domain/entities/task.dart';
 import 'package:timeflow/domain/entities/task_category.dart';
 import 'package:timeflow/presentation/utils/time_formatter.dart';
+import 'package:timeflow/presentation/widgets/category_widgets.dart';
 
 /// Shows a task's details without editing controls (shared schedules).
 Future<void> showTaskSummarySheet(
   BuildContext context,
   Task task, {
+  required TaskCategory category,
   required bool use24Hour,
 }) {
   return showModalBottomSheet<void>(
@@ -48,9 +50,9 @@ Future<void> showTaskSummarySheet(
                 '${time(task.startTime)} – ${time(task.endTime)}',
                 style: theme.textTheme.bodyLarge,
               ),
-              if (task.category != TaskCategory.none) ...[
+              if (!category.isNone) ...[
                 const SizedBox(height: 12),
-                CategoryBadge(category: task.category),
+                CategoryBadge(category: category),
               ],
               if (task.description != null) ...[
                 const SizedBox(height: 16),

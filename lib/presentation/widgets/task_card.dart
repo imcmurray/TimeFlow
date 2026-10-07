@@ -2,10 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeflow/core/theme/app_colors.dart';
 import 'package:timeflow/domain/entities/task.dart';
 import 'package:timeflow/domain/entities/task_category.dart';
+import 'package:timeflow/presentation/providers/category_provider.dart';
 import 'package:timeflow/presentation/utils/time_formatter.dart';
+import 'package:timeflow/presentation/widgets/category_widgets.dart';
 import 'package:timeflow/presentation/widgets/reminder_line.dart';
 import 'package:timeflow/presentation/widgets/priority_column_card.dart';
 import 'package:timeflow/presentation/widgets/reminder_shake_mixin.dart';
@@ -15,7 +18,7 @@ import 'package:timeflow/presentation/widgets/reminder_shake_mixin.dart';
 /// Task cards are positioned vertically based on their start time,
 /// with height proportional to duration. They support swipe gestures
 /// for completion and tap for editing.
-class TaskCard extends StatefulWidget {
+class TaskCard extends ConsumerStatefulWidget {
   /// The task to display.
   final Task task;
 
@@ -57,12 +60,13 @@ class TaskCard extends StatefulWidget {
   });
 
   @override
-  State<TaskCard> createState() => _TaskCardState();
+  ConsumerState<TaskCard> createState() => _TaskCardState();
 }
 
-class _TaskCardState extends State<TaskCard>
+class _TaskCardState extends ConsumerState<TaskCard>
     with SingleTickerProviderStateMixin, ReminderShakeMixin {
   Timer? _countdownTimer;
+  TaskCategory _category = TaskCategory.none;
 
   @override
   void initState() {
@@ -123,6 +127,7 @@ class _TaskCardState extends State<TaskCard>
 
   @override
   Widget build(BuildContext context) {
+    _category = ref.watch(categoryLookupProvider)[widget.task.categoryId];
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isTriggered = widget.reminderState == ReminderState.triggered;
 
@@ -132,9 +137,9 @@ class _TaskCardState extends State<TaskCard>
       cardColor = Color(
         int.parse(widget.task.color!.replaceFirst('#', '0xFF')),
       );
-    } else if (widget.task.category != TaskCategory.none) {
+    } else if (!_category.isNone) {
       // Use category color as the primary indicator
-      cardColor = widget.task.category.color;
+      cardColor = _category.color;
     } else if (widget.task.isImportant) {
       cardColor = AppColors.accentCoral;
     } else if (widget.task.isCompleted) {
@@ -265,7 +270,7 @@ class _TaskCardState extends State<TaskCard>
       '${_formatTime(t.startTime)} to ${_formatTime(t.endTime)}',
       if (t.isCompleted) 'done',
       if (t.isImportant) 'important',
-      if (t.category != TaskCategory.none) t.category.label,
+      if (!_category.isNone) _category.label,
       if (t.isRecurring) 'repeats',
       if (t.attachmentPath != null) 'has a photo',
       if (widget.reminderState == ReminderState.triggered) 'reminder due',
@@ -292,13 +297,13 @@ class _TaskCardState extends State<TaskCard>
         // Title row (highest priority)
         Row(
           children: [
-            if (widget.task.category != TaskCategory.none)
+            if (!_category.isNone)
               Padding(
                 padding: const EdgeInsets.only(right: 4),
                 child: Icon(
-                  widget.task.category.icon,
+                  _category.iconData,
                   size: 14,
-                  color: widget.task.category.color,
+                  color: _category.color,
                 ),
               ),
             if (widget.task.isImportant)
@@ -352,17 +357,16 @@ class _TaskCardState extends State<TaskCard>
         ),
 
         // Category badge and recurring indicator
-        if (widget.task.category != TaskCategory.none ||
+        if (!_category.isNone ||
             widget.task.isRecurring ||
             widget.task.attachmentPath != null) ...[
           const SizedBox(height: 4),
           Row(
             children: [
-              if (widget.task.category != TaskCategory.none)
-                CategoryBadge(category: widget.task.category, compact: true),
+              if (!_category.isNone)
+                CategoryBadge(category: _category, compact: true),
               if (widget.task.isRecurring) ...[
-                if (widget.task.category != TaskCategory.none)
-                  const SizedBox(width: 6),
+                if (!_category.isNone) const SizedBox(width: 6),
                 Icon(
                   Icons.repeat,
                   size: 14,

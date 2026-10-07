@@ -17,7 +17,7 @@ Future<void> addSampleDay(TaskService service, {DateTime? now}) async {
     String title,
     int offsetMinutes,
     int minutes, {
-    TaskCategory category = TaskCategory.none,
+    String category = TaskCategory.noneId,
     bool done = false,
     bool important = false,
     int? reminder,
@@ -28,7 +28,7 @@ Future<void> addSampleDay(TaskService service, {DateTime? now}) async {
     title: title,
     startTime: addWallMinutes(base, offsetMinutes),
     endTime: addWallMinutes(base, offsetMinutes + minutes),
-    category: category,
+    categoryId: category,
     isCompleted: done,
     isImportant: important,
     reminderMinutes: reminder,
@@ -40,13 +40,13 @@ Future<void> addSampleDay(TaskService service, {DateTime? now}) async {
 
   final vitaminsStart = LocalDate.of(base).at(8, 0);
   final samples = [
-    task('Morning walk', -180, 45, category: TaskCategory.health, done: true),
-    task('Focus time', -60, 90, category: TaskCategory.deepWork),
+    task('Morning walk', -180, 45, category: 'health', done: true),
+    task('Focus time', -60, 90, category: 'deepWork'),
     task(
       'Lunch with Sam',
       90,
       60,
-      category: TaskCategory.family,
+      category: 'family',
       reminder: 15,
       notes: 'The café on 3rd Street',
     ),
@@ -54,7 +54,7 @@ Future<void> addSampleDay(TaskService service, {DateTime? now}) async {
       'Pick up groceries',
       210,
       30,
-      category: TaskCategory.personal,
+      category: 'personal',
       important: true,
       reminder: 10,
     ),
@@ -63,7 +63,7 @@ Future<void> addSampleDay(TaskService service, {DateTime? now}) async {
       title: 'Take vitamins',
       startTime: vitaminsStart,
       endTime: addWallMinutes(vitaminsStart, 15),
-      category: TaskCategory.health,
+      categoryId: 'health',
       recurrence: RecurrenceRule.daily,
       createdAt: created,
       updatedAt: created,

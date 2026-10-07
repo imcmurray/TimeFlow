@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timeflow/domain/entities/task_category.dart';
+import 'package:timeflow/presentation/providers/category_provider.dart';
 import 'package:timeflow/domain/sharing/share_codec.dart';
 import 'package:timeflow/domain/time/local_date.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
@@ -38,8 +40,17 @@ class SharedScheduleScreen extends ConsumerWidget {
     );
     if (confirmed != true || !context.mounted) return;
     final service = ref.read(taskServiceProvider);
+    final used = {for (final t in schedule.tasks) t.categoryId};
+    final ids = await ref
+        .read(categoryRepositoryProvider)
+        .adopt(schedule.categories.where((c) => used.contains(c.id)));
     for (final task in schedule.tasks) {
-      await service.create(task.copyWith(isCompleted: false));
+      await service.create(
+        task.copyWith(
+          isCompleted: false,
+          categoryId: ids[task.categoryId] ?? TaskCategory.noneId,
+        ),
+      );
     }
     ref.read(settingsProvider.notifier).setFirstLaunch(false);
     if (!context.mounted) return;
@@ -74,6 +85,9 @@ class SharedScheduleScreen extends ConsumerWidget {
     return ProviderScope(
       overrides: [
         timelineReadOnlyProvider.overrideWithValue(true),
+        categoryLookupProvider.overrideWithValue(
+          CategoryLookup(schedule.categories),
+        ),
         tasksInRangeProvider.overrideWith(
           (ref, r) => Stream.value([
             for (final t in tasks)

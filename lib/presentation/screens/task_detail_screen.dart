@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeflow/domain/entities/recurrence_rule.dart';
 import 'package:timeflow/domain/entities/task.dart';
 import 'package:timeflow/domain/entities/task_category.dart';
+import 'package:timeflow/presentation/widgets/category_widgets.dart';
 import 'package:timeflow/domain/time/local_date.dart';
 import 'package:timeflow/domain/time/wall_clock.dart';
 import 'package:timeflow/presentation/helpers/photo_picker.dart';
@@ -53,7 +54,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   bool _completed = false;
   int? _reminderMinutes;
   RecurrenceRule? _recurrence;
-  TaskCategory _category = TaskCategory.none;
+  String _categoryId = TaskCategory.noneId;
   String? _attachment;
   bool _saving = false;
 
@@ -76,7 +77,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       _completed = task.isCompleted;
       _reminderMinutes = task.reminderMinutes;
       _recurrence = task.recurrence;
-      _category = task.category;
+      _categoryId = task.categoryId;
       _attachment = task.attachmentPath;
     } else {
       if (widget.initialStartTime != null && widget.initialEndTime != null) {
@@ -133,7 +134,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       isCompleted: _completed,
       reminderMinutes: _reminderMinutes,
       recurrence: _recurrence,
-      category: _category,
+      categoryId: _categoryId,
       attachmentPath: _attachment,
     );
   }
@@ -405,10 +406,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                 onChanged: (v) => setState(() => _reminderMinutes = v),
               ),
               const SizedBox(height: 16),
-              CategorySelector(
-                value: _category,
-                onChanged: (v) =>
-                    setState(() => _category = v ?? TaskCategory.none),
+              CategoryPickerField(
+                value: _categoryId,
+                onChanged: (v) => setState(() => _categoryId = v),
               ),
               const SizedBox(height: 8),
               SwitchListTile(

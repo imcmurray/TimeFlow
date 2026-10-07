@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timeflow/presentation/providers/category_provider.dart';
 import 'package:timeflow/domain/entities/task.dart';
 import 'package:timeflow/domain/time/wall_clock.dart';
 import 'package:timeflow/presentation/helpers/task_actions.dart';
@@ -433,6 +434,7 @@ class _TaskLayerState extends ConsumerState<TaskLayer> {
       showTaskSummarySheet(
         context,
         task,
+        category: ref.read(categoryLookupProvider)[task.categoryId],
         use24Hour: ref.read(settingsProvider).use24HourFormat,
       );
       return;

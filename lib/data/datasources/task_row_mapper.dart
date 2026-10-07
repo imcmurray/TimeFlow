@@ -22,7 +22,7 @@ extension TaskRowMapping on TaskRow {
     reminderMinutes: reminderMinutes,
     attachmentPath: attachmentPath,
     color: color,
-    category: TaskCategoryExtension.fromString(category),
+    categoryId: category,
     recurrence: recurrence != null
         ? RecurrenceRule.parse(recurrence!)
         : seriesRule,
@@ -48,7 +48,7 @@ TasksCompanion taskToCompanion(Task task, {bool isCancelled = false}) =>
       reminderMinutes: Value(task.reminderMinutes),
       attachmentPath: Value(task.attachmentPath),
       color: Value(task.color),
-      category: Value(task.category.value),
+      category: Value(task.categoryId),
       // Only series rows store the rule; occurrences inherit it.
       recurrence: Value(task.isOccurrence ? null : task.recurrence?.toRRule()),
       seriesId: Value(task.seriesId),
@@ -60,3 +60,25 @@ TasksCompanion taskToCompanion(Task task, {bool isCancelled = false}) =>
 
 TasksCompanion storedToCompanion(StoredTask s) =>
     taskToCompanion(s.task, isCancelled: s.isCancelled);
+
+/// Converts between drift rows and [TaskCategory]s.
+extension CategoryRowMapping on CategoryRow {
+  TaskCategory toCategory() => TaskCategory(
+    id: id,
+    name: name,
+    icon: icon,
+    colorValue: color,
+    sortOrder: sortOrder,
+    builtIn: builtIn,
+  );
+}
+
+CategoriesCompanion categoryToCompanion(TaskCategory c) =>
+    CategoriesCompanion.insert(
+      id: c.id,
+      name: c.name,
+      icon: c.icon,
+      color: c.colorValue,
+      sortOrder: Value(c.sortOrder),
+      builtIn: Value(c.builtIn),
+    );

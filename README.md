@@ -21,8 +21,8 @@ so you always see what's happening now, what's coming, and what's behind you.
 - **A living timeline.** The view follows the present on its own; scroll away
   to look ahead or back, tap *Jump to now* to return. Days run together with
   sunrise and sunset marked, and pinch (or Ctrl+scroll) zooms.
-- **Tasks that fit real life.** Times, notes, a photo, a category, an
-  "important" flag. Long-press empty space to create a task right there, or
+- **Tasks that fit real life.** Times, notes, a photo, a category (add your
+  own in Settings → Categories), an "important" flag. Long-press empty space to create a task right there, or
   long-press a task to drag it somewhere else. Swipe right when it's done,
   left to delete (with undo).
 - **Repeats done properly.** Daily, weekdays, weekly on chosen days, every N

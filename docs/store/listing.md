@@ -19,7 +19,7 @@ PLAN IN SECONDS
 • Long-press anywhere on the timeline to add a task at that time
 • Long-press a task and drag it to move it
 • Swipe right when it's done, left to delete (with undo)
-• Notes, a photo, categories and an "important" flag when you need them
+• Notes, a photo, your own categories and an "important" flag when you need them
 
 REPEATS THAT MAKE SENSE
 • Daily, weekdays, chosen days of the week, every few weeks, monthly, yearly

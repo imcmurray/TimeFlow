@@ -6,6 +6,8 @@ version is tagged, *Unreleased* becomes that version's notes.
 
 ## Unreleased
 
+## 1.1.0 — 2026-10-07
+
 ### App
 - **Your own categories** (fixes #24): Settings → Categories lists every
   category with how many past, upcoming and repeating events use it. Add,

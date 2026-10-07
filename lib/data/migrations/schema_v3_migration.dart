@@ -47,7 +47,7 @@ LegacyTask legacyTaskFromV2Row(Map<String, Object?> r) {
       notes: r['notes'] as String?,
       attachmentPath: r['attachment_path'] as String?,
       color: r['color'] as String?,
-      category: TaskCategoryExtension.fromString(r['category'] as String?),
+      categoryId: r['category'] as String? ?? TaskCategory.noneId,
       createdAt: time('created_at'),
       updatedAt: time('updated_at'),
     ),

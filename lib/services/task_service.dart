@@ -301,7 +301,11 @@ class TaskService {
         newBase.attachmentPath,
       ),
       color: pick(target.color, oldBase.color, newBase.color),
-      category: pick(target.category, oldBase.category, newBase.category),
+      categoryId: pick(
+        target.categoryId,
+        oldBase.categoryId,
+        newBase.categoryId,
+      ),
     );
 
     final oldTime = minuteOfDay(oldBase.startTime);

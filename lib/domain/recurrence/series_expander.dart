@@ -25,7 +25,7 @@ class SeriesExpander {
       notes: series.notes,
       attachmentPath: series.attachmentPath,
       color: series.color,
-      category: series.category,
+      categoryId: series.categoryId,
       recurrence: series.recurrence,
       seriesId: series.id,
       occurrenceDate: date,

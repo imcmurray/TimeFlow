@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
+import 'package:timeflow/presentation/screens/categories_screen.dart';
 import 'package:timeflow/presentation/screens/settings/choice_dialog.dart';
 import 'package:timeflow/presentation/screens/settings/section_header.dart';
 
@@ -13,6 +14,16 @@ class SettingsTaskCreationSection extends ConsumerWidget {
     return Column(
       children: [
         const SectionHeader(title: 'Task Creation'),
+        ListTile(
+          key: const Key('settings-categories'),
+          leading: const Icon(Icons.category_outlined),
+          title: const Text('Categories'),
+          subtitle: const Text('Add, rename, recolour or remove'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const CategoriesScreen())),
+        ),
         ListTile(
           leading: const Icon(Icons.touch_app_outlined),
           title: const Text('Default Duration'),

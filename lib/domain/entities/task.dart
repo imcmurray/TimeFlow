@@ -33,7 +33,9 @@ class Task {
 
   /// Custom card color override (hex string).
   final String? color;
-  final TaskCategory category;
+
+  /// The [TaskCategory.id] this task is filed under.
+  final String categoryId;
 
   /// The repeat rule. Set on series definitions and copied onto their
   /// occurrences so the UI can say how a task repeats.
@@ -64,7 +66,7 @@ class Task {
     this.notes,
     this.attachmentPath,
     this.color,
-    this.category = TaskCategory.none,
+    this.categoryId = TaskCategory.noneId,
     this.recurrence,
     this.seriesId,
     this.occurrenceDate,
@@ -113,7 +115,7 @@ class Task {
     Object? notes = _keep,
     Object? attachmentPath = _keep,
     Object? color = _keep,
-    TaskCategory? category,
+    String? categoryId,
     Object? recurrence = _keep,
     Object? seriesId = _keep,
     Object? occurrenceDate = _keep,
@@ -139,7 +141,7 @@ class Task {
           ? this.attachmentPath
           : attachmentPath as String?,
       color: identical(color, _keep) ? this.color : color as String?,
-      category: category ?? this.category,
+      categoryId: categoryId ?? this.categoryId,
       recurrence: identical(recurrence, _keep)
           ? this.recurrence
           : recurrence as RecurrenceRule?,
@@ -168,7 +170,7 @@ class Task {
       notes == other.notes &&
       attachmentPath == other.attachmentPath &&
       color == other.color &&
-      category == other.category;
+      categoryId == other.categoryId;
 
   @override
   bool operator ==(Object other) =>

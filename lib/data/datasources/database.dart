@@ -4,6 +4,7 @@ import 'package:timeflow/data/datasources/database_location_stub.dart'
     if (dart.library.io) 'package:timeflow/data/datasources/database_location.dart'
     as location;
 import 'package:timeflow/data/migrations/schema_v3_migration.dart';
+import 'package:timeflow/domain/entities/task_category.dart';
 import 'package:timeflow/domain/time/wall_clock.dart';
 
 part 'database.g.dart';
@@ -90,20 +91,57 @@ class PluginData extends Table {
   Set<Column> get primaryKey => {pluginId, key};
 }
 
-@DriftDatabase(tables: [Tasks, Attachments, PluginData])
+/// Categories tasks are filed under (`Tasks.category` holds the id). Seeded
+/// with the built-ins; people can add, edit and remove them.
+@DataClassName('CategoryRow')
+class Categories extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get icon => text()();
+  IntColumn get color => integer()();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  BoolColumn get builtIn => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DriftDatabase(tables: [Tasks, Attachments, PluginData, Categories])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _open());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (m) => m.createAll(),
+    onCreate: (m) async {
+      await m.createAll();
+      await seedCategories();
+    },
     onUpgrade: (m, from, to) async {
       if (from < 3) await migrateToSchemaV3(this, m, from);
       if (from < 4) await m.createTable(pluginData);
+      if (from < 5) {
+        await m.createTable(categories);
+        await seedCategories();
+      }
     },
+  );
+
+  /// Adds the built-in categories. Task rows already hold their ids.
+  Future<void> seedCategories() => batch(
+    (b) => b.insertAll(categories, [
+      for (final c in builtInCategories)
+        CategoriesCompanion.insert(
+          id: c.id,
+          name: c.name,
+          icon: c.icon,
+          color: c.colorValue,
+          sortOrder: Value(c.sortOrder),
+          builtIn: const Value(true),
+        ),
+    ], mode: InsertMode.insertOrIgnore),
   );
 
   static QueryExecutor _open() => driftDatabase(

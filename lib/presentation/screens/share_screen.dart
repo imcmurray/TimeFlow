@@ -9,7 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:timeflow/core/app_links.dart';
 import 'package:timeflow/domain/entities/task.dart';
-import 'package:timeflow/domain/entities/task_category.dart';
+import 'package:timeflow/presentation/providers/category_provider.dart';
 import 'package:timeflow/domain/sharing/share_codec.dart';
 import 'package:timeflow/domain/time/local_date.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
@@ -83,7 +83,11 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
 
   Uri _link(List<Task> tasks) => ShareCodec.link(
     webAppUrl(),
-    SharedSchedule(title: _heading, tasks: tasks),
+    SharedSchedule(
+      title: _heading,
+      tasks: tasks,
+      categories: ref.read(categoryLookupProvider).all,
+    ),
   );
 
   String _text(List<Task> tasks) {
@@ -317,7 +321,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
 }
 
 /// The schedule as it will look in the shared image.
-class _Preview extends StatelessWidget {
+class _Preview extends ConsumerWidget {
   final String heading;
   final List<Task> tasks;
   final bool showDays;
@@ -331,8 +335,9 @@ class _Preview extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final categories = ref.watch(categoryLookupProvider);
     final rows = <Widget>[];
     LocalDate? day;
     for (final t in tasks) {
@@ -349,9 +354,10 @@ class _Preview extends StatelessWidget {
         );
         day = d;
       }
-      final color = t.category != TaskCategory.none
-          ? t.category.color
-          : theme.colorScheme.primary;
+      final category = categories[t.categoryId];
+      final color = category.isNone
+          ? theme.colorScheme.primary
+          : category.color;
       rows.add(
         Container(
           margin: const EdgeInsets.symmetric(vertical: 4),

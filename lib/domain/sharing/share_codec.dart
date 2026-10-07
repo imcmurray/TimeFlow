@@ -13,7 +13,16 @@ class SharedSchedule {
   final String? title;
   final List<Task> tasks;
 
-  const SharedSchedule({this.title, required this.tasks});
+  /// What the tasks' categories look like. When encoding, the sender's
+  /// categories (only those the tasks use matter). When decoding, the
+  /// categories the link described plus the built-ins.
+  final List<TaskCategory> categories;
+
+  const SharedSchedule({
+    this.title,
+    required this.tasks,
+    this.categories = const [],
+  });
 }
 
 /// Packs schedules into the `#` part of a TimeFlow web link.
@@ -43,7 +52,25 @@ class ShareCodec {
     }
   }
 
+  /// Each task row is `[title, start, minutes, flags, builtInIndex,
+  /// description, notes]`, plus an index into `c` when its category isn't a
+  /// built-in as shipped (added, renamed or recoloured). `builtInIndex` is
+  /// the category's position in [legacyCategoryOrder] or -1, so links still
+  /// open in versions before 1.1 (which show described categories as None).
   static String encode(SharedSchedule schedule) {
+    final byId = {for (final c in schedule.categories) c.id: c};
+    final described = <TaskCategory>[];
+    int? describe(String id) {
+      final c = byId[id];
+      if (c == null || c.isNone) return null;
+      final shipped = builtInCategory(id);
+      if (shipped != null && shipped.looksLike(c)) return null;
+      final i = described.indexWhere((d) => d.id == id);
+      if (i >= 0) return i;
+      described.add(c);
+      return described.length - 1;
+    }
+
     final json = jsonEncode({
       'v': _version,
       if (schedule.title != null) 'n': schedule.title,
@@ -54,11 +81,16 @@ class ShareCodec {
             _compactTime(t.startTime),
             t.durationMinutes,
             (t.isImportant ? 1 : 0) | (t.isCompleted ? 2 : 0),
-            t.category.index,
+            legacyCategoryOrder.indexOf(t.categoryId),
             t.description ?? '',
             t.notes ?? '',
+            ?describe(t.categoryId),
           ],
       ],
+      if (described.isNotEmpty)
+        'c': [
+          for (final c in described) [c.name, c.icon, c.colorValue],
+        ],
     });
     final deflated = const ZLibEncoder().encode(utf8.encode(json), level: 9);
     return base64Url.encode(deflated).replaceAll('=', '');
@@ -74,6 +106,15 @@ class ShareCodec {
       throw const FormatException('Unsupported share link version');
     }
     final created = DateTime.now();
+    final described = [
+      for (final (i, c) in ((map['c'] as List?) ?? const []).indexed)
+        TaskCategory(
+          id: 'shared-$i',
+          name: (c as List)[0] as String,
+          icon: c[1] as String,
+          colorValue: c[2] as int,
+        ),
+    ];
     final tasks = <Task>[];
     final list = (map['t'] as List).cast<List<dynamic>>();
     for (var i = 0; i < list.length; i++) {
@@ -81,6 +122,7 @@ class ShareCodec {
       final start = _parseCompactTime(row[1] as String);
       final flags = row[3] as int;
       final categoryIndex = row[4] as int;
+      final describedIndex = row.length > 7 ? row[7] as int : null;
       final description = row[5] as String;
       final notes = row[6] as String;
       tasks.add(
@@ -91,10 +133,14 @@ class ShareCodec {
           endTime: addWallMinutes(start, row[2] as int),
           isImportant: flags & 1 != 0,
           isCompleted: flags & 2 != 0,
-          category:
-              categoryIndex >= 0 && categoryIndex < TaskCategory.values.length
-              ? TaskCategory.values[categoryIndex]
-              : TaskCategory.none,
+          categoryId:
+              describedIndex != null &&
+                  describedIndex >= 0 &&
+                  describedIndex < described.length
+              ? described[describedIndex].id
+              : categoryIndex >= 0 && categoryIndex < legacyCategoryOrder.length
+              ? legacyCategoryOrder[categoryIndex]
+              : TaskCategory.noneId,
           description: description.isEmpty ? null : description,
           notes: notes.isEmpty ? null : notes,
           createdAt: created,
@@ -102,7 +148,11 @@ class ShareCodec {
         ),
       );
     }
-    return SharedSchedule(title: map['n'] as String?, tasks: tasks);
+    return SharedSchedule(
+      title: map['n'] as String?,
+      tasks: tasks,
+      categories: [...builtInCategories, ...described],
+    );
   }
 
   /// `yyyyMMddHHmm`.

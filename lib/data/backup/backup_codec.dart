@@ -51,12 +51,25 @@ class BackupCodec {
     List<StoredTask> rows, {
     List<BackupAttachment> attachments = const [],
     List<BackupPluginValue> pluginData = const [],
+    List<TaskCategory> categories = const [],
     DateTime? exportedAt,
   }) {
     return const JsonEncoder.withIndent('  ').convert({
       'format': 'timeflow-backup',
       'version': currentVersion,
       'exportedAt': (exportedAt ?? DateTime.now()).toUtc().toIso8601String(),
+      if (categories.isNotEmpty)
+        'categories': [
+          for (final c in categories)
+            {
+              'id': c.id,
+              'name': c.name,
+              'icon': c.icon,
+              'color': c.colorValue,
+              'sortOrder': c.sortOrder,
+              if (c.builtIn) 'builtIn': true,
+            },
+        ],
       'tasks': [for (final r in rows) _rowToJson(r)],
       if (attachments.isNotEmpty)
         'attachments': [
@@ -75,18 +88,20 @@ class BackupCodec {
     });
   }
 
-  /// Parses a backup with its photos and plugin data. Throws
-  /// [BackupFormatException].
+  /// Parses a backup with its photos, plugin data and categories (empty for
+  /// backups made before 1.1). Throws [BackupFormatException].
   static ({
     List<StoredTask> rows,
     List<BackupAttachment> attachments,
     List<BackupPluginValue> pluginData,
+    List<TaskCategory> categories,
   })
   decodeBackup(String source, {required String Function() newId}) {
     final rows = decode(source, newId: newId);
     final data = jsonDecode(source) as Map<String, dynamic>;
     final list = (data['attachments'] as List?) ?? const [];
     final plugins = (data['pluginData'] as List?) ?? const [];
+    final categories = (data['categories'] as List?) ?? const [];
     try {
       return (
         rows: rows,
@@ -104,6 +119,17 @@ class BackupCodec {
               v['pluginId'] as String,
               v['key'] as String,
               v['value'] as String,
+            ),
+        ],
+        categories: [
+          for (final c in categories.cast<Map<String, dynamic>>())
+            TaskCategory(
+              id: c['id'] as String,
+              name: c['name'] as String,
+              icon: c['icon'] as String,
+              colorValue: c['color'] as int,
+              sortOrder: c['sortOrder'] as int? ?? 0,
+              builtIn: c['builtIn'] as bool? ?? false,
             ),
         ],
       );
@@ -170,9 +196,7 @@ class BackupCodec {
               notes: j['notes'] as String?,
               attachmentPath: j['attachmentPath'] as String?,
               color: j['color'] as String?,
-              category: TaskCategoryExtension.fromString(
-                j['category'] as String?,
-              ),
+              categoryId: j['category'] as String? ?? TaskCategory.noneId,
               createdAt: DateTime.parse(j['createdAt'] as String),
               updatedAt: DateTime.parse(j['updatedAt'] as String),
             ),
@@ -205,7 +229,7 @@ class BackupCodec {
       if (t.reminderMinutes != null) 'reminderMinutes': t.reminderMinutes,
       if (t.attachmentPath != null) 'attachmentPath': t.attachmentPath,
       if (t.color != null) 'color': t.color,
-      'category': t.category.value,
+      'category': t.categoryId,
       if (!t.isOccurrence && t.recurrence != null)
         'recurrence': t.recurrence!.toRRule(),
       if (t.seriesId != null) 'seriesId': t.seriesId,
@@ -232,7 +256,7 @@ class BackupCodec {
         reminderMinutes: j['reminderMinutes'] as int?,
         attachmentPath: j['attachmentPath'] as String?,
         color: j['color'] as String?,
-        category: TaskCategoryExtension.fromString(j['category'] as String?),
+        categoryId: j['category'] as String? ?? TaskCategory.noneId,
         recurrence: recurrence != null
             ? RecurrenceRule.parse(recurrence)
             : null,

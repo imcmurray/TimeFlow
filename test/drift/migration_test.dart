@@ -2,13 +2,16 @@ import 'package:drift/drift.dart';
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timeflow/data/datasources/database.dart';
+import 'package:timeflow/data/repositories/category_repository.dart';
 import 'package:timeflow/data/repositories/task_repository.dart';
+import 'package:timeflow/domain/entities/task_category.dart';
 import 'package:timeflow/domain/entities/recurrence_rule.dart';
 import 'package:timeflow/domain/time/local_date.dart';
 
 import '../helpers/dst.dart';
 import 'generated/schema.dart';
 import 'generated/schema_v2.dart' as v2;
+import 'generated/schema_v4.dart' as v4;
 
 /// Schema 2 stored DateTimes as epoch seconds.
 int _epoch(DateTime t) => t.millisecondsSinceEpoch ~/ 1000;
@@ -19,7 +22,7 @@ void main() {
 
   setUpAll(() => verifier = SchemaVerifier(GeneratedHelper()));
 
-  for (final from in [2, 3]) {
+  for (final from in [2, 3, 4]) {
     test('schema v$from upgrades to the current schema', () async {
       final connection = await verifier.startAt(from);
       final db = AppDatabase(connection);
@@ -27,6 +30,45 @@ void main() {
       await db.close();
     });
   }
+
+  test('v4 tasks keep their categories and the built-ins are added', () async {
+    final schema = await verifier.schemaAt(4);
+    final old = v4.DatabaseAtV4(schema.newConnection());
+    final created = DateTime(2026, 5, 1).millisecondsSinceEpoch ~/ 1000;
+    await old.batch(
+      (b) => b.insertAll(old.tasks, [
+        for (final (id, category) in [
+          ('a', 'health'),
+          ('b', 'deepWork'),
+          ('c', 'none'),
+        ])
+          v4.TasksCompanion.insert(
+            id: id,
+            title: id,
+            startAt: '2026-06-0${id.codeUnitAt(0) - 96}T09:00:00',
+            endAt: '2026-06-0${id.codeUnitAt(0) - 96}T10:00:00',
+            category: Value(category),
+            createdAt: created,
+            updatedAt: created,
+          ),
+      ]),
+    );
+    await old.close();
+
+    final db = AppDatabase(schema.newConnection());
+    addTearDown(db.close);
+    final tasks = await TaskRepository(
+      db,
+    ).getRange(DateTime(2026, 6), DateTime(2026, 7));
+    expect(
+      {for (final t in tasks) t.id: t.categoryId},
+      {'a': 'health', 'b': 'deepWork', 'c': 'none'},
+    );
+    final categories = await CategoryRepository(db).getAll();
+    expect(categories.map((c) => c.id), [
+      for (final c in builtInCategories) c.id,
+    ]);
+  });
 
   group('v2 data', () {
     final created = DateTime(2026, 5, 1);

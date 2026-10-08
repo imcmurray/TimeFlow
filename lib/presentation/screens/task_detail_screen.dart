@@ -533,10 +533,10 @@ class _DateTimeGroup extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.chevron_left),
                 tooltip: 'Previous day',
+                visualDensity: VisualDensity.compact,
                 onPressed: () => onShiftDay(-1),
               ),
               Expanded(
-                flex: 3,
                 child: Semantics(
                   button: true,
                   label: '$label date, $date',
@@ -567,34 +567,30 @@ class _DateTimeGroup extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.chevron_right),
                 tooltip: 'Next day',
+                visualDensity: VisualDensity.compact,
                 onPressed: () => onShiftDay(1),
               ),
               Container(width: 1, height: 32, color: theme.dividerColor),
-              Expanded(
-                flex: 2,
-                child: Semantics(
-                  button: true,
-                  label: '$label time, $clock',
-                  excludeSemantics: true,
-                  child: InkWell(
-                    onTap: onTimeTap,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.access_time, size: 18),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              clock,
-                              style: theme.textTheme.titleMedium,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
+              // The time is never shortened; the date gives way instead.
+              Semantics(
+                button: true,
+                label: '$label time, $clock',
+                excludeSemantics: true,
+                child: InkWell(
+                  onTap: onTimeTap,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 8,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.access_time, size: 18),
+                        const SizedBox(width: 6),
+                        Text(clock, style: theme.textTheme.titleMedium),
+                      ],
                     ),
                   ),
                 ),

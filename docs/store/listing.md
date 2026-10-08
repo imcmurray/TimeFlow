@@ -42,7 +42,7 @@ Made for anyone who finds a calendar grid stressful, and especially helpful for 
 
 **Category:** Productivity
 **Tags:** Planner, Calendar, Daily schedule
-**Contact email:** (Play Console requires one; use the support address)
+**Contact email:** (Play shows it publicly; use a dedicated address, see [../PLAY_STORE.md](../PLAY_STORE.md))
 **Website:** https://imcmurray.github.io/TimeFlow/
 **Privacy policy:** https://imcmurray.github.io/TimeFlow/privacy.html
 
@@ -50,9 +50,16 @@ Made for anyone who finds a calendar grid stressful, and especially helpful for 
 
 - App icon 512×512: `docs/store/icon-512.png`
 - Feature graphic 1024×500: `docs/store/feature-graphic.png`
-- Phone screenshots (1080×2400-ish, PNG): `docs/store/screenshots/`
+- Phone screenshots (6 × 1080×1920 PNG, no alpha; Play rejects images more
+  than twice as tall as wide): `docs/store/screenshots/`, made by
+  `scripts/generate_play_screenshots.sh`
 
-## Release notes for 1.0
+## Release notes
+
+Play's "What's new" text lives in `distribution/whatsnew/whatsnew-en-US` and
+goes up with each tagged release.
+
+### 1.0
 
 First release: the flowing timeline, repeating tasks, reminders, photos, link
 sharing, backups.

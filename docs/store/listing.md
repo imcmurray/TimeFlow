@@ -42,8 +42,8 @@ Made for anyone who finds a calendar grid stressful, and especially helpful for 
 
 **Category:** Productivity
 **Tags:** Planner, Calendar, Daily schedule
-**Contact email:** (Play shows it publicly; use a dedicated address, see [../PLAY_STORE.md](../PLAY_STORE.md))
-**Website:** https://imcmurray.github.io/TimeFlow/
+**Contact email:** RinseRepeatLabs@gmail.com (shown publicly; also on the Rinse Repeat Labs site and the support page)
+**Website:** https://rinserepeatlabs.com/portfolio/timeflow/ (same page the App Store listing uses)
 **Privacy policy:** https://imcmurray.github.io/TimeFlow/privacy.html
 
 ## Graphics

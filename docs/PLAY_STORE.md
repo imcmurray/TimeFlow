@@ -44,9 +44,9 @@ organization account later.
 1. https://play.google.com/console/signup, pick the account type, pay the fee.
 2. Complete identity verification (and, for organizations, the D-U-N-S
    details). Verification can take a few days.
-3. **Contact email:** Play shows it publicly on the listing. Use a dedicated
-   address (e.g. a `timeflow@` alias), not a personal or work inbox. Add the
-   same address to `web/support.html` afterwards.
+3. **Contact email:** Play shows it publicly on the listing. Use
+   **RinseRepeatLabs@gmail.com**, which is already public on the Rinse
+   Repeat Labs site and the support page (not a personal or work inbox).
 
 ## 3. Create the app
 
@@ -84,7 +84,8 @@ denied.
 ## 5. Store listing and the first internal release
 
 *Grow users → Store presence → Main store listing*: paste the name, short and
-full description from [store/listing.md](store/listing.md), upload the
+full description from [store/listing.md](store/listing.md), website
+**https://rinserepeatlabs.com/portfolio/timeflow/** (as on the App Store), upload the
 icon, the feature graphic and the six phone screenshots. Category
 **Productivity**, tags *Planner*, *Calendar*. Tablet screenshots are
 optional.

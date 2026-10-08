@@ -57,10 +57,8 @@ First release on iPhone and iPad: the flowing timeline, repeating tasks, reminde
 ## URLs and legal
 
 - **Support URL:** https://imcmurray.github.io/TimeFlow/support.html
-- **Marketing URL:** leave empty for now. The Rinse Repeat Labs TimeFlow
-  portfolio page describes a different product (downloads, ratings, AI and
-  cloud sync that TimeFlow doesn't have) and must be corrected before it's
-  linked.
+- **Marketing URL:** https://rinserepeatlabs.com/portfolio/timeflow/ (corrected; it now describes
+  TimeFlow accurately and links the support page)
 - **Privacy Policy URL:** https://imcmurray.github.io/TimeFlow/privacy.html
 - **Copyright:** 2026 Rinse Repeat Labs
 

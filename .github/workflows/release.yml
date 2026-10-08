@@ -1,9 +1,10 @@
 name: Release
 
 # Push a tag like v1.0.0 (matching the version in pubspec.yaml) to publish:
-# a signed Android bundle to Play's internal track (once the
-# PLAY_SERVICE_ACCOUNT_JSON secret exists), and a GitHub release with the
-# signed APK plus experimental, unsigned desktop builds.
+# a signed Android bundle to Google Play (once the PLAY_SERVICE_ACCOUNT_JSON
+# secret exists; track and status from the PLAY_TRACK / PLAY_RELEASE_STATUS
+# variables), and a GitHub release with the signed APK and bundle plus
+# experimental, unsigned desktop builds.
 
 on:
   push:
@@ -59,8 +60,13 @@ jobs:
           flutter build appbundle --release $FLAGS
           flutter build apk --release $FLAGS
           cp build/app/outputs/flutter-apk/app-release.apk "timeflow-$GITHUB_REF_NAME.apk"
+          cp build/app/outputs/bundle/release/app-release.aab "timeflow-$GITHUB_REF_NAME.aab"
 
-      - name: Upload to Play internal track
+      # Track and status come from repository variables (Settings → Secrets
+      # and variables → Actions → Variables). Until Play has reviewed the
+      # app's first release it only accepts `draft`, so that's the default;
+      # set PLAY_RELEASE_STATUS=completed afterwards. See docs/PLAY_STORE.md.
+      - name: Upload to Google Play
         env:
           PLAY_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
         if: env.PLAY_JSON != ''
@@ -69,13 +75,16 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.rinserepeatlabs.timeflow
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: internal
-          status: completed
+          track: ${{ vars.PLAY_TRACK || 'internal' }}
+          status: ${{ vars.PLAY_RELEASE_STATUS || 'draft' }}
+          whatsNewDirectory: distribution/whatsnew
 
       - uses: actions/upload-artifact@v4
         with:
           name: android
-          path: timeflow-*.apk
+          path: |
+            timeflow-*.apk
+            timeflow-*.aab
 
   desktop:
     strategy:
@@ -140,5 +149,6 @@ jobs:
         with:
           files: |
             android/timeflow-*.apk
+            android/timeflow-*.aab
             timeflow-*-experimental.zip
           generate_release_notes: true

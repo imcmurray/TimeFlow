@@ -6,6 +6,19 @@ version is tagged, *Unreleased* becomes that version's notes.
 
 ## Unreleased
 
+### App
+- The task editor no longer cuts off the start and end times on narrow
+  phones (360 dp wide); the date gives way instead.
+
+### Android / Google Play
+- Play-ready: `docs/PLAY_STORE.md` walks through the console setup with every
+  questionnaire answer. Phone screenshots regenerated at 1080×1920 (the old
+  1082×2402 ones are over Play's 2:1 limit) with a new Categories shot, by
+  `scripts/generate_play_screenshots.sh`. Releases attach the AAB for the
+  first manual upload; CI uploads use `PLAY_TRACK` / `PLAY_RELEASE_STATUS`
+  (default internal / draft, which a not-yet-reviewed app requires) and send
+  `distribution/whatsnew/whatsnew-en-US`.
+
 ## 1.1.0 — 2026-10-07
 
 ### App

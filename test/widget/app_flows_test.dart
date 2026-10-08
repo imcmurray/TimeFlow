@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timeflow/domain/entities/recurrence_rule.dart';
@@ -59,6 +63,31 @@ void main() {
       () => container.read(taskRepositoryProvider).count(),
     );
     expect(count, 1);
+  });
+
+  testWidgets('the editor shows whole times on a 360 dp wide phone', (
+    tester,
+  ) async {
+    // Real glyph widths: the test font draws every character as a square.
+    await tester.runAsync(() async {
+      final font = File('assets/fonts/Nunito.ttf').readAsBytes();
+      await (FontLoader(
+        'Nunito',
+      )..addFont(font.then((b) => ByteData.sublistView(b)))).load();
+    });
+    await pumpApp(tester, const TaskDetailScreen());
+    await tester.binding.setSurfaceSize(const Size(360, 640));
+    await tester.pumpAndSettle();
+    final times = find.textContaining(RegExp(r'^\d{1,2}:\d{2}'));
+    expect(times, findsNWidgets(2));
+    for (final e in times.evaluate()) {
+      final paragraph = e.renderObject! as RenderParagraph;
+      expect(paragraph.didExceedMaxLines, isFalse);
+      expect(
+        paragraph.size.width,
+        greaterThanOrEqualTo(paragraph.getMaxIntrinsicWidth(double.infinity)),
+      );
+    }
   });
 
   testWidgets('the editor refuses a task without a title', (tester) async {

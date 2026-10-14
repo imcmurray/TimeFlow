@@ -61,6 +61,10 @@ jobs:
           flutter build apk --release $FLAGS
           cp build/app/outputs/flutter-apk/app-release.apk "timeflow-$GITHUB_REF_NAME.apk"
           cp build/app/outputs/bundle/release/app-release.aab "timeflow-$GITHUB_REF_NAME.aab"
+          # The tester-round APK: same release, plus the Feedback button that
+          # opens the tester portal. Only the bundle above goes to Play.
+          flutter build apk --release $(TIMEFLOW_BETA=1 ./scripts/build_flags.sh)
+          cp build/app/outputs/flutter-apk/app-release.apk "timeflow-$GITHUB_REF_NAME-beta.apk"
 
       # Track and status come from repository variables (Settings → Secrets
       # and variables → Actions → Variables). Until Play has reviewed the

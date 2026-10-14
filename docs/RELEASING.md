@@ -6,7 +6,7 @@
 |---|---|
 | Pull request | Analyze, format check, generated-code check, tests (under `TZ=America/Denver`), web build, debug-signed Android build |
 | Push to `main` | All of the above, then the web app deploys to GitHub Pages and a **release-signed** app bundle + APK are built (CI artifacts) |
-| Tag `vX.Y.Z` | GitHub release with the signed APK, the bundle (AAB) and experimental desktop zips; the bundle also goes to Google Play if `PLAY_SERVICE_ACCOUNT_JSON` is set (track/status from the `PLAY_TRACK`/`PLAY_RELEASE_STATUS` variables, default internal/draft) |
+| Tag `vX.Y.Z` | GitHub release with the signed APK, a beta APK for tester rounds (`timeflow-vX.Y.Z-beta.apk`), the bundle (AAB) and experimental desktop zips; the bundle also goes to Google Play if `PLAY_SERVICE_ACCOUNT_JSON` is set (track/status from the `PLAY_TRACK`/`PLAY_RELEASE_STATUS` variables, default internal/draft) |
 
 Build numbers are the commit count on `main` (`scripts/build_flags.sh`), so
 every build's Android version code is higher than the last.
@@ -21,6 +21,27 @@ every build's Android version code is higher than the last.
    `git tag v1.0.1 && git push origin v1.0.1`. The release workflow refuses
    a tag that doesn't match `pubspec.yaml`.
 4. Promote the build in Play Console (internal → closed → production).
+
+## Beta builds (tester rounds)
+
+A beta build is a release build with a **Feedback** button beside Settings.
+It opens the tester portal (testers.rinserepeatlabs.com) at the report form
+for the tester's current TimeFlow round, with the version, build, commit,
+platform, OS and device filled in from the URL fragment. The tester signs in
+there, and findings go through portal-sync and findings-bridge into GitLab
+(`rrl-beta/timeflow-findings`) the same way as any other finding.
+
+- Make one with `TIMEFLOW_BETA=1`:
+  `flutter build apk --release $(TIMEFLOW_BETA=1 ./scripts/build_flags.sh)`.
+  Without it (the default) there's no button, which is what Play production,
+  the App Store and the public web app must get.
+- Each tag's release has `timeflow-vX.Y.Z-beta.apk` for Android rounds.
+- iPhone/iPad: TestFlight builds for a round are built with the flag on the
+  Mac (see `IOS.md`). Don't promote a beta build to the App Store, and don't
+  promote a beta bundle out of a Play testing track; upload a store build
+  instead.
+- The portal picks the round by the app name `TimeFlow`, so the app in the
+  tester console must keep that name.
 
 ## Signing
 

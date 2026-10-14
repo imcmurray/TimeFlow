@@ -7,6 +7,13 @@ version is tagged, *Unreleased* becomes that version's notes.
 ## Unreleased
 
 ### App
+- **Beta feedback button**: beta builds (`TIMEFLOW_BETA=1`, see
+  `docs/RELEASING.md` → *Beta builds*) show a Feedback button beside
+  Settings that opens the tester portal's report form for the tester's
+  current TimeFlow round, pre-filled with version, build, commit, platform,
+  OS and device (new dependency: `device_info_plus`). Store and web builds
+  don't show it. Releases now also attach `timeflow-vX.Y.Z-beta.apk`.
+  **Mac:** TestFlight builds for tester rounds need the flag; see the issue.
 - The task editor no longer cuts off the start and end times on narrow
   phones (360 dp wide); the date gives way instead.
 

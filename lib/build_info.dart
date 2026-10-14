@@ -10,3 +10,7 @@ const String buildTimestamp = String.fromEnvironment(
   'BUILD_TIME',
   defaultValue: 'dev',
 );
+
+// Beta builds for tester rounds (TIMEFLOW_BETA=1 ./scripts/build_flags.sh)
+// show a Feedback button that opens the tester portal. Store builds don't.
+const bool betaFeedback = bool.fromEnvironment('BETA_FEEDBACK');

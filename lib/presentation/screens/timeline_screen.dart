@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timeflow/build_info.dart';
 import 'package:timeflow/core/plugins/plugin_interface.dart';
 import 'package:timeflow/core/plugins/plugin_state_provider.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
@@ -15,6 +16,7 @@ import 'package:timeflow/presentation/screens/task_detail_screen.dart';
 import 'package:timeflow/presentation/screens/settings_screen.dart';
 import 'package:timeflow/presentation/screens/share_screen.dart';
 import 'package:timeflow/presentation/utils/time_formatter.dart';
+import 'package:timeflow/services/beta_feedback.dart';
 
 /// View mode for the timeline screen.
 enum TimelineViewMode { day, calendar }
@@ -146,6 +148,20 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
     _timelineKey.currentState?.jumpToNow();
   }
 
+  Future<void> _openBetaFeedback() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final isTablet = MediaQuery.sizeOf(context).shortestSide >= 600;
+    if (!await openBetaFeedback(isTablet: isTablet)) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Couldn't open a browser. Report it at testers.rinserepeatlabs.com",
+          ),
+        ),
+      );
+    }
+  }
+
   void _onZoomChanged(double hourHeight) {
     setState(() => _currentHourHeight = hourHeight);
   }
@@ -271,6 +287,12 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                 );
               },
             ),
+            if (betaFeedback)
+              IconButton(
+                icon: const Icon(Icons.feedback_outlined),
+                tooltip: 'Beta feedback',
+                onPressed: _openBetaFeedback,
+              ),
             IconButton(
               icon: const Icon(Icons.settings_outlined),
               onPressed: () {

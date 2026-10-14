@@ -26,6 +26,11 @@ version is tagged, *Unreleased* becomes that version's notes.
   (default internal / draft, which a not-yet-reviewed app requires) and send
   `distribution/whatsnew/whatsnew-en-US`.
 
+### iPhone and iPad
+- `docs/IOS.md` explains how TestFlight builds for tester rounds are made
+  (`TIMEFLOW_BETA=1`, kept apart from store builds) and the Mac's key-free
+  upload. The first one, 1.1.0 (222), is in TestFlight. (#46)
+
 ## 1.1.0 — 2026-10-07
 
 ### App

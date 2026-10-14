@@ -67,6 +67,17 @@ left needs Xcode and the Apple developer account.
 6. **First TestFlight build.** `flutter build ipa $(./scripts/build_flags.sh)`
    then upload `build/ios/ipa/*.ipa` with Xcode's Organizer or the
    Transporter app. Internal testers can install right away.
+   - **Tester-round builds** add the beta Feedback button:
+     `flutter build ipa $(TIMEFLOW_BETA=1 ./scripts/build_flags.sh)`. Never
+     submit one of these for App Store review. The store build is a separate
+     upload made **without** `TIMEFLOW_BETA`, from a later commit so its
+     build number (the commit count) is higher.
+   - The Mac uploads without an API key, using Xcode's signed-in account:
+     `xcodebuild -exportArchive -archivePath build/ios/archive/Runner.xcarchive
+     -exportOptionsPlist upload.plist -exportPath out -allowProvisioningUpdates`,
+     where `upload.plist` sets `method` `app-store-connect`, `destination`
+     `upload`, `teamID` `3UU2DT4DNW` and `manageAppVersionAndBuildNumber`
+     `false`.
 7. **Automate it (optional, recommended).** Create an App Store Connect API
    key (Users and Access → Integrations), add repository secrets
    `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`,
@@ -77,9 +88,11 @@ left needs Xcode and the Apple developer account.
 
 ## Things to watch for
 
-- **Plugin pods / Swift Package Manager:** Flutter 3.44 may use SPM for
-  plugins. If a plugin lacks SPM support, Flutter falls back to CocoaPods
-  and needs `pod install` (it runs automatically on `flutter build`).
+- **Plugin pods / Swift Package Manager:** the Mac builds with SPM
+  (`enable-swift-package-manager`), so there's no Podfile and no
+  `pod install`; new plugins such as `device_info_plus` resolve on the next
+  `flutter build`. If a plugin lacks SPM support, Flutter falls back to
+  CocoaPods and runs `pod install` itself.
 - **Notification timing:** iOS has no exact-alarm permission; scheduled
   notifications fire on time. The Android-only "allow on-time reminders"
   row won't appear on iOS.

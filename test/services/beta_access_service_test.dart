@@ -64,7 +64,7 @@ void main() {
 
       // Normalised before it leaves the device, so what the portal hashes is what it minted.
       expect(jsonDecode(seen.single.body)['code'], '7K2P9QRM4T8X3HBN');
-      expect(seen.single.url.path, '/beta/connect');
+      expect(seen.single.url.path, '/api/device/connect');
       expect(
         seen.single.headers['Authorization'],
         isNull,
@@ -173,7 +173,7 @@ void main() {
         ok(const {'ok': true}),
       ]);
       await service.disconnect();
-      expect(seen.single.url.path, '/beta/disconnect');
+      expect(seen.single.url.path, '/api/device/disconnect');
       expect(seen.single.headers['Authorization'], 'Bearer ${'d' * 43}');
       expect(store.values, isEmpty);
     },

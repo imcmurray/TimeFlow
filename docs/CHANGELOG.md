@@ -6,6 +6,8 @@ version is tagged, *Unreleased* becomes that version's notes.
 
 ## Unreleased
 
+## 1.1.2 — 2026-10-16
+
 ### App
 - **Beta tester mode** (TimeFlow#54): **Settings → Beta testing** takes the one-time
   `RRL-…` code from a round's announcement email and connects this device to the

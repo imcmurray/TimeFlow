@@ -6,6 +6,25 @@ version is tagged, *Unreleased* becomes that version's notes.
 
 ## Unreleased
 
+### App
+- **Beta tester mode** (TimeFlow#54): **Settings → Beta testing** takes the one-time
+  `RRL-…` code from a round's announcement email and connects this device to the
+  tester portal. The Tasks button then carries a badge with how many required
+  steps are left, and tapping either beta button lands in the portal already
+  signed in — the app asks for a 30-second, single-use handoff on the tap, so the
+  token itself never travels in a URL. Signing in to the portal by email keeps
+  working, and **Disconnect** (or Revoke, in the portal) ends it from either side.
+  New dependencies: `http`, `flutter_secure_storage` (Keychain `…ThisDeviceOnly`,
+  not synchronizable; Android's secure-storage file is excluded from Auto Backup
+  and device transfer, because its key never leaves the Keystore).
+- The two beta buttons now appear when the build has `TIMEFLOW_BETA=1` **or** a
+  code has been pasted, so the **web app** can be a tester build at runtime. iOS
+  and Android store builds show no Beta testing section at all.
+- Release builds now declare `android.permission.INTERNET`: beta tester mode is
+  the only thing that uses the network, and a beta APK is the same build type as
+  a store APK, so the permission can't be declared for one and not the other.
+  Your tasks, your schedule and your backups still never leave the device.
+
 ## 1.1.1 — 2026-10-16
 
 ### App

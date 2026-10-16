@@ -60,12 +60,19 @@ String portalPlatform({
 }
 
 /// The report form, for a finding the tester has in hand.
-Uri betaFeedbackUri(BetaFeedbackContext c) => _portalUri('report', c);
+Uri betaFeedbackUri(BetaFeedbackContext c, {String handoff = ''}) =>
+    _portalUri('report', c, handoff);
 
 /// The round's tasks, one to a screen.
-Uri betaTasksUri(BetaFeedbackContext c) => _portalUri('tasks', c);
+Uri betaTasksUri(BetaFeedbackContext c, {String handoff = ''}) =>
+    _portalUri('tasks', c, handoff);
 
-Uri _portalUri(String page, BetaFeedbackContext c) {
+/// [handoff] is a one-time value, good for thirty seconds, that the portal swaps for a
+/// signed-in session so a connected tester isn't sent back through their email. It rides
+/// in the fragment with everything else, so it never reaches the portal's logs — and it's
+/// this, not the device token, that ends up in browser history, because it's already spent
+/// by the time the page has loaded.
+Uri _portalUri(String page, BetaFeedbackContext c, String handoff) {
   final params = <String, String>{
     'app': testerPortalAppName,
     'version': c.version,
@@ -74,6 +81,7 @@ Uri _portalUri(String page, BetaFeedbackContext c) {
     'platform': c.platform,
     'os': c.os,
     'device': c.device,
+    'h': handoff,
   }..removeWhere((_, value) => value.isEmpty);
   final query = Uri(queryParameters: params).query;
   return Uri.parse('$testerPortalOrigin/#/$page?$query');

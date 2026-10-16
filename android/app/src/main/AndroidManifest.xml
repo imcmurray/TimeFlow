@@ -1,13 +1,24 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Task reminders: show notifications, deliver them on time, and
-         restore them after a reboot. TimeFlow needs no network access. -->
+         restore them after a reboot. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Beta tester mode talks to testers.rinserepeatlabs.com, and nothing else does.
+         Your tasks, your schedule and your backups never leave the device.
+
+         It is declared for every release build because a beta APK and a store APK are the
+         same build type with a different dart-define, and a permission can only be added
+         or removed per build type or flavour. Separating them would mean Android flavours,
+         which on iOS means Xcode schemes, which would break the Mac's build. See
+         docs/RELEASING.md → Beta builds. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:label="TimeFlow"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"

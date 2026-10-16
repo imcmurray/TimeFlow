@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeflow/build_info.dart';
 import 'package:timeflow/core/plugins/plugin_interface.dart';
 import 'package:timeflow/core/plugins/plugin_state_provider.dart';
+import 'package:timeflow/domain/beta_access.dart';
+import 'package:timeflow/presentation/providers/beta_access_provider.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
 import 'package:timeflow/presentation/timeline/now_chip.dart';
 import 'package:timeflow/presentation/timeline/timeline_view.dart';
@@ -33,7 +35,8 @@ class TimelineScreen extends ConsumerStatefulWidget {
   ConsumerState<TimelineScreen> createState() => _TimelineScreenState();
 }
 
-class _TimelineScreenState extends ConsumerState<TimelineScreen> {
+class _TimelineScreenState extends ConsumerState<TimelineScreen>
+    with WidgetsBindingObserver {
   DateTime _visibleDate = DateTime.now();
   OffscreenNow? _offscreenNow;
   final GlobalKey<TimelineViewState> _timelineKey = GlobalKey();
@@ -58,13 +61,25 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
     super.initState();
     _focusNode.requestFocus();
     HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+    if (betaModeOffered) WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
+    if (betaModeOffered) WidgetsBinding.instance.removeObserver(this);
     _focusNode.dispose();
     super.dispose();
+  }
+
+  /// Ask the portal how many steps are left when the app comes back — and only then. The
+  /// number changes when the tester does something in the portal, so a timer would spend
+  /// requests to learn nothing.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(betaAccessProvider.notifier).refresh();
+    }
   }
 
   bool _handleKeyEvent(KeyEvent event) {
@@ -150,21 +165,34 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
 
   Future<void> _openBetaFeedback() => _openPortal(
     openBetaFeedback,
-    "Couldn't open a browser. Report it at testers.rinserepeatlabs.com",
+    intent: 'report',
+    ifNoBrowser:
+        "Couldn't open a browser. Report it at testers.rinserepeatlabs.com",
   );
 
   Future<void> _openBetaTasks() => _openPortal(
     openBetaTasks,
-    "Couldn't open a browser. Your tasks are at testers.rinserepeatlabs.com",
+    intent: 'tasks',
+    ifNoBrowser:
+        "Couldn't open a browser. Your tasks are at testers.rinserepeatlabs.com",
   );
 
   Future<void> _openPortal(
-    Future<bool> Function({required bool isTablet}) open,
-    String ifNoBrowser,
-  ) async {
+    Future<bool> Function({required bool isTablet, String handoff}) open, {
+    required String intent,
+    required String ifNoBrowser,
+  }) async {
     final messenger = ScaffoldMessenger.of(context);
     final isTablet = MediaQuery.sizeOf(context).shortestSide >= 600;
-    if (!await open(isTablet: isTablet)) {
+    // Minted here, on the tap, so a connected tester lands signed in. An unconnected one
+    // gets an empty string and the portal asks for their email as it always has.
+    final connected =
+        (ref.read(betaAccessProvider).value ?? BetaAccess.disconnected)
+            .connected;
+    final handoff = connected
+        ? await ref.read(betaAccessServiceProvider).handoff(intent: intent)
+        : '';
+    if (!await open(isTablet: isTablet, handoff: handoff)) {
       messenger.showSnackBar(SnackBar(content: Text(ifNoBrowser)));
     }
   }
@@ -196,6 +224,9 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final betaAccess = betaModeOffered
+        ? (ref.watch(betaAccessProvider).value ?? BetaAccess.disconnected)
+        : BetaAccess.disconnected;
 
     return KeyboardListener(
       focusNode: _focusNode,
@@ -294,10 +325,19 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                 );
               },
             ),
-            if (betaFeedback) ...[
+            // A beta build always offers these. Any other build that offers beta mode at
+            // all — the web app — shows them once a code has been pasted in Settings, so
+            // the toggle is the gate rather than how the build was compiled.
+            if (betaFeedback || betaAccess.connected) ...[
               IconButton(
-                icon: const Icon(Icons.fact_check_outlined),
-                tooltip: 'Beta tasks',
+                icon: Badge(
+                  isLabelVisible: betaAccess.showBadge,
+                  label: Text('${betaAccess.tasksLeft}'),
+                  child: const Icon(Icons.fact_check_outlined),
+                ),
+                tooltip: betaAccess.showBadge
+                    ? 'Beta tasks (${betaAccess.tasksLeft} left)'
+                    : 'Beta tasks',
                 onPressed: _openBetaTasks,
               ),
               IconButton(

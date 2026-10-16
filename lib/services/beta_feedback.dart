@@ -7,21 +7,35 @@ import 'package:url_launcher/url_launcher.dart';
 
 /// Opens the tester portal's report form, filled in for this build and
 /// device. Returns false when no browser could be opened.
-Future<bool> openBetaFeedback({required bool isTablet}) =>
-    _openPortal(betaFeedbackUri, isTablet: isTablet);
+///
+/// [handoff] is a one-time value from a connected device, so the tester lands signed in
+/// instead of being sent back through their email. It's minted on the tap and never
+/// earlier: one that goes unused is one more thing to explain.
+Future<bool> openBetaFeedback({required bool isTablet, String handoff = ''}) =>
+    _openPortal(betaFeedbackUri, isTablet: isTablet, handoff: handoff);
 
 /// Opens the round's tasks, to be walked one at a time. Returns false when no
 /// browser could be opened.
-Future<bool> openBetaTasks({required bool isTablet}) =>
-    _openPortal(betaTasksUri, isTablet: isTablet);
+Future<bool> openBetaTasks({required bool isTablet, String handoff = ''}) =>
+    _openPortal(betaTasksUri, isTablet: isTablet, handoff: handoff);
+
+/// The platform name the portal knows this device by, for the device list a tester sees.
+Future<String> betaPlatformName({required bool isTablet}) async =>
+    portalPlatform(
+      targetPlatform: defaultTargetPlatform.name,
+      isWeb: kIsWeb,
+      isTablet: isTablet,
+    );
 
 Future<bool> _openPortal(
-  Uri Function(BetaFeedbackContext) link, {
+  Uri Function(BetaFeedbackContext, {String handoff}) link, {
   required bool isTablet,
+  String handoff = '',
 }) async {
   final package = await PackageInfo.fromPlatform();
   final (os, device) = await _osAndDevice();
   final uri = link(
+    handoff: handoff,
     BetaFeedbackContext(
       version: package.version,
       buildNumber: package.buildNumber,

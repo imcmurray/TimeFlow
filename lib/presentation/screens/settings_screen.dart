@@ -6,6 +6,7 @@ import 'package:timeflow/presentation/screens/settings/settings_task_creation_se
 import 'package:timeflow/presentation/screens/settings/settings_notifications_section.dart';
 import 'package:timeflow/presentation/screens/settings/settings_data_section.dart';
 import 'package:timeflow/presentation/screens/settings/settings_about_section.dart';
+import 'package:timeflow/presentation/screens/settings/settings_beta_section.dart';
 
 /// Settings screen for app preferences and customization.
 ///
@@ -30,6 +31,8 @@ class SettingsScreen extends ConsumerWidget {
           Divider(),
           SettingsDataSection(),
           Divider(),
+          // Nothing in store builds; see betaModeOffered.
+          SettingsBetaSection(),
           SettingsAboutSection(),
         ],
       ),

@@ -39448,7 +39448,7 @@ return A.f(A.bak(),$async$WF)
 case 4:o=e
 n=o.a
 m=o.b
-q=A.aji(a.$2$handoff(new A.Io(p.c,p.d,"dbcc3c5",A.bsT(c,!0,A.aY().b),n,m),b),B.Z3)
+q=A.aji(a.$2$handoff(new A.Io(p.c,p.d,"f7aa66d",A.bsT(c,!0,A.aY().b),n,m),b),B.Z3)
 s=1
 break
 case 1:return A.o(q,r)}})
@@ -130572,7 +130572,7 @@ A.aJN.prototype={
 $0(){return A.bt0(null,null,"TimeFlow",this.b.au($.be1(),t.gu).gp(),this.a)},
 $S:0}
 A.aJF.prototype={
-$1(a){var s=null,r=t.p,q=A.bm(A.b([A.V("Version: "+this.a.c,s,s,s,s,s,s,s),A.V("Build: dbcc3c5 (2026-10-16T22:28:13Z)",s,s,s,s,s,s,s),B.aj,B.axw,B.aF,A.h6(!1,s,!0,A.V("View or create issues on GitHub",s,s,s,A.ck(s,s,A.x(a).ax.b,s,B.lS,s,s,s,s,s,s,s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s,s),s,!0,s,s,s,s,s,s,s,s,s,s,s,new A.aJD(),s,s,s,s,s,s,s)],r),B.a_,B.l,B.X,0,B.w)
+$1(a){var s=null,r=t.p,q=A.bm(A.b([A.V("Version: "+this.a.c,s,s,s,s,s,s,s),A.V("Build: f7aa66d (2026-10-16T22:39:44Z)",s,s,s,s,s,s,s),B.aj,B.axw,B.aF,A.h6(!1,s,!0,A.V("View or create issues on GitHub",s,s,s,A.ck(s,s,A.x(a).ax.b,s,B.lS,s,s,s,s,s,s,s,s,s,s,s,s,!0,s,s,s,s,s,s,s,s),s,s,s),s,!0,s,s,s,s,s,s,s,s,s,s,s,new A.aJD(),s,s,s,s,s,s,s)],r),B.a_,B.l,B.X,0,B.w)
 return A.kD(A.b([A.dZ(B.awE,s,s,s,new A.aJE(a),s,s)],r),q,s,!1,B.J7)},
 $S:56}
 A.aJD.prototype={
@@ -134454,7 +134454,7 @@ for(;;)switch(s){case 0:k=A.bik(a)
 if(k.length===0){q=B.KT
 s=1
 break}s=3
-return A.f(p.aKj("/beta/connect",A.aH(["code",k,"label",b,"platform",c],t.N,t.X)),$async$lP)
+return A.f(p.aKj("/api/device/connect",A.aH(["code",k,"label",b,"platform",c],t.N,t.X)),$async$lP)
 case 3:o=e
 if(o==null){q=B.KR
 s=1
@@ -134484,7 +134484,7 @@ case 3:i=b
 if(i==null){q=null
 s=1
 break}s=4
-return A.f(p.Hp("/beta/summary",i),$async$qB)
+return A.f(p.Hp("/api/device/summary",i),$async$qB)
 case 4:o=b
 if(o==null){q=null
 s=1
@@ -134525,7 +134525,7 @@ case 3:m=c
 if(m==null){q=""
 s=1
 break}s=4
-return A.f(p.wV("/beta/handoff",A.aH(["intent",a],t.N,t.X),m),$async$DZ)
+return A.f(p.wV("/api/device/handoff",A.aH(["intent",a],t.N,t.X),m),$async$DZ)
 case 4:o=c
 if(o==null||o.b!==200){q=""
 s=1
@@ -134543,7 +134543,7 @@ case 2:p=b
 s=p!=null?3:4
 break
 case 3:s=5
-return A.f(q.wV("/beta/disconnect",B.afW,p),$async$n0)
+return A.f(q.wV("/api/device/disconnect",B.afW,p),$async$n0)
 case 5:case 4:s=6
 return A.f(q.yq(),$async$n0)
 case 6:return A.o(null,r)}})

@@ -1,9 +1,10 @@
-/// The tester portal link behind the beta Feedback button.
+/// The tester portal links behind the beta buttons: Feedback, which opens the
+/// report form, and Beta tasks, which walks the round's steps one at a time.
 ///
-/// It opens the portal's report form for the tester's current TimeFlow round,
-/// already filled in with what the build and device are. Everything rides in
-/// the URL fragment, so none of it reaches the portal's server or its logs
-/// until the tester signs in and sends the finding themselves.
+/// Both open the tester's current TimeFlow round, already told what the build
+/// and device are. Everything rides in the URL fragment, so none of it reaches
+/// the portal's server or its logs until the tester signs in and sends it
+/// themselves.
 const String testerPortalOrigin = 'https://testers.rinserepeatlabs.com';
 
 /// The app name the portal knows TimeFlow by; it picks the round from it.
@@ -58,7 +59,13 @@ String portalPlatform({
   }
 }
 
-Uri betaFeedbackUri(BetaFeedbackContext c) {
+/// The report form, for a finding the tester has in hand.
+Uri betaFeedbackUri(BetaFeedbackContext c) => _portalUri('report', c);
+
+/// The round's tasks, one to a screen.
+Uri betaTasksUri(BetaFeedbackContext c) => _portalUri('tasks', c);
+
+Uri _portalUri(String page, BetaFeedbackContext c) {
   final params = <String, String>{
     'app': testerPortalAppName,
     'version': c.version,
@@ -69,5 +76,5 @@ Uri betaFeedbackUri(BetaFeedbackContext c) {
     'device': c.device,
   }..removeWhere((_, value) => value.isEmpty);
   final query = Uri(queryParameters: params).query;
-  return Uri.parse('$testerPortalOrigin/#/report?$query');
+  return Uri.parse('$testerPortalOrigin/#/$page?$query');
 }

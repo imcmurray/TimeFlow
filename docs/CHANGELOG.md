@@ -14,6 +14,12 @@ version is tagged, *Unreleased* becomes that version's notes.
   OS and device (new dependency: `device_info_plus`). Store and web builds
   don't show it. Releases now also attach `timeflow-vX.Y.Z-beta.apk`.
   **Mac:** TestFlight builds for tester rounds need the flag; see the issue.
+- **Beta tasks button**: beta builds show a second button beside Feedback
+  that opens the tester portal at the round's tasks, walked one step to a
+  screen. Same build context in the URL fragment, same `TIMEFLOW_BETA=1`
+  gate, no new dependency. A badge counting the steps a tester has left
+  needs the app to be connected to the portal and comes later (phase 2 of
+  the issue); the page itself says "2 of 6" once they're signed in.
 - The task editor no longer cuts off the start and end times on narrow
   phones (360 dp wide); the date gives way instead.
 

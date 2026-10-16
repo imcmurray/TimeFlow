@@ -50,6 +50,43 @@ void main() {
     });
   });
 
+  group('betaTasksUri', () {
+    test('opens the tasks route with the same build context', () {
+      const context = BetaFeedbackContext(
+        version: '1.1.0',
+        buildNumber: '223',
+        commit: 'dc2a0aa',
+        platform: 'iOS (iPhone)',
+        os: 'iOS 26.0',
+        device: 'iPhone 16 Pro',
+      );
+      final uri = betaTasksUri(context);
+
+      expect(uri.origin, testerPortalOrigin);
+      expect(uri.path, '/');
+      expect(uri.query, isEmpty, reason: 'nothing may reach the server');
+      expect(uri.fragment, startsWith('/tasks?'));
+
+      // The portal picks the round from the app name; the rest is what it
+      // fills a finding in with if the tester reports one from a step.
+      final params = Uri.splitQueryString(uri.fragment.split('?').last);
+      expect(params, {
+        'app': 'TimeFlow',
+        'version': '1.1.0',
+        'build': '223',
+        'commit': 'dc2a0aa',
+        'platform': 'iOS (iPhone)',
+        'os': 'iOS 26.0',
+        'device': 'iPhone 16 Pro',
+      });
+      expect(
+        Uri.splitQueryString(betaFeedbackUri(context).fragment.split('?').last),
+        params,
+        reason: 'both buttons tell the portal the same thing',
+      );
+    });
+  });
+
   group('portalPlatform', () {
     String of(String p, {bool tablet = false, bool web = false}) =>
         portalPlatform(targetPlatform: p, isWeb: web, isTablet: tablet);

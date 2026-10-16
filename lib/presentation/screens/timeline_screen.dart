@@ -148,17 +148,24 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
     _timelineKey.currentState?.jumpToNow();
   }
 
-  Future<void> _openBetaFeedback() async {
+  Future<void> _openBetaFeedback() => _openPortal(
+    openBetaFeedback,
+    "Couldn't open a browser. Report it at testers.rinserepeatlabs.com",
+  );
+
+  Future<void> _openBetaTasks() => _openPortal(
+    openBetaTasks,
+    "Couldn't open a browser. Your tasks are at testers.rinserepeatlabs.com",
+  );
+
+  Future<void> _openPortal(
+    Future<bool> Function({required bool isTablet}) open,
+    String ifNoBrowser,
+  ) async {
     final messenger = ScaffoldMessenger.of(context);
     final isTablet = MediaQuery.sizeOf(context).shortestSide >= 600;
-    if (!await openBetaFeedback(isTablet: isTablet)) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Couldn't open a browser. Report it at testers.rinserepeatlabs.com",
-          ),
-        ),
-      );
+    if (!await open(isTablet: isTablet)) {
+      messenger.showSnackBar(SnackBar(content: Text(ifNoBrowser)));
     }
   }
 
@@ -287,12 +294,18 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                 );
               },
             ),
-            if (betaFeedback)
+            if (betaFeedback) ...[
+              IconButton(
+                icon: const Icon(Icons.fact_check_outlined),
+                tooltip: 'Beta tasks',
+                onPressed: _openBetaTasks,
+              ),
               IconButton(
                 icon: const Icon(Icons.feedback_outlined),
                 tooltip: 'Beta feedback',
                 onPressed: _openBetaFeedback,
               ),
+            ],
             IconButton(
               icon: const Icon(Icons.settings_outlined),
               onPressed: () {

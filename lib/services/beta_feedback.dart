@@ -7,10 +7,21 @@ import 'package:url_launcher/url_launcher.dart';
 
 /// Opens the tester portal's report form, filled in for this build and
 /// device. Returns false when no browser could be opened.
-Future<bool> openBetaFeedback({required bool isTablet}) async {
+Future<bool> openBetaFeedback({required bool isTablet}) =>
+    _openPortal(betaFeedbackUri, isTablet: isTablet);
+
+/// Opens the round's tasks, to be walked one at a time. Returns false when no
+/// browser could be opened.
+Future<bool> openBetaTasks({required bool isTablet}) =>
+    _openPortal(betaTasksUri, isTablet: isTablet);
+
+Future<bool> _openPortal(
+  Uri Function(BetaFeedbackContext) link, {
+  required bool isTablet,
+}) async {
   final package = await PackageInfo.fromPlatform();
   final (os, device) = await _osAndDevice();
-  final uri = betaFeedbackUri(
+  final uri = link(
     BetaFeedbackContext(
       version: package.version,
       buildNumber: package.buildNumber,

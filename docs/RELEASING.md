@@ -43,6 +43,29 @@ there, and findings go through portal-sync and findings-bridge into GitLab
 - The portal picks the round by the app name `TimeFlow`, so the app in the
   tester console must keep that name.
 
+### Beta tester mode (TimeFlow#54)
+
+A tester can also turn **any** build that offers it into a tester build: Settings →
+Beta testing takes the one-time `RRL-…` code from the round's announcement email
+and connects that device.
+
+- The section appears when `TIMEFLOW_BETA=1` **or** on the web, and never in an
+  iOS or Android store build (`betaModeOffered` in
+  `lib/presentation/providers/beta_access_provider.dart`). That's deliberate: a
+  hidden sign-in in a store build invites App Review questions we'd rather not
+  invite, and the web app is one deployment serving everybody, so a compile-time
+  flag can't gate it.
+- **Why every release build declares `INTERNET`.** A beta APK and a store APK are
+  the same Gradle build type with a different dart-define, and a permission can
+  only be added per build type or flavour. Splitting them would mean Android
+  flavours, which on iOS means Xcode schemes — the Mac's build would have to
+  change too. If that trade ever stops being worth it, flavours are the fix.
+- The token is kept in the Keychain or the Keystore, never in a preference: the
+  toggle reads as on when a token exists, because deleting an iOS app leaves its
+  Keychain items behind. Android's secure-storage file is excluded from Auto
+  Backup and device transfer (`android/app/src/main/res/xml/`), since the key that
+  wraps it cannot leave the device.
+
 ## Signing
 
 - **Upload key:** `~/.config/timeflow-signing/upload-keystore.jks` with its

@@ -53,6 +53,11 @@ dependencies:
   cron_expression_parser: ^1.0.0
   device_info_plus: ^13.3.0
 
+  # Beta tester mode: the one-time code, the device token and the portal's API.
+  # Both are pure Dart or resolve through SPM on Apple — nothing to set up per platform.
+  http: ^1.6.0
+  flutter_secure_storage: ^11.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

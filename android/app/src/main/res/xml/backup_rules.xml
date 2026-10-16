@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 and below (android:fullBackupContent).
+
+     The beta tester token is encrypted with a key in this device's Keystore, which is not
+     backed up and cannot leave the device. Restored onto a new phone the file would be
+     undecryptable rubbish — and worse, the portal's list of connected devices would name a
+     device nobody connected. Excluded, so a restored phone simply asks for a new code. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+    <exclude domain="sharedpref" path="FlutterSecureStorageConfiguration.xml" />
+</full-backup-content>

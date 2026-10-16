@@ -55,6 +55,12 @@ and connects that device.
   hidden sign-in in a store build invites App Review questions we'd rather not
   invite, and the web app is one deployment serving everybody, so a compile-time
   flag can't gate it.
+- **The Linux desktop build needs `libsecret-1-dev` and `libjsoncpp-dev`.**
+  `flutter_secure_storage_linux` keeps the token in the Secret Service, and its
+  CMake refuses to configure without them. Nothing on a pull request builds Linux
+  desktop — only a tag does — so v1.1.2's experimental Linux zip is missing and
+  the break wasn't visible until the tag ran. `flutter run -d linux` needs them
+  locally too.
 - **Why every release build declares `INTERNET`.** A beta APK and a store APK are
   the same Gradle build type with a different dart-define, and a permission can
   only be added per build type or flavour. Splitting them would mean Android

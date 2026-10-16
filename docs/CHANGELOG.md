@@ -6,6 +6,12 @@ version is tagged, *Unreleased* becomes that version's notes.
 
 ## Unreleased
 
+### Build
+- The Linux desktop build installs `libsecret-1-dev` and `libjsoncpp-dev`, which
+  `flutter_secure_storage_linux` needs to configure. v1.1.2's experimental Linux
+  zip is missing because of this; nothing on a pull request builds Linux desktop,
+  so only the tag found out.
+
 ## 1.1.2 — 2026-10-16
 
 ### App

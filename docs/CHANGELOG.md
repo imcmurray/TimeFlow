@@ -6,7 +6,7 @@ version is tagged, *Unreleased* becomes that version's notes.
 
 ## Unreleased
 
-## 1.1.1 — 2026-10-15
+## 1.1.1 — 2026-10-16
 
 ### App
 - **Beta feedback button**: beta builds (`TIMEFLOW_BETA=1`, see

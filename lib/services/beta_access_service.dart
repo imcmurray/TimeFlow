@@ -6,7 +6,12 @@ import 'package:http/http.dart' as http;
 import 'package:timeflow/domain/beta_access.dart';
 import 'package:timeflow/domain/beta_feedback_link.dart';
 
-/// Talks to the tester portal on behalf of a connected device.
+/// Talks to the tester portal on behalf of a connected device, at `/api/device/*`.
+///
+/// That path is Bearer only and never reads a cookie — it's carved out ahead of the
+/// portal's session handling. It sits under `/api/` rather than a prefix of its own
+/// because the portal's zone firewall is an allowlist, and a new top-level path would be
+/// a rule change in a dashboard before any build could reach it.
 ///
 /// The token lives in the platform's own store — Keychain on Apple, Keystore-backed
 /// preferences on Android, WebCrypto in the browser — and is read only in the foreground.
@@ -43,7 +48,7 @@ class BetaAccessService {
         "That doesn't look like a beta code. It's the RRL-… line in the email about this round.",
       );
     }
-    final res = await _post('/beta/connect', {
+    final res = await _post('/api/device/connect', {
       'code': code,
       'label': label,
       'platform': platform,
@@ -75,7 +80,7 @@ class BetaAccessService {
   Future<BetaSummary?> summary() async {
     final token = await readToken();
     if (token == null) return null;
-    final res = await _get401('/beta/summary', token);
+    final res = await _get401('/api/device/summary', token);
     if (res == null) return null;
     if (res.statusCode == 401) {
       // The tester left the pool, or the token was revoked from the portal. Forget it
@@ -92,7 +97,9 @@ class BetaAccessService {
   Future<String> handoff({required String intent}) async {
     final token = await readToken();
     if (token == null) return '';
-    final res = await _post('/beta/handoff', {'intent': intent}, token: token);
+    final res = await _post('/api/device/handoff', {
+      'intent': intent,
+    }, token: token);
     if (res == null || res.statusCode != 200) return '';
     return _json(res.body)['handoff'] as String? ?? '';
   }
@@ -101,7 +108,9 @@ class BetaAccessService {
   /// the app is never opened again, then forget the token either way.
   Future<void> disconnect() async {
     final token = await readToken();
-    if (token != null) await _post('/beta/disconnect', const {}, token: token);
+    if (token != null) {
+      await _post('/api/device/disconnect', const {}, token: token);
+    }
     await forget();
   }
 

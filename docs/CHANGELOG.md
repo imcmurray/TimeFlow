@@ -14,6 +14,7 @@ version is tagged, *Unreleased* becomes that version's notes.
   signed in — the app asks for a 30-second, single-use handoff on the tap, so the
   token itself never travels in a URL. Signing in to the portal by email keeps
   working, and **Disconnect** (or Revoke, in the portal) ends it from either side.
+  The app talks to `/api/device/*` on the portal — Bearer only, never a cookie.
   New dependencies: `http`, `flutter_secure_storage` (Keychain `…ThisDeviceOnly`,
   not synchronizable; Android's secure-storage file is excluded from Auto Backup
   and device transfer, because its key never leaves the Keystore).

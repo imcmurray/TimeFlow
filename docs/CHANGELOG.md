@@ -6,6 +6,8 @@ version is tagged, *Unreleased* becomes that version's notes.
 
 ## Unreleased
 
+## 1.1.3 — 2026-10-16
+
 ### App
 - A **store build no longer contains beta tester mode at all** — not the Settings
   section, not the device token, not `testers.rinserepeatlabs.com`. `betaModeOffered`

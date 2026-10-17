@@ -107,7 +107,9 @@ class ReminderCoordinator with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // The background handler may have snoozed or completed something.
+      // The background handler may have snoozed or completed something,
+      // through its own database connection.
+      _repo.markChangedElsewhere();
       _ref.read(reminderAcksProvider.notifier).reload();
       _replan();
     }

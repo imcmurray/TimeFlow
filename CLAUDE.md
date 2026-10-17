@@ -105,7 +105,17 @@ emergency; sessions shouldn't.
 
 ## Commands
 
+**Before pushing, run `scripts/check.sh`** — every gate in CI's *Analyze and test* job, in
+order, with the environment CI uses. Not the four commands below one at a time: running
+three of four and calling it green is easy and has happened (#67 failed on `dart format`
+with analyze and the tests passing, which skipped all three build jobs). The script checks
+itself against `.github/workflows/ci.yml` first, so changing the job without changing the
+script fails loudly instead of quietly meaning less.
+
 ```bash
+scripts/check.sh                                           # all of CI's gates
+scripts/check.sh --fix                                     # format first, then the rest
+
 flutter pub get
 dart run build_runner build --delete-conflicting-outputs   # after editing drift tables
 flutter analyze                                            # must be clean (CI gate)

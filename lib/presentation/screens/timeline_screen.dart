@@ -77,7 +77,7 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen>
   /// requests to learn nothing.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (betaModeOffered && state == AppLifecycleState.resumed) {
       ref.read(betaAccessProvider.notifier).refresh();
     }
   }
@@ -163,6 +163,37 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen>
     _timelineKey.currentState?.jumpToNow();
   }
 
+  /// The two beta buttons, and the only place in this screen that watches beta state.
+  ///
+  /// Behind `if (betaModeOffered)` at its single call site: a store build never references
+  /// it, so this method, the provider, the service and `testerPortalOrigin` are all gone
+  /// from the binary rather than merely unreachable.
+  List<Widget> _betaActions() {
+    final beta = ref.watch(betaAccessProvider).value ?? BetaAccess.disconnected;
+    // A beta build always shows them. Any other build that offers beta mode — the web app
+    // — shows them once a code has been pasted in Settings, so the toggle is the gate
+    // rather than how the build was compiled.
+    if (!betaFeedback && !beta.connected) return const [];
+    return [
+      IconButton(
+        icon: Badge(
+          isLabelVisible: beta.showBadge,
+          label: Text('${beta.tasksLeft}'),
+          child: const Icon(Icons.fact_check_outlined),
+        ),
+        tooltip: beta.showBadge
+            ? 'Beta tasks (${beta.tasksLeft} left)'
+            : 'Beta tasks',
+        onPressed: _openBetaTasks,
+      ),
+      IconButton(
+        icon: const Icon(Icons.feedback_outlined),
+        tooltip: 'Beta feedback',
+        onPressed: _openBetaFeedback,
+      ),
+    ];
+  }
+
   Future<void> _openBetaFeedback() => _openPortal(
     openBetaFeedback,
     intent: 'report',
@@ -224,9 +255,6 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final betaAccess = betaModeOffered
-        ? (ref.watch(betaAccessProvider).value ?? BetaAccess.disconnected)
-        : BetaAccess.disconnected;
 
     return KeyboardListener(
       focusNode: _focusNode,
@@ -325,27 +353,9 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen>
                 );
               },
             ),
-            // A beta build always offers these. Any other build that offers beta mode at
-            // all — the web app — shows them once a code has been pasted in Settings, so
-            // the toggle is the gate rather than how the build was compiled.
-            if (betaFeedback || betaAccess.connected) ...[
-              IconButton(
-                icon: Badge(
-                  isLabelVisible: betaAccess.showBadge,
-                  label: Text('${betaAccess.tasksLeft}'),
-                  child: const Icon(Icons.fact_check_outlined),
-                ),
-                tooltip: betaAccess.showBadge
-                    ? 'Beta tasks (${betaAccess.tasksLeft} left)'
-                    : 'Beta tasks',
-                onPressed: _openBetaTasks,
-              ),
-              IconButton(
-                icon: const Icon(Icons.feedback_outlined),
-                tooltip: 'Beta feedback',
-                onPressed: _openBetaFeedback,
-              ),
-            ],
+            // `betaModeOffered` is const, so a store build is compiled without any of
+            // this — not even the portal's hostname reaches the binary.
+            if (betaModeOffered) ..._betaActions(),
             IconButton(
               icon: const Icon(Icons.settings_outlined),
               onPressed: () {

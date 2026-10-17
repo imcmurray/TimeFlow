@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeflow/build_info.dart';
 import 'package:timeflow/domain/beta_access.dart';
@@ -7,15 +6,6 @@ import 'package:timeflow/services/beta_access_service.dart';
 final betaAccessServiceProvider = Provider<BetaAccessService>(
   (ref) => BetaAccessService(),
 );
-
-/// Whether this build offers beta tester mode at all.
-///
-/// Beta mobile builds do, because that's what they're for. The web app does because it
-/// can't carry a compile-time flag — it's one deployment serving everybody, and a toggle
-/// nobody has a code for does nothing. iOS and Android **store** builds never do: a hidden
-/// sign-in in a store build invites questions from App Review that we'd rather not invite,
-/// and the answer "it's for testers" isn't visible from the outside.
-bool get betaModeOffered => betaFeedback || kIsWeb;
 
 /// Who this device is acting for, and how much they have left to do.
 class BetaAccessNotifier extends AsyncNotifier<BetaAccess> {

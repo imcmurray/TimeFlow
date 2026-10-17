@@ -66,6 +66,24 @@ jobs:
           flutter build apk --release $(TIMEFLOW_BETA=1 ./scripts/build_flags.sh)
           cp build/app/outputs/flutter-apk/app-release.apk "timeflow-$GITHUB_REF_NAME-beta.apk"
 
+      # betaModeOffered is const, so a store build should be compiled without beta tester
+      # mode entirely — not merely with it switched off. Prove it from the artifact rather
+      # than trust the source: 1.1.2 shipped a store APK carrying the portal's hostname
+      # because the gate was a getter, and nothing noticed until someone read the strings.
+      - name: No beta tester mode in the store build
+        run: |
+          set -euo pipefail
+          for f in "timeflow-$GITHUB_REF_NAME.apk" "timeflow-$GITHUB_REF_NAME-beta.apk"; do
+            unzip -oq "$f" "lib/arm64-v8a/libapp.so" -d "unpacked-$f"
+            found=$(strings "unpacked-$f/lib/arm64-v8a/libapp.so" \
+              | grep -c 'testers\.rinserepeatlabs\.com' || true)
+            echo "$f: $found reference(s) to the tester portal"
+            case "$f" in
+              *-beta.apk) [ "$found" -gt 0 ] || { echo "::error::the beta APK has no tester portal in it"; exit 1; } ;;
+              *)          [ "$found" -eq 0 ] || { echo "::error::the store APK carries the tester portal; see betaModeOffered in lib/build_info.dart"; exit 1; } ;;
+            esac
+          done
+
       # Track and status come from repository variables (Settings → Secrets
       # and variables → Actions → Variables). Until Play has reviewed the
       # app's first release it only accepts `draft`, so that's the default;

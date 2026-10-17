@@ -77,10 +77,17 @@ class BetaAccessService {
 
   /// The badge. Null means we don't know — offline, or the portal said no — and the caller
   /// should keep whatever it had rather than show a zero it can't stand behind.
+  ///
+  /// The app name goes with the question: a tester is often in rounds for more than one
+  /// app, and a number on this app's Tasks button that counted another app's round is a
+  /// number that doesn't match the page the button opens.
   Future<BetaSummary?> summary() async {
     final token = await readToken();
     if (token == null) return null;
-    final res = await _get401('/api/device/summary', token);
+    final res = await _get401(
+      '/api/device/summary?app=${Uri.encodeQueryComponent(testerPortalAppName)}',
+      token,
+    );
     if (res == null) return null;
     if (res.statusCode == 401) {
       // The tester left the pool, or the token was revoked from the portal. Forget it

@@ -117,6 +117,9 @@ void main() {
       final summary = await service.summary();
       expect(summary?.tasksLeft, 2);
       expect(seen.single.headers['Authorization'], 'Bearer ${'b' * 43}');
+      // Scoped to this app, or the badge counts rounds belonging to another one.
+      expect(seen.single.url.path, '/api/device/summary');
+      expect(seen.single.url.queryParameters['app'], 'TimeFlow');
     });
 
     test('forgets the token when the portal says the tester is gone', () async {

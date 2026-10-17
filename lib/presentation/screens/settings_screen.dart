@@ -32,10 +32,11 @@ class SettingsScreen extends ConsumerWidget {
           Divider(),
           SettingsDataSection(),
           Divider(),
-          // A const condition in a const list: a store build is compiled without this
-          // element, so the section, the provider, the service and the portal's hostname
-          // are all shaken out rather than merely hidden.
-          if (betaModeOffered) SettingsBetaSection(),
+          // A const condition in a const list: a store build is compiled without these
+          // elements, so the section, the provider, the service and the portal's hostname
+          // are all shaken out rather than merely hidden — and the divider goes with it,
+          // instead of leaving two rules together above Plugins.
+          if (betaModeOffered) ...[SettingsBetaSection(), Divider()],
           SettingsAboutSection(),
         ],
       ),

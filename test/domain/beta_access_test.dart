@@ -66,6 +66,21 @@ void main() {
       );
     });
 
+    test('knows which rounds the number is made of', () {
+      final summary = BetaSummary.fromJson(const {
+        'rounds': [
+          {'name': 'First look - Android and web', 'tasks_left': 5},
+          {'name': 'Finished round', 'tasks_left': 0},
+        ],
+        'tasks_left': 5,
+      });
+      expect(summary.roundsWithWork, hasLength(1));
+      expect(
+        summary.roundsWithWork.single.name,
+        'First look - Android and web',
+      );
+    });
+
     test('survives a response with nothing useful in it', () {
       final summary = BetaSummary.fromJson(const {});
       expect(summary.tasksLeft, 0);

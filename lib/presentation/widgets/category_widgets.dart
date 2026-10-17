@@ -4,6 +4,7 @@ import 'package:timeflow/data/repositories/category_repository.dart';
 import 'package:timeflow/domain/entities/task_category.dart';
 import 'package:timeflow/presentation/providers/category_provider.dart';
 import 'package:timeflow/presentation/screens/categories_screen.dart';
+import 'package:timeflow/presentation/widgets/field_value.dart';
 
 /// Widget displaying a category chip/badge.
 class CategoryBadge extends StatelessWidget {
@@ -118,9 +119,7 @@ class CategoryPickerField extends ConsumerWidget {
           children: [
             CategoryIcon(category, size: 20),
             const SizedBox(width: 12),
-            Expanded(
-              child: Text(category.label, overflow: TextOverflow.ellipsis),
-            ),
+            Expanded(child: FieldValueText(category.label)),
           ],
         ),
       ),

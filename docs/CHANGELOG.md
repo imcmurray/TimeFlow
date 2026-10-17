@@ -7,6 +7,11 @@ version is tagged, *Unreleased* becomes that version's notes.
 ## Unreleased
 
 ### App
+- **The task editor's Category and Repeat values are no longer drawn grey.** Both
+  fields are a tappable box rather than a real input, and a bare label inside one
+  inherits the app's secondary grey, so a chosen category read as an empty
+  placeholder. They now match the Reminder field next to them. Category was the
+  reported half (TimeFlow#43); Repeat had the same defect and nobody had filed it.
 - **Settings warns when a round has moved past the build you're running.** A
   round's build moves in place rather than a new round opening — *First Look -
   Apple* went 1.1.0 (222) to 1.1.3 (242) — so a tester could be working a list of

@@ -36,6 +36,33 @@ class BetaSummary {
   List<BetaRound> get roundsWithWork =>
       rounds.where((r) => r.tasksLeft > 0).toList(growable: false);
 
+  /// Rounds asking for a build this app isn't, out of the ones with work left in them.
+  ///
+  /// A round moves in place rather than a new one opening — *First Look - Apple* went
+  /// 1.1.0 (222) to 1.1.3 (242) — so a tester can be holding an old build and a list of
+  /// steps written for a newer one, with nothing to tell them apart. Either field
+  /// disagreeing is enough; a tester hunting for a build number does not care which of the
+  /// two we noticed.
+  ///
+  /// A round that says nothing about its build, or work already finished, is not worth a
+  /// word: silence is the right answer when there is nothing to do about it.
+  List<BuildMoved> movedPast({required String version, required String build}) => [
+    for (final round in roundsWithWork)
+      if (!round.needsAgreement &&
+          round.label.isNotEmpty &&
+          (_differs(round.version, version) || _differs(round.build, build)))
+        BuildMoved(
+          round: round.name,
+          wanted: round.label,
+          running: switch ((version, build)) {
+            ('', '') => 'what you have',
+            ('', final b) => b,
+            (final v, '') => v,
+            (final v, final b) => '$v ($b)',
+          },
+        ),
+  ];
+
   static BetaSummary fromJson(Map<String, dynamic> json) {
     final seconds = _int(json['poll_after']);
     return BetaSummary(
@@ -57,6 +84,8 @@ class BetaRound {
   const BetaRound({
     this.name = '',
     this.app = '',
+    this.version = '',
+    this.build = '',
     this.tasksLeft = 0,
     this.tasksTotal = 0,
     this.needsAgreement = false,
@@ -64,17 +93,54 @@ class BetaRound {
 
   final String name;
   final String app;
+
+  /// The build this round is asking to be tested, as the portal has it. Empty on a round
+  /// gated behind an agreement, which says nothing about itself until it is signed.
+  final String version;
+  final String build;
+
   final int tasksLeft;
   final int tasksTotal;
   final bool needsAgreement;
 
+  /// "1.1.3 (242)", or as much of it as the round gave us.
+  String get label => switch ((version, build)) {
+    ('', '') => '',
+    ('', final b) => b,
+    (final v, '') => v,
+    (final v, final b) => '$v ($b)',
+  };
+
   static BetaRound fromJson(Map<String, dynamic> json) => BetaRound(
     name: json['name'] as String? ?? '',
     app: json['app'] as String? ?? '',
+    version: json['version'] as String? ?? '',
+    build: json['build'] as String? ?? '',
     tasksLeft: _int(json['tasks_left']),
     tasksTotal: _int(json['tasks_total']),
     needsAgreement: json['needs_agreement'] == true,
   );
+}
+
+/// A round that has moved on from the build this app is running.
+///
+/// A warning, never a block. The tester may well have found something real on the build
+/// they have, and the worst outcome here is one who decides their report no longer counts
+/// and says nothing. The portal's round page says the same thing when they get there; this
+/// is so they hear it before they start rather than after.
+class BuildMoved {
+  const BuildMoved({
+    required this.round,
+    required this.wanted,
+    required this.running,
+  });
+
+  /// The round's name, so a tester in two rounds knows which one means them.
+  final String round;
+
+  /// What the round asks for, and what this app actually is — "1.1.3 (242)", "1.1.0 (227)".
+  final String wanted;
+  final String running;
 }
 
 /// What the app shows about itself: connected or not, for whom, and how much is left.
@@ -109,6 +175,16 @@ String normaliseBetaCode(String raw) {
 }
 
 bool looksLikeBetaCode(String raw) => normaliseBetaCode(raw).isNotEmpty;
+
+/// Two build strings disagree only when we have both and they aren't the same.
+///
+/// Missing either side is not a disagreement. A round that hasn't filled in its build, or a
+/// platform that won't tell us ours, would otherwise warn every tester about nothing.
+bool _differs(String theirs, String ours) {
+  final a = theirs.trim();
+  final b = ours.trim();
+  return a.isNotEmpty && b.isNotEmpty && a != b;
+}
 
 int _int(Object? value) => switch (value) {
   final int n => n,

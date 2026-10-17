@@ -41,6 +41,26 @@ class SettingsBetaSection extends ConsumerWidget {
             title: Text('Connected as ${access.handle}'),
             subtitle: Text(_whatIsLeft(access)),
           ),
+          // Before they tap anything, not after. The portal's round page says the same
+          // thing, but by then they have already gone looking.
+          for (final moved in _movedPast(access, ref))
+            ListTile(
+              leading: Icon(
+                Icons.system_update_outlined,
+                color: Theme.of(context).colorScheme.tertiary,
+              ),
+              title: Text(
+                moved.round.isEmpty
+                    ? 'That round has moved on'
+                    : '${moved.round} has moved on',
+              ),
+              subtitle: Text(
+                'It’s on ${moved.wanted} now; this is ${moved.running}. '
+                'Update before you carry on — and if you’ve already found '
+                'something on the build you have, tell us anyway and say '
+                'which one it was.',
+              ),
+            ),
           ListTile(
             leading: const Icon(Icons.link_off),
             title: const Text('Disconnect this device'),
@@ -53,6 +73,17 @@ class SettingsBetaSection extends ConsumerWidget {
         ],
       ],
     );
+  }
+
+  /// Rounds asking for a build this app isn't, once the platform has told us what we are.
+  ///
+  /// Nothing while that answer is in flight: a warning that appears a moment after the page
+  /// does is worse than one that waits, and the comparison is worthless without both sides.
+  List<BuildMoved> _movedPast(BetaAccess access, WidgetRef ref) {
+    final summary = access.summary;
+    final mine = ref.watch(appBuildProvider).value;
+    if (summary == null || mine == null) return const [];
+    return summary.movedPast(version: mine.version, build: mine.build);
   }
 
   /// Say which round the number belongs to. The badge adds up every open round this app

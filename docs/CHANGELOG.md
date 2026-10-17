@@ -7,6 +7,14 @@ version is tagged, *Unreleased* becomes that version's notes.
 ## Unreleased
 
 ### App
+- **Settings warns when a round has moved past the build you're running.** A
+  round's build moves in place rather than a new round opening — *First Look -
+  Apple* went 1.1.0 (222) to 1.1.3 (242) — so a tester could be working a list of
+  steps written for a build they don't have, with nothing to tell them apart.
+  Settings now names the round and both builds ("It's on 1.1.3 (242) now; this is
+  1.1.0 (227)") before they tap anything. It warns and never blocks: a finding on
+  the older build still counts, and the notice says to report it and say which
+  build it was (TimeFlow#61).
 - The Tasks badge now counts **this app's** rounds only. A tester in rounds for
   two apps saw one number in Settings and a different one on the page the button
   opened; the summary is asked `?app=TimeFlow` and Settings names the round the

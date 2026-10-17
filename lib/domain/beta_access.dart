@@ -46,7 +46,10 @@ class BetaSummary {
   ///
   /// A round that says nothing about its build, or work already finished, is not worth a
   /// word: silence is the right answer when there is nothing to do about it.
-  List<BuildMoved> movedPast({required String version, required String build}) => [
+  List<BuildMoved> movedPast({
+    required String version,
+    required String build,
+  }) => [
     for (final round in roundsWithWork)
       if (!round.needsAgreement &&
           round.label.isNotEmpty &&

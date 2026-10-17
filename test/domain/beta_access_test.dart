@@ -168,7 +168,9 @@ void main() {
     };
 
     test('is named, with both builds spelled out', () {
-      final moved = summaryOf([apple]).movedPast(version: '1.1.0', build: '227');
+      final moved = summaryOf([
+        apple,
+      ]).movedPast(version: '1.1.0', build: '227');
       expect(moved, hasLength(1));
       expect(moved.single.round, 'First Look - Apple');
       expect(moved.single.wanted, '1.1.3 (242)');
@@ -185,7 +187,9 @@ void main() {
     test('notices a build bump that keeps the version', () {
       // 1.1.3 (242) and 1.1.3 (243) are different builds, and a tester hunting a number in
       // TestFlight cares. Either field disagreeing is enough.
-      final moved = summaryOf([apple]).movedPast(version: '1.1.3', build: '241');
+      final moved = summaryOf([
+        apple,
+      ]).movedPast(version: '1.1.3', build: '241');
       expect(moved, hasLength(1));
       expect(moved.single.running, '1.1.3 (241)');
     });
@@ -232,17 +236,19 @@ void main() {
           'tasks_left': 2,
         },
       ]).movedPast(version: '1.1.0', build: '227');
-      expect(
-        moved.map((m) => m.round),
-        ['First Look - Apple', 'First Look - Android'],
-      );
+      expect(moved.map((m) => m.round), [
+        'First Look - Apple',
+        'First Look - Android',
+      ]);
       expect(moved.map((m) => m.wanted), ['1.1.3 (242)', '1.1.4 (250)']);
     });
 
     test('carries the round\'s build through from the portal\'s answer', () {
       // The summary dropped version and build before this; the warning is only possible
       // because they survive the parse.
-      final round = BetaSummary.fromJson({'rounds': [apple]}).rounds.single;
+      final round = BetaSummary.fromJson({
+        'rounds': [apple],
+      }).rounds.single;
       expect(round.version, '1.1.3');
       expect(round.build, '242');
       expect(round.label, '1.1.3 (242)');

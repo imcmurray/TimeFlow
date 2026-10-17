@@ -23,6 +23,15 @@ version is tagged, *Unreleased* becomes that version's notes.
   record the case where plugins in the background isolate are the problem; the
   handler also now calls `DartPluginRegistrant.ensureInitialized()`, whose
   absence is one documented way for that handler to do nothing (TimeFlow#68).
+- **A task completed from the lock screen now shows as completed when you open
+  TimeFlow.** The breadcrumb on a real iPhone (1.1.3 (250)) showed **Completed**
+  had in fact been written. But iOS starts the app in the background to handle
+  the button, the background handler writes through its own database
+  connection, and drift only refreshes its task lists for writes made through
+  the app's. Opening TimeFlow resumed that process still showing the task red
+  and alerting until a restart. Coming back to the foreground now re-reads tasks
+  as well as snoozes. 1.1.3 (242)'s *Done* most likely had the same cause
+  (TimeFlow#68).
 - **The task editor's Category and Repeat values are no longer drawn grey.** Both
   fields are a tappable box rather than a real input, and a bare label inside one
   inherits the app's secondary grey, so a chosen category read as an empty

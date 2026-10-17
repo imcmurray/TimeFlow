@@ -45,7 +45,8 @@ class SettingsBetaSection extends ConsumerWidget {
             leading: const Icon(Icons.link_off),
             title: const Text('Disconnect this device'),
             subtitle: const Text(
-              'Forgets the code on this device. The portal still lets you in by email.',
+              'Tells the portal to drop this device and forgets the code. '
+              'The portal still lets you in by email.',
             ),
             onTap: () => _disconnect(context, ref),
           ),
@@ -54,6 +55,9 @@ class SettingsBetaSection extends ConsumerWidget {
     );
   }
 
+  /// Say which round the number belongs to. The badge adds up every open round this app
+  /// has for the tester, so a bare "5 tasks left" in front of a page that opens one round
+  /// and says "Task 1 of 6" is a number with nowhere to go.
   String _whatIsLeft(BetaAccess access) {
     final summary = access.summary;
     if (summary == null) {
@@ -62,11 +66,15 @@ class SettingsBetaSection extends ConsumerWidget {
     if (summary.needsAgreement && summary.tasksTotal == 0) {
       return 'There’s an agreement to read in the portal before this round opens up.';
     }
-    return switch (summary.tasksLeft) {
-      0 => 'Nothing left to do — thank you.',
-      1 => '1 task left of ${summary.tasksTotal}.',
-      final n => '$n tasks left of ${summary.tasksTotal}.',
-    };
+    final left = summary.tasksLeft;
+    if (left == 0) return 'Nothing left to do — thank you.';
+    final tasks = left == 1 ? '1 task left' : '$left tasks left';
+    final rounds = summary.roundsWithWork;
+    if (rounds.length == 1 && rounds.single.name.isNotEmpty) {
+      return '$tasks in ${rounds.single.name}.';
+    }
+    if (rounds.length > 1) return '$tasks across ${rounds.length} rounds.';
+    return '$tasks of ${summary.tasksTotal}.';
   }
 
   Future<void> _connect(BuildContext context, WidgetRef ref) async {
@@ -141,7 +149,7 @@ class _CodeDialogState extends State<_CodeDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'It looks like RRL-7K2P-9QRM-4T8X, in the email about this round.',
+            'It looks like RRL-7K2P-9QRM-4T8X-2WYE, in the email about this round.',
           ),
           const SizedBox(height: 12),
           TextField(

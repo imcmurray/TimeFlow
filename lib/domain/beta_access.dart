@@ -5,7 +5,7 @@
 /// here is pure: the talking is in services/beta_access_service.dart.
 library;
 
-/// The portal's answer to `GET /beta/summary`.
+/// The portal's answer to `GET /api/device/summary`.
 class BetaSummary {
   const BetaSummary({
     this.tasksLeft = 0,
@@ -16,8 +16,9 @@ class BetaSummary {
     this.rounds = const [],
   });
 
-  /// Required steps not yet reported, across every open round the tester is in. This is
-  /// the number on the badge.
+  /// Required steps not yet reported, across every open round this app has for the
+  /// tester. This is the number on the badge. The portal is asked about this app only,
+  /// so it can never count a round belonging to something else.
   final int tasksLeft;
   final int tasksTotal;
   final int findingsOpen;
@@ -29,6 +30,11 @@ class BetaSummary {
   /// How long the portal would like us to wait before asking again.
   final Duration pollAfter;
   final List<BetaRound> rounds;
+
+  /// The rounds the number is actually made of. One of them means we can name it, which
+  /// is the difference between "5 tasks left" and "5 tasks left, but where?".
+  List<BetaRound> get roundsWithWork =>
+      rounds.where((r) => r.tasksLeft > 0).toList(growable: false);
 
   static BetaSummary fromJson(Map<String, dynamic> json) {
     final seconds = _int(json['poll_after']);
@@ -88,8 +94,8 @@ class BetaAccess {
   static const disconnected = BetaAccess();
 }
 
-/// What `RRL-7K2P-9QRM-4T8X` looks like once the spaces and the hyphens are gone and the
-/// three characters people mistype are put back. The portal does this too, and refusing it
+/// What `RRL-7K2P-9QRM-4T8X-2WYE` looks like once the spaces and the hyphens are gone and
+/// the three characters people mistype are put back. The portal does this too, and refusing it
 /// here as well means a mistyped code never costs a round trip.
 String normaliseBetaCode(String raw) {
   final body = raw

@@ -6,6 +6,19 @@ version is tagged, *Unreleased* becomes that version's notes.
 
 ## Unreleased
 
+### App
+- The Tasks badge now counts **this app's** rounds only. A tester in rounds for
+  two apps saw one number in Settings and a different one on the page the button
+  opened; the summary is asked `?app=TimeFlow` and Settings names the round the
+  count belongs to ("5 tasks left in First look - Android and web") or says how
+  many rounds it spans (TimeFlow#61).
+- **Disconnect** says what it actually does: it tells the portal to drop the
+  device, then forgets the code. It always did both — only the wording suggested
+  otherwise.
+- The beta code example in the connect dialog is four groups, like a real code.
+- Settings has a divider between **Beta testing** and **Plugins**, like every
+  other section, and a store build drops the divider with the section.
+
 ## 1.1.3 — 2026-10-16
 
 ### App

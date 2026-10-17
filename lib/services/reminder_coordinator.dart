@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show DartPluginRegistrant;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -13,12 +14,12 @@ import 'package:timeflow/domain/time/local_date.dart';
 import 'package:timeflow/presentation/providers/reminder_ack_provider.dart';
 import 'package:timeflow/presentation/providers/settings_provider.dart';
 import 'package:timeflow/presentation/providers/task_provider.dart';
+import 'package:timeflow/services/background_breadcrumb.dart';
 import 'package:timeflow/services/notification_service.dart';
+import 'package:timeflow/services/reminder_actions.dart';
 import 'package:timeflow/services/reminder_sound_service.dart';
 import 'package:timeflow/services/task_service.dart';
 import 'package:window_to_front/window_to_front.dart';
-
-const _snoozeFor = Duration(minutes: 10);
 
 final notificationServiceProvider = Provider<NotificationService>(
   (ref) => NotificationService(),
@@ -178,17 +179,25 @@ class ReminderCoordinator with WidgetsBindingObserver {
     }
   }
 
+  /// The same four outcomes as [notificationBackgroundHandler], from the same
+  /// [ReminderIntent]. They were two switches on two action identifiers, and
+  /// the pair of them disagreeing is how Done could complete a task in one
+  /// isolate and not the other (TimeFlow#68).
   Future<void> _handle(ReminderResponse response) async {
     final task = await findTask(_repo, response.payload);
     if (task == null) return;
-    switch (response.action) {
-      case NotificationService.actionDone:
+    switch (response.intent) {
+      case ReminderIntent.complete:
         await _ref.read(taskServiceProvider).setCompleted(task, true);
-      case NotificationService.actionSnooze:
+      case ReminderIntent.snooze:
         _ref
             .read(reminderAcksProvider.notifier)
-            .snoozeUntil(task.id, DateTime.now().add(_snoozeFor));
-      default:
+            .snoozeUntil(task.id, DateTime.now().add(response.action!.snooze!));
+      case ReminderIntent.dismiss:
+        // Seen, not done: the in-app alert has to go too, or the app keeps
+        // nagging about a reminder the tester already answered.
+        _ref.read(reminderAcksProvider.notifier).acknowledge(task);
+      case ReminderIntent.open:
         _openTask?.call(task);
     }
   }
@@ -217,36 +226,97 @@ Future<Task?> findTask(TaskRepository repo, ReminderPayload payload) async {
   return tasks.where((t) => t.id == payload.taskId).firstOrNull;
 }
 
-/// Handles "Done" and "Snooze" pressed on a notification while TimeFlow
-/// isn't running. Runs in a background isolate, so it opens its own
-/// database and preferences.
+/// Handles a button pressed on a reminder while TimeFlow isn't running. Runs in
+/// a background isolate, so it opens its own database and preferences.
+///
+/// Every step leaves a [BackgroundBreadcrumb], because this is the path that
+/// failed on a tester's iPhone in a release build and passed on every simulator
+/// in a debug one (TimeFlow#68). Nobody can attach a debugger to a tester's
+/// phone; the isolate writes down how far it got, and Settings → About shows it
+/// on a beta build.
 @pragma('vm:entry-point')
 Future<void> notificationBackgroundHandler(NotificationResponse raw) async {
   WidgetsFlutterBinding.ensureInitialized();
+  // In a background isolate the plugins this handler needs — path_provider for
+  // the database's directory, shared_preferences for the acks — are not
+  // registered by ensureInitialized() alone. This is what registers them, and
+  // its absence is a documented way for exactly this handler to do nothing.
+  DartPluginRegistrant.ensureInitialized();
+  await BackgroundBreadcrumb.note(
+    '${BackgroundBreadcrumb.received} ${raw.actionId ?? 'tap'}',
+  );
+  await BackgroundBreadcrumb.note(BackgroundBreadcrumb.plugins);
   final response = NotificationService.parseResponse(raw);
-  if (response == null) return;
+  if (response == null) {
+    await BackgroundBreadcrumb.failed('the notification carried no task');
+    return;
+  }
   final db = AppDatabase();
   try {
+    await BackgroundBreadcrumb.note(BackgroundBreadcrumb.database);
     final repo = TaskRepository(db);
     final task = await findTask(repo, response.payload);
-    if (task == null) return;
-    if (response.action == NotificationService.actionDone) {
-      await TaskService(repo).setCompleted(task, true);
-    } else if (response.action == NotificationService.actionSnooze) {
-      final until = DateTime.now().add(_snoozeFor);
-      final prefs = await SharedPreferences.getInstance();
-      final acks = Map.of(ReminderAcksNotifier.load(prefs));
-      acks[task.id] = ReminderAck(snoozedUntil: until);
-      await ReminderAcksNotifier.save(prefs, acks);
-      final notifications = NotificationService();
-      await notifications.initialize(onResponse: (_) {});
-      await notifications.scheduleOne(
-        payload: response.payload,
-        title: task.title,
-        fireAt: until,
+    if (task == null) {
+      await BackgroundBreadcrumb.failed(
+        'no task for ${response.payload.taskId}',
       );
+      return;
     }
+    await BackgroundBreadcrumb.note(BackgroundBreadcrumb.found);
+    await applyInBackground(repo, response, task);
+    await BackgroundBreadcrumb.note(BackgroundBreadcrumb.written);
+  } catch (e) {
+    // Swallowed before as well, only silently: the isolate has nowhere to
+    // report to, which is the whole reason for the breadcrumb.
+    await BackgroundBreadcrumb.failed(e);
   } finally {
     await db.close();
   }
+}
+
+/// What a button does when the app isn't running: the same four outcomes as
+/// [ReminderCoordinator._handle], written straight to the stores a background
+/// isolate can reach. Separate from the handler so a test can drive it without
+/// a notification plugin in the way.
+@visibleForTesting
+Future<void> applyInBackground(
+  TaskRepository repo,
+  ReminderResponse response,
+  Task task,
+) async {
+  switch (response.intent) {
+    case ReminderIntent.complete:
+      await TaskService(repo).setCompleted(task, true);
+    case ReminderIntent.snooze:
+      // The ack first, and the new notification after, each on its own: if
+      // scheduling fails the snooze still stands, so the app stops alerting
+      // about a reminder the tester has already answered. The breadcrumb says
+      // when that happened rather than letting it pass for success.
+      final until = DateTime.now().add(response.action!.snooze!);
+      await _writeAck(task.id, ReminderAck(snoozedUntil: until));
+      try {
+        final notifications = NotificationService();
+        await notifications.initialize(onResponse: (_) {});
+        await notifications.scheduleOne(
+          payload: response.payload,
+          title: task.title,
+          fireAt: until,
+        );
+      } catch (e) {
+        await BackgroundBreadcrumb.failed('snoozed, but not rescheduled: $e');
+      }
+    case ReminderIntent.dismiss:
+      await _writeAck(task.id, const ReminderAck(acknowledged: true));
+    case ReminderIntent.open:
+      // A tap, not a button: the system brings the app up and the main isolate
+      // opens the task from launchResponse().
+      break;
+  }
+}
+
+Future<void> _writeAck(String taskId, ReminderAck ack) async {
+  final prefs = await SharedPreferences.getInstance();
+  final acks = Map.of(ReminderAcksNotifier.load(prefs));
+  acks[taskId] = ack;
+  await ReminderAcksNotifier.save(prefs, acks);
 }

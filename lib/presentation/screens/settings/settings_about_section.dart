@@ -7,12 +7,18 @@ import 'package:timeflow/core/app_links.dart';
 import 'package:timeflow/core/plugins/plugin_state_provider.dart';
 import 'package:timeflow/presentation/screens/plugin_marketplace_screen.dart';
 import 'package:timeflow/presentation/screens/settings/section_header.dart';
+import 'package:timeflow/services/background_breadcrumb.dart';
 
 /// The app's version and build number, e.g. "1.0.0 (42)".
 final appVersionProvider = FutureProvider<String>((ref) async {
   final info = await PackageInfo.fromPlatform();
   return '${info.version} (${info.buildNumber})';
 });
+
+/// How far the notification background isolate got, last time one ran.
+final lastBackgroundActionProvider = FutureProvider<String?>(
+  (ref) => BackgroundBreadcrumb.read(),
+);
 
 /// About settings: app info, support, legal.
 class SettingsAboutSection extends ConsumerWidget {
@@ -71,7 +77,74 @@ class SettingsAboutSection extends ConsumerWidget {
             applicationVersion: ref.read(appVersionProvider).value,
           ),
         ),
+
+        // Beta builds only, and `betaFeedback` is const, so a store build
+        // doesn't hide this — it doesn't contain it.
+        if (betaFeedback) ...[
+          const Divider(),
+          const SectionHeader(title: 'Beta diagnostics'),
+          ListTile(
+            leading: const Icon(Icons.bug_report_outlined),
+            title: const Text('Last reminder action'),
+            subtitle: Text(
+              ref
+                      .watch(lastBackgroundActionProvider)
+                      .maybeWhen(
+                        data: (crumbs) => crumbs?.split('\n').last,
+                        orElse: () => null,
+                      ) ??
+                  'Nothing recorded yet. Answer a reminder from the lock '
+                      'screen with the app closed, then look here.',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _showBreadcrumb(context, ref),
+          ),
+        ],
       ],
+    );
+  }
+
+  /// What the background isolate wrote down, for a tester to read back to us.
+  ///
+  /// It exists because *Completed* on a lock-screen reminder didn't complete the
+  /// task on a release build on a real iPhone, and passed on every simulator
+  /// (TimeFlow#68). This is how a phone nobody can plug in says where it stops.
+  void _showBreadcrumb(BuildContext context, WidgetRef ref) {
+    ref.invalidate(lastBackgroundActionProvider);
+    showDialog(
+      context: context,
+      builder: (context) => Consumer(
+        builder: (context, ref, _) => AlertDialog(
+          title: const Text('Last reminder action'),
+          content: SingleChildScrollView(
+            child: Text(
+              ref
+                      .watch(lastBackgroundActionProvider)
+                      .maybeWhen(
+                        data: (crumbs) => crumbs,
+                        orElse: () => null,
+                      ) ??
+                  'Nothing recorded yet.\n\nThis fills in when a reminder is '
+                      'answered from the notification while TimeFlow is '
+                      'closed: each step the app reached, or the error it hit.',
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await BackgroundBreadcrumb.clear();
+                ref.invalidate(lastBackgroundActionProvider);
+              },
+              child: const Text('Clear'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

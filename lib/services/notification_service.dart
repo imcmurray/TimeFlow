@@ -6,6 +6,7 @@ import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timeflow/domain/reminders/reminder_planner.dart';
 import 'package:timeflow/domain/time/wall_clock.dart';
+import 'package:timeflow/services/reminder_actions.dart';
 import 'package:timeflow/presentation/utils/time_formatter.dart';
 
 /// What a notification refers to, carried in its payload.
@@ -41,11 +42,15 @@ class ReminderPayload {
 class ReminderResponse {
   final ReminderPayload payload;
 
-  /// [NotificationService.actionDone], [NotificationService.actionSnooze],
-  /// or null for a tap on the notification itself.
-  final String? action;
+  /// The button pressed, or null for a tap on the notification itself — and
+  /// also for an identifier this build doesn't know, which an older or newer
+  /// build's notification can carry. Both open the task, which is the safe
+  /// reading of "something was pressed and we can't tell what".
+  final ReminderAction? action;
 
   const ReminderResponse(this.payload, this.action);
+
+  ReminderIntent get intent => action?.intent ?? ReminderIntent.open;
 }
 
 /// Delivers task reminders as system notifications.
@@ -60,8 +65,6 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _plugin;
 
-  static const actionDone = 'done';
-  static const actionSnooze = 'snooze';
   static const _category = 'task_reminder';
   static const _channelId = 'task_reminders';
 
@@ -95,9 +98,11 @@ class NotificationService {
       notificationCategories: [
         DarwinNotificationCategory(
           _category,
+          // `plain`, so none of them opens the app: the point of these buttons
+          // is answering a reminder from the lock screen.
           actions: [
-            DarwinNotificationAction.plain(actionDone, 'Done'),
-            DarwinNotificationAction.plain(actionSnooze, 'Snooze 10 min'),
+            for (final a in ReminderActions.onDarwin)
+              DarwinNotificationAction.plain(a.id, a.label),
           ],
         ),
       ],
@@ -126,11 +131,7 @@ class NotificationService {
   static ReminderResponse? _toResponse(NotificationResponse r) {
     final payload = ReminderPayload.decode(r.payload);
     if (payload == null) return null;
-    final action = r.actionId;
-    return ReminderResponse(
-      payload,
-      action == actionDone || action == actionSnooze ? action : null,
-    );
+    return ReminderResponse(payload, ReminderActions.byId(r.actionId));
   }
 
   /// Public for the background handler, which receives raw responses.
@@ -220,7 +221,7 @@ class NotificationService {
         ?.requestExactAlarmsPermission();
   }
 
-  NotificationDetails _details() => const NotificationDetails(
+  NotificationDetails _details() => NotificationDetails(
     android: AndroidNotificationDetails(
       _channelId,
       'Task reminders',
@@ -228,13 +229,15 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       category: AndroidNotificationCategory.reminder,
+      // Three at most on Android; the Darwin set is on the category instead,
+      // which is why iOS can have four.
       actions: [
-        AndroidNotificationAction(actionDone, 'Done'),
-        AndroidNotificationAction(actionSnooze, 'Snooze 10 min'),
+        for (final a in ReminderActions.onAndroid)
+          AndroidNotificationAction(a.id, a.label),
       ],
     ),
-    iOS: DarwinNotificationDetails(categoryIdentifier: _category),
-    macOS: DarwinNotificationDetails(categoryIdentifier: _category),
+    iOS: const DarwinNotificationDetails(categoryIdentifier: _category),
+    macOS: const DarwinNotificationDetails(categoryIdentifier: _category),
   );
 
   String _body(PlannedReminder r, bool use24Hour) {

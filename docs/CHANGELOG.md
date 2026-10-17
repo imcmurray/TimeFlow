@@ -7,6 +7,22 @@ version is tagged, *Unreleased* becomes that version's notes.
 ## Unreleased
 
 ### App
+- **A reminder's buttons say what they do: Completed · Snooze 5 min · Snooze
+  10 min · Dismiss.** *Done* meant "complete the task", and a tester and Ian
+  both read it as "stop reminding me" — so the two meanings are now two buttons,
+  and **Dismiss** clears the in-app red alert as well as the notification.
+  Android gets Completed · Snooze 10 min · Dismiss, because Android shows at
+  most three. *Delete* is deliberately not among them: from a lock screen it is
+  one mis-tap from losing a task, with no undo. A reminder already delivered by
+  1.1.3 (242) still works — its `done` button still completes (TimeFlow#68).
+- **Beta builds record how far a background reminder action got**, in
+  Settings → About → *Last reminder action*. **Completed** from the lock screen
+  did not complete the task on a release build on a real iPhone, while passing
+  on every simulator, where builds are debug — and a tester's phone can't be
+  plugged in. The breadcrumb is written with `dart:io` alone, so it can still
+  record the case where plugins in the background isolate are the problem; the
+  handler also now calls `DartPluginRegistrant.ensureInitialized()`, whose
+  absence is one documented way for that handler to do nothing (TimeFlow#68).
 - **The task editor's Category and Repeat values are no longer drawn grey.** Both
   fields are a tappable box rather than a real input, and a bare label inside one
   inherits the app's secondary grey, so a chosen category read as an empty

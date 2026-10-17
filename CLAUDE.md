@@ -40,12 +40,16 @@ a name, an email address, a beta code, a device row. This repo is public. Those
 go through the private relay (`relay.py` in the tester-pool repo, a message
 queue on Ian's LAN server) or they wait for Ian.
 
-On the Mac that means the relay's MCP tools rather than a command: Claude
-Desktop has no shell, so `relay_mcp.py` exposes the queue as `relay_inbox`,
-`relay_read`, `relay_send`, `relay_threads` and `relay_thread`. Check the inbox
-when a session starts and answer on the same thread; `docs/relay.md` in
-tester-pool has the rest, including the setup. Nothing can wake a Desktop
-session, so a message addressed to `mac` waits until Ian opens that chat.
+On the Mac that means the relay's MCP tools: `relay_mcp.py` exposes the queue
+as `relay_inbox`, `relay_read`, `relay_send`, `relay_threads` and
+`relay_thread`. Check the inbox when a session starts and answer on the same
+thread; `docs/relay.md` in tester-pool has the rest, including the setup.
+
+The Mac runs Claude Code in a tab of the Claude desktop app, so it also has a
+shell: `python3 ~/Development/tester-pool/relay.py wait --timeout 1800` as a
+background command exits the moment something arrives, and that wakes the
+session. Arm it when a session starts and re-arm it when it expires. The MCP
+tools never wake anything — they are for working the queue once awake.
 
 While working:
 - **Commit as `Ian McMurray <ian.mcmurray@gmail.com>`.** This is a personal,

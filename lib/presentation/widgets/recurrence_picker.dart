@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:timeflow/domain/entities/recurrence_rule.dart';
 import 'package:timeflow/domain/time/local_date.dart';
 import 'package:timeflow/presentation/utils/recurrence_format.dart';
+import 'package:timeflow/presentation/widgets/field_value.dart';
 
 /// The "Repeat" field of the task editor: a list of common patterns, a
 /// custom option, and an optional end date.
@@ -118,7 +119,7 @@ class RecurrencePicker extends StatelessWidget {
           ),
           child: InkWell(
             onTap: enabled ? () => _pick(context) : null,
-            child: Text(
+            child: FieldValueText(
               rule == null
                   ? 'Does not repeat'
                   : describeRecurrence(rule.copyWith(clearUntil: true), start),

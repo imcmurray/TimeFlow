@@ -53,8 +53,24 @@ run() {
 }
 
 run flutter pub get
+
+# CI's gate is `git diff --exit-code -- lib` on a clean checkout, where any diff means
+# generated code wasn't committed. Run that verbatim here and it reports whatever you are
+# in the middle of writing instead, which is a script that cries wolf every time it is
+# useful. What CI is actually asking is whether build_runner has output nobody committed,
+# so compare the diff either side of it: unchanged means your edits are your own.
+before="$(git diff -- lib | sha256sum)"
 run dart run build_runner build --delete-conflicting-outputs
-run git diff --exit-code -- lib
+if [ "$(git diff -- lib | sha256sum)" != "$before" ]; then
+  echo "── git diff --exit-code -- lib ──"
+  echo "build_runner changed files under lib that are not committed." >&2
+  git --no-pager diff --stat -- lib >&2
+  failed+=("git diff --exit-code -- lib")
+elif git diff --quiet -- lib; then
+  echo "── git diff --exit-code -- lib ──"
+else
+  echo "── git diff -- lib: build_runner added nothing; what's there is yours, uncommitted ──"
+fi
 run dart format --output=none --set-exit-if-changed lib test
 run flutter analyze
 # `env`, not a VAR=x prefix: that form in front of a shell function leaks the assignment

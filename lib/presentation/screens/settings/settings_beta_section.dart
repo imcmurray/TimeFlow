@@ -46,20 +46,13 @@ class SettingsBetaSection extends ConsumerWidget {
           for (final moved in _movedPast(access, ref))
             ListTile(
               leading: Icon(
-                Icons.system_update_outlined,
+                moved.gap == BuildGap.behind
+                    ? Icons.system_update_outlined
+                    : Icons.info_outline,
                 color: Theme.of(context).colorScheme.tertiary,
               ),
-              title: Text(
-                moved.round.isEmpty
-                    ? 'That round has moved on'
-                    : '${moved.round} has moved on',
-              ),
-              subtitle: Text(
-                'It’s on ${moved.wanted} now; this is ${moved.running}. '
-                'Update before you carry on — and if you’ve already found '
-                'something on the build you have, tell us anyway and say '
-                'which one it was.',
-              ),
+              title: Text(_movedTitle(moved)),
+              subtitle: Text(_movedDetail(moved)),
             ),
           ListTile(
             leading: const Icon(Icons.link_off),
@@ -79,6 +72,33 @@ class SettingsBetaSection extends ConsumerWidget {
   ///
   /// Nothing while that answer is in flight: a warning that appears a moment after the page
   /// does is worse than one that waits, and the comparison is worthless without both sides.
+  /// Only a round that is **ahead** asks anything of the tester. The other two ways a build
+  /// can differ are information, and saying "update" for them sends somebody to TestFlight
+  /// to look for a build that is older than the one they are running.
+  String _movedTitle(BuildMoved moved) {
+    final round = moved.round.isEmpty ? 'That round' : moved.round;
+    return switch (moved.gap) {
+      BuildGap.behind => '$round has moved on',
+      BuildGap.ahead => 'You’re ahead of $round',
+      BuildGap.unclear => '$round is on a different build',
+    };
+  }
+
+  String _movedDetail(BuildMoved moved) => switch (moved.gap) {
+    BuildGap.behind =>
+      'It’s on ${moved.wanted} now; this is ${moved.running}. '
+          'Update before you carry on — and if you’ve already found something '
+          'on the build you have, tell us anyway and say which one it was.',
+    BuildGap.ahead =>
+      'You have ${moved.running}; its steps were written for ${moved.wanted}. '
+          'Nothing to do — carry on, and if a step mentions a build number, go '
+          'by what you have and say so when you report.',
+    BuildGap.unclear =>
+      'It asks for ${moved.wanted}; this is ${moved.running}. '
+          'Carry on either way, and say which one you were on when you report '
+          'anything.',
+  };
+
   List<BuildMoved> _movedPast(BetaAccess access, WidgetRef ref) {
     final summary = access.summary;
     final mine = ref.watch(appBuildProvider).value;

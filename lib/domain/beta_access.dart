@@ -63,8 +63,21 @@ class BetaSummary {
             (final v, '') => v,
             (final v, final b) => '$v ($b)',
           },
+          gap: _gap(round.build, build),
         ),
   ];
+
+  /// Build numbers are what a tester reads in TestFlight and Play, and on this app they are
+  /// plain integers, so they can be compared. Anything else is [BuildGap.unclear] rather
+  /// than a guess dressed up as advice.
+  static BuildGap _gap(String roundBuild, String appBuild) {
+    final theirs = int.tryParse(roundBuild.trim());
+    final ours = int.tryParse(appBuild.trim());
+    if (theirs == null || ours == null || theirs == ours) {
+      return BuildGap.unclear;
+    }
+    return theirs > ours ? BuildGap.behind : BuildGap.ahead;
+  }
 
   static BetaSummary fromJson(Map<String, dynamic> json) {
     final seconds = _int(json['poll_after']);
@@ -136,6 +149,7 @@ class BuildMoved {
     required this.round,
     required this.wanted,
     required this.running,
+    this.gap = BuildGap.unclear,
   });
 
   /// The round's name, so a tester in two rounds knows which one means them.
@@ -144,6 +158,28 @@ class BuildMoved {
   /// What the round asks for, and what this app actually is — "1.1.3 (242)", "1.1.0 (227)".
   final String wanted;
   final String running;
+
+  /// Which of the two is in front, where that can be told.
+  final BuildGap gap;
+}
+
+/// Which way a round and the build in hand have come apart.
+///
+/// The first version of this warning only knew that they differed, and told the tester to
+/// update either way. That is wrong half the time: a round's build row is updated by hand
+/// after an upload, so for a while the round asks for the *older* build and a tester who
+/// updated promptly was told to update again — to a build behind the one they had.
+enum BuildGap {
+  /// The round has moved on. Update.
+  behind,
+
+  /// The tester is ahead of the round: they have a newer build than its steps were written
+  /// for. Nothing for them to do, but worth knowing before they report anything.
+  ahead,
+
+  /// They differ and nothing in them says which way round — a build that isn't a number, or
+  /// two versions apart on the same build.
+  unclear,
 }
 
 /// What the app shows about itself: connected or not, for whom, and how much is left.

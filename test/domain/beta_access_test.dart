@@ -177,6 +177,49 @@ void main() {
       expect(moved.single.running, '1.1.0 (227)');
     });
 
+    test('knows the round is the one in front', () {
+      final moved = summaryOf([
+        apple,
+      ]).movedPast(version: '1.1.0', build: '227');
+      expect(moved.single.gap, BuildGap.behind, reason: '242 is past 227');
+    });
+
+    test('knows when the tester is the one in front', () {
+      // The round's build row is updated by hand after an upload, so for a while the round
+      // asks for the older build. A tester who updated promptly used to be told to update
+      // again, to a build behind the one they had.
+      final moved = summaryOf([
+        apple,
+      ]).movedPast(version: '1.1.3', build: '249');
+      expect(
+        moved,
+        hasLength(1),
+        reason: 'still worth saying, just not as "update"',
+      );
+      expect(moved.single.gap, BuildGap.ahead);
+      expect(moved.single.wanted, '1.1.3 (242)');
+      expect(moved.single.running, '1.1.3 (249)');
+    });
+
+    test('admits when it cannot tell which way round', () {
+      final lettered = {...apple, 'build': '242-rc1'};
+      expect(
+        summaryOf([
+          lettered,
+        ]).movedPast(version: '1.1.3', build: '241').single.gap,
+        BuildGap.unclear,
+        reason: 'a build that is not a number is not a number to compare',
+      );
+      // Same build, different version: odd data, and not something to advise on.
+      final sameBuild = {...apple, 'version': '1.1.4'};
+      expect(
+        summaryOf([
+          sameBuild,
+        ]).movedPast(version: '1.1.3', build: '242').single.gap,
+        BuildGap.unclear,
+      );
+    });
+
     test('says nothing when the build matches', () {
       expect(
         summaryOf([apple]).movedPast(version: '1.1.3', build: '242'),

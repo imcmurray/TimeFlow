@@ -28,6 +28,12 @@ version is tagged, *Unreleased* becomes that version's notes.
   inherits the app's secondary grey, so a chosen category read as an empty
   placeholder. They now match the Reminder field next to them. Category was the
   reported half (TimeFlow#43); Repeat had the same defect and nobody had filed it.
+- **That warning now knows which build is in front.** It fired on any
+  difference and always said "update", so a tester who updated promptly — while
+  the round's build row was still being caught up by hand — was told to update
+  again, to a build behind the one they had. It now says *"You're ahead of this
+  round"* and *nothing to do* in that case, and admits it can't tell when the
+  build numbers aren't comparable (TimeFlow#68).
 - **Settings warns when a round has moved past the build you're running.** A
   round's build moves in place rather than a new round opening — *First Look -
   Apple* went 1.1.0 (222) to 1.1.3 (242) — so a tester could be working a list of

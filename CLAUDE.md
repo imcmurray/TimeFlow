@@ -7,10 +7,11 @@ are in progress (see `docs/IOS.md`); desktop builds are experimental.
 
 ## Working across machines (read first)
 
-More than one Claude Code session works on this repo: one on Ian's Linux PC
+More than one Claude session works on this repo: one on Ian's Linux PC
 (everything except Apple builds) and one on a Mac mini (iPhone/iPad, Xcode,
-App Store Connect). They can't message each other; **GitHub is the shared
-channel.**
+App Store Connect). **GitHub issues are the shared channel and the durable
+record** — a decision that isn't in an issue didn't happen, because the other
+machine can only read what's written down.
 
 At the start of every session:
 1. `git fetch --prune && git checkout main && git pull`
@@ -18,6 +19,26 @@ At the start of every session:
    worked here.
 3. `gh issue list --label mac` (on the Mac) or `gh issue list` (elsewhere) for
    work waiting for you. Issues are how instructions are handed over.
+
+### The baton
+
+**End every comment written for the other machine with a baton line**, on its
+own, as the last line:
+
+```
+**Baton: mac** — <what you're waiting for, in a few words>
+```
+
+`mac`, `linux` or `ian`. It says who the issue is waiting on, so either session
+can tell at a glance whether it is working or waiting without reading the whole
+thread. Taking work means posting a comment that takes the baton; finishing
+means handing it back. If you read an issue whose last baton is yours, that is
+your queue — start there.
+
+The one thing never to put in a GitHub comment is anything private to a tester:
+a name, an email address, a beta code, a device row. This repo is public. Those
+go through the private relay (`relay.py` in the tester-pool repo, a message
+queue on Ian's LAN server) or they wait for Ian.
 
 While working:
 - **Commit as `Ian McMurray <ian.mcmurray@gmail.com>`.** This is a personal,

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:timeflow/build_info.dart';
 import 'package:timeflow/domain/beta_access.dart';
 import 'package:timeflow/services/beta_access_service.dart';
@@ -6,6 +7,23 @@ import 'package:timeflow/services/beta_access_service.dart';
 final betaAccessServiceProvider = Provider<BetaAccessService>(
   (ref) => BetaAccessService(),
 );
+
+/// What this build calls itself, for comparing against the build a round is asking for.
+///
+/// Read from the platform rather than `build_info.dart`: the version and build number live
+/// in the app's own metadata, and `--dart-define` only carries the commit. A platform that
+/// won't answer gives empty strings, which the comparison treats as "don't warn" rather
+/// than "everything has moved".
+final appBuildProvider = FutureProvider<({String version, String build})>((
+  ref,
+) async {
+  try {
+    final info = await PackageInfo.fromPlatform();
+    return (version: info.version, build: info.buildNumber);
+  } catch (_) {
+    return (version: '', build: '');
+  }
+});
 
 /// Who this device is acting for, and how much they have left to do.
 class BetaAccessNotifier extends AsyncNotifier<BetaAccess> {

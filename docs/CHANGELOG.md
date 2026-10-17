@@ -6,6 +6,14 @@ version is tagged, *Unreleased* becomes that version's notes.
 
 ## Unreleased
 
+### App
+- A **store build no longer contains beta tester mode at all** — not the Settings
+  section, not the device token, not `testers.rinserepeatlabs.com`. `betaModeOffered`
+  is now a compile-time constant and every reference sits behind it, so the compiler
+  removes the feature instead of hiding it. 1.1.2's store APK carried the portal's
+  hostname (unreachable, but there); 1.1.3's does not, and the release workflow now
+  reads the artifact's strings and fails if it ever does again.
+
 ### Build
 - The Linux desktop build installs `libsecret-1-dev` and `libjsoncpp-dev`, which
   `flutter_secure_storage_linux` needs to configure. v1.1.2's experimental Linux

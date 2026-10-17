@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timeflow/domain/beta_access.dart';
+import 'package:timeflow/build_info.dart';
 import 'package:timeflow/presentation/providers/beta_access_provider.dart';
 import 'package:timeflow/presentation/screens/settings/section_header.dart';
 import 'package:timeflow/services/beta_feedback.dart';
@@ -8,9 +9,9 @@ import 'package:timeflow/services/beta_feedback.dart';
 /// Beta testing: paste the code from the round's email and this device can see the
 /// tester's tasks and send findings without signing in to the portal first.
 ///
-/// Absent from store builds on iOS and Android — see [betaModeOffered]. The web app shows
-/// it, because it's one deployment serving everybody and a toggle nobody has a code for
-/// does nothing.
+/// A store build never reaches this widget: [betaModeOffered] is `const`, so the one
+/// reference to it is dropped at compile time along with everything it leads to. The guard
+/// below is belt and braces for anyone who calls it directly.
 class SettingsBetaSection extends ConsumerWidget {
   const SettingsBetaSection({super.key});
 

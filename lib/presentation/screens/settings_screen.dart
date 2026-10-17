@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timeflow/build_info.dart';
 import 'package:timeflow/presentation/screens/settings/settings_appearance_section.dart';
 import 'package:timeflow/presentation/screens/settings/settings_location_section.dart';
 import 'package:timeflow/presentation/screens/settings/settings_task_creation_section.dart';
@@ -31,8 +32,10 @@ class SettingsScreen extends ConsumerWidget {
           Divider(),
           SettingsDataSection(),
           Divider(),
-          // Nothing in store builds; see betaModeOffered.
-          SettingsBetaSection(),
+          // A const condition in a const list: a store build is compiled without this
+          // element, so the section, the provider, the service and the portal's hostname
+          // are all shaken out rather than merely hidden.
+          if (betaModeOffered) SettingsBetaSection(),
           SettingsAboutSection(),
         ],
       ),

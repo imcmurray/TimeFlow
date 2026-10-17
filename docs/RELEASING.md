@@ -61,6 +61,13 @@ and connects that device.
   desktop — only a tag does — so v1.1.2's experimental Linux zip is missing and
   the break wasn't visible until the tag ran. `flutter run -d linux` needs them
   locally too.
+- **`betaModeOffered` is `const`, and it has to stay that way.** Every reference to
+  beta tester mode sits behind it, so a store build is *compiled without* the
+  feature — the Settings section, the device token and the portal's hostname are all
+  absent from the binary. Make it a getter and they come back: that is how 1.1.2's
+  store APK ended up carrying `testers.rinserepeatlabs.com`. The release workflow
+  reads both APKs' strings and fails if the store one mentions the portal, or if the
+  beta one doesn't.
 - **Why every release build declares `INTERNET`.** A beta APK and a store APK are
   the same Gradle build type with a different dart-define, and a permission can
   only be added per build type or flavour. Splitting them would mean Android

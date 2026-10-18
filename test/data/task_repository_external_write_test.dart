@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -22,8 +23,10 @@ void main() {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     dir = Directory.systemTemp.createTempSync('timeflow_external_write');
     final file = File('${dir.path}/timeflow.db');
-    app = AppDatabase(NativeDatabase(file));
-    background = AppDatabase(NativeDatabase(file));
+    // Each on its own isolate, as in the app: a connection waiting on SQLite's
+    // busy timeout blocks its thread, so two on one thread would deadlock.
+    app = AppDatabase(NativeDatabase.createInBackground(file));
+    background = AppDatabase(NativeDatabase.createInBackground(file));
   });
 
   tearDown(() async {
@@ -71,5 +74,37 @@ void main() {
     await settle();
     expect(emitted.last.single.isCompleted, isTrue);
     await sub.cancel();
+  });
+
+  test('the other connection can save while the app is reading', () async {
+    final appRepo = TaskRepository(app);
+    await TaskService(
+      appRepo,
+    ).create(draft('Lunch', start: DateTime(2026, 6, 3, 12)));
+    final backgroundRepo = TaskRepository(background);
+    final seen = (await backgroundRepo.getRange(
+      DateTime(2026, 6, 3),
+      DateTime(2026, 6, 4),
+    )).single;
+
+    // The app is in a transaction, as it is while starting up on a
+    // background launch. Drift begins native transactions IMMEDIATE, so this
+    // holds the write lock; without a busy timeout the other connection's
+    // save failed at once with "database is locked" (code 5).
+    final inside = Completer<void>();
+    final appBusy = app.transaction(() async {
+      await appRepo.getRange(DateTime(2026, 6, 3), DateTime(2026, 6, 4));
+      inside.complete();
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    });
+    await inside.future;
+
+    await TaskService(backgroundRepo).setCompleted(seen, true);
+    await appBusy;
+    final after = await appRepo.getRange(
+      DateTime(2026, 6, 3),
+      DateTime(2026, 6, 4),
+    );
+    expect(after.single.isCompleted, isTrue);
   });
 }

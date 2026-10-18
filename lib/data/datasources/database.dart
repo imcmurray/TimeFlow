@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:timeflow/data/datasources/database_location_stub.dart'
     if (dart.library.io) 'package:timeflow/data/datasources/database_location.dart'
     as location;
@@ -127,7 +128,25 @@ class AppDatabase extends _$AppDatabase {
         await seedCategories();
       }
     },
+    beforeOpen: (_) => shareFileSafely(),
   );
+
+  /// Lets two connections share the file without "database is locked".
+  ///
+  /// A reminder action pressed while TimeFlow is closed is handled in a
+  /// background isolate with its own connection, while iOS starts the app's
+  /// main isolate for the same launch and that one starts reading tasks. In
+  /// SQLite's default rollback journal a reader blocks a writer's COMMIT, and
+  /// without a busy timeout the writer fails at once: a tester's *Completed*
+  /// was lost with `SqliteException(5) … COMMIT TRANSACTION`. WAL lets readers
+  /// and one writer run together; the timeout makes the rare writer–writer
+  /// clash wait instead of failing. The web build has one connection and its
+  /// own storage, so it is left alone.
+  Future<void> shareFileSafely() async {
+    if (kIsWeb) return;
+    await customStatement('PRAGMA journal_mode = WAL;');
+    await customStatement('PRAGMA busy_timeout = 5000;');
+  }
 
   /// Adds the built-in categories. Task rows already hold their ids.
   Future<void> seedCategories() => batch(

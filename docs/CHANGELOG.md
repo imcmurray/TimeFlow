@@ -35,10 +35,10 @@ version is tagged, *Unreleased* becomes that version's notes.
 - **…and the save itself no longer fails when the app is starting up at the
   same moment.** On a second try the breadcrumb read `failed:
   SqliteException(5) … database is locked … COMMIT TRANSACTION`: the app's main
-  isolate, started by iOS for the same launch, was inside a transaction (drift
-  begins them IMMEDIATE), and with no busy timeout the background handler's
-  write gave up at once. The database now waits up to five seconds for the
-  lock and runs in WAL mode, so readers never block the write (TimeFlow#68).
+  isolate, started by iOS for the same launch, was reading tasks, and under
+  SQLite's default rollback journal a reader blocks a writer's commit, so the
+  background handler's save was lost. The database now runs in WAL mode, where
+  a reader and a writer can work at once (TimeFlow#68).
 - **The task editor's Category and Repeat values are no longer drawn grey.** Both
   fields are a tappable box rather than a real input, and a bare label inside one
   inherits the app's secondary grey, so a chosen category read as an empty

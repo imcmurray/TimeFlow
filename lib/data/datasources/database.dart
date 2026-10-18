@@ -136,12 +136,20 @@ class AppDatabase extends _$AppDatabase {
   /// A reminder action pressed while TimeFlow is closed is handled in a
   /// background isolate with its own connection, while iOS starts the app's
   /// main isolate for the same launch and that one starts reading tasks. In
-  /// SQLite's default rollback journal a reader blocks a writer's COMMIT, and
-  /// without a busy timeout the writer fails at once: a tester's *Completed*
-  /// was lost with `SqliteException(5) … COMMIT TRANSACTION`. WAL lets readers
-  /// and one writer run together; the timeout makes the rare writer–writer
-  /// clash wait instead of failing. The web build has one connection and its
-  /// own storage, so it is left alone.
+  /// SQLite's default rollback journal a reader blocks a writer's COMMIT, so
+  /// the writer failed and a tester's *Completed* was lost with
+  /// `SqliteException(5) … COMMIT TRANSACTION`. WAL is the part that fixes
+  /// that: a reader and a writer can run at once.
+  ///
+  /// The busy timeout is not. Two connections in one process never wait for
+  /// each other however long it is set to — SQLite returns SQLITE_BUSY
+  /// without calling the busy handler rather than risk a deadlock, in every
+  /// journal mode. It is kept because it costs nothing and does apply to
+  /// another process holding the file, but don't reach for it if two
+  /// isolates ever clash as writers; they need a retry instead.
+  ///
+  /// The web build has one connection and its own storage, so it is left
+  /// alone.
   Future<void> shareFileSafely() async {
     if (kIsWeb) return;
     await customStatement('PRAGMA journal_mode = WAL;');

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -87,20 +86,22 @@ void main() {
       DateTime(2026, 6, 4),
     )).single;
 
-    // The app is in a transaction, as it is while starting up on a
-    // background launch. Drift begins native transactions IMMEDIATE, so this
-    // holds the write lock; without a busy timeout the other connection's
-    // save failed at once with "database is locked" (code 5).
-    final inside = Completer<void>();
-    final appBusy = app.transaction(() async {
-      await appRepo.getRange(DateTime(2026, 6, 3), DateTime(2026, 6, 4));
-      inside.complete();
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-    });
-    await inside.future;
+    // What the tester's breadcrumb caught: the task was found and written,
+    // then COMMIT failed with "database is locked". iOS had started the
+    // app's main isolate for the same launch and it was reading tasks, and
+    // under SQLite's default rollback journal a reader blocks a writer's
+    // commit. A plain BEGIN takes that reader's lock and holds it.
+    //
+    // Two connections in one process never wait for each other, whatever
+    // busy_timeout says: SQLite returns SQLITE_BUSY without calling the busy
+    // handler rather than risk a deadlock. So a test that has the app hold a
+    // write lock can't pass, and the timeout is not what saves this. WAL is:
+    // it lets a reader and a writer run at once.
+    await app.customStatement('BEGIN;');
+    await app.customSelect('SELECT count(*) FROM tasks;').getSingle();
 
     await TaskService(backgroundRepo).setCompleted(seen, true);
-    await appBusy;
+    await app.customStatement('COMMIT;');
     final after = await appRepo.getRange(
       DateTime(2026, 6, 3),
       DateTime(2026, 6, 4),

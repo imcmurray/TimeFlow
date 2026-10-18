@@ -110,6 +110,15 @@ class TaskRepository {
   Stream<void> get changes =>
       _db.tableUpdates(TableUpdateQuery.onTable(_tasks));
 
+  /// Tells [watchRange] and [changes] that tasks may have changed behind
+  /// this connection's back, so they read the file again.
+  ///
+  /// Drift only sees writes made through this [AppDatabase]. A reminder
+  /// action pressed while the app is in the background is handled by a
+  /// second isolate with its own connection, so without this the app comes
+  /// back to the foreground still showing the task as it was.
+  void markChangedElsewhere() => _db.markTablesUpdated([_tasks]);
+
   /// A stored task, series or override by id.
   Future<Task?> getStored(String id) async {
     final row = await (_db.select(

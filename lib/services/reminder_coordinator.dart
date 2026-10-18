@@ -107,7 +107,9 @@ class ReminderCoordinator with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // The background handler may have snoozed or completed something.
+      // The background handler may have snoozed or completed something,
+      // through its own database connection.
+      _repo.markChangedElsewhere();
       _ref.read(reminderAcksProvider.notifier).reload();
       _replan();
     }
@@ -286,7 +288,7 @@ Future<void> applyInBackground(
 ) async {
   switch (response.intent) {
     case ReminderIntent.complete:
-      await TaskService(repo).setCompleted(task, true);
+      await writeWithRetries(() => TaskService(repo).setCompleted(task, true));
     case ReminderIntent.snooze:
       // The ack first, and the new notification after, each on its own: if
       // scheduling fails the snooze still stands, so the app stops alerting
@@ -311,6 +313,47 @@ Future<void> applyInBackground(
       // A tap, not a button: the system brings the app up and the main isolate
       // opens the task from launchResponse().
       break;
+  }
+}
+
+/// How long to wait before trying a refused write again.
+const backgroundWriteWaits = [
+  Duration(milliseconds: 200),
+  Duration(milliseconds: 400),
+  Duration(milliseconds: 800),
+];
+
+/// Runs [write], trying again if another connection is holding the database.
+///
+/// WAL stopped a *reader* in the app's main isolate from blocking this commit,
+/// which is what a tester lost a *Completed* to. A writer there still blocks
+/// it: two connections in one process never wait for each other, because
+/// SQLite returns `SQLITE_BUSY` rather than risk a deadlock, however long
+/// `busy_timeout` is. On a background launch the main isolate is almost always
+/// only reading, so this covers the narrow rest — a first launch still seeding
+/// categories, a migration — where a second or so is plenty.
+///
+/// Anything that isn't the lock is thrown straight on: a write that fails for
+/// its own reasons should reach the breadcrumb now, not in three tries' time.
+@visibleForTesting
+Future<void> writeWithRetries(
+  Future<void> Function() write, {
+  List<Duration> waits = backgroundWriteWaits,
+}) async {
+  for (var attempt = 0; ; attempt++) {
+    try {
+      await write();
+      return;
+    } catch (e) {
+      if (attempt >= waits.length ||
+          !e.toString().toLowerCase().contains('database is locked')) {
+        rethrow;
+      }
+      await BackgroundBreadcrumb.note(
+        '${BackgroundBreadcrumb.locked} ${waits[attempt].inMilliseconds}ms',
+      );
+      await Future<void>.delayed(waits[attempt]);
+    }
   }
 }
 

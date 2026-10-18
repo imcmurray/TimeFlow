@@ -23,6 +23,9 @@ class BackgroundBreadcrumb {
   static const found = 'task found';
   static const written = 'written';
 
+  /// Another connection had the database; the wait before trying again.
+  static const locked = 'database locked, waiting';
+
   /// Notes a step. Never throws: the one thing worse than no breadcrumb is a
   /// breadcrumb that takes the handler down with it.
   static Future<void> note(String step, {DateTime? at}) =>

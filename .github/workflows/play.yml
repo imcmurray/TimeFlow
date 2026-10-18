@@ -1,0 +1,104 @@
+# Play tracks, driven from here instead of from the Console.
+#
+# The service-account key stays a repository secret: every promotion and
+# rollout is a run with a log, and deleting PLAY_SERVICE_ACCOUNT_JSON takes the
+# ability away again. See docs/PLAY_STORE.md.
+name: Play release
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: What to do
+        required: true
+        type: choice
+        options: [show, promote, rollout, halt]
+        default: show
+      from_track:
+        description: "promote: the track the build is on now"
+        type: choice
+        options: ['', internal, alpha, beta, production]
+        default: ''
+      to_track:
+        description: "promote: the track to move it to"
+        type: choice
+        options: ['', internal, alpha, beta, production]
+        default: ''
+      track:
+        description: "rollout/halt/show: which track"
+        type: choice
+        options: ['', internal, alpha, beta, production]
+        default: ''
+      fraction:
+        description: "Share of users, 0-1 (promote to production defaults to 0.1)"
+        type: string
+        default: ''
+      version_code:
+        description: "Build number (default: the newest on the track)"
+        type: string
+        default: ''
+      dry_run:
+        description: Print the requests instead of sending them
+        type: boolean
+        default: false
+
+concurrency: play-release
+
+jobs:
+  play:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4          # for distribution/whatsnew and the script
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet google-auth
+
+      - name: Check the secret is there
+        env:
+          PLAY_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -z "$PLAY_JSON" ] && [ "${{ inputs.dry_run }}" != "true" ]; then
+            echo "::error::PLAY_SERVICE_ACCOUNT_JSON is not set, so there is" \
+              "nothing to talk to Play with. docs/PLAY_STORE.md step 7." && exit 1
+          fi
+
+      - name: ${{ inputs.command }}
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          args=()
+          # `set -e` and a bare `test && ...` don't mix: a false test as the
+          # last command of the list would end the step, not skip the flag.
+          if [ "${{ inputs.dry_run }}" = "true" ]; then args+=(--dry-run); fi
+          args+=("${{ inputs.command }}")
+          add() { if [ -n "$2" ]; then args+=("$1" "$2"); fi; }
+          case "${{ inputs.command }}" in
+            show)
+              add --track "${{ inputs.track }}" ;;
+            promote)
+              if [ -z "${{ inputs.from_track }}" ] || [ -z "${{ inputs.to_track }}" ]; then
+                echo "::error::promote needs from_track and to_track" && exit 1
+              fi
+              args+=(--from "${{ inputs.from_track }}" --to "${{ inputs.to_track }}")
+              add --fraction "${{ inputs.fraction }}"
+              add --version-code "${{ inputs.version_code }}" ;;
+            rollout)
+              if [ -z "${{ inputs.fraction }}" ]; then
+                echo "::error::rollout needs a fraction" && exit 1
+              fi
+              args+=(--fraction "${{ inputs.fraction }}")
+              add --track "${{ inputs.track }}"
+              add --version-code "${{ inputs.version_code }}" ;;
+            halt)
+              add --track "${{ inputs.track }}"
+              add --version-code "${{ inputs.version_code }}" ;;
+          esac
+          echo "scripts/play_release.py ${args[*]}"
+          {
+            echo '```'
+            echo "scripts/play_release.py ${args[*]}"
+            python3 scripts/play_release.py "${args[@]}" | tee /dev/stderr
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

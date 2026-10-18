@@ -123,17 +123,25 @@ Invitation you can send:
 > installed for 14 days and tell me anything that wobbles. You get a "TimeFlow
 > Tester" badge for your trouble.
 
-## 7. Automate uploads (optional, do once)
+## 7. Automate uploads and promotion (do this; nothing else here works without it)
+
+This is the one step only Ian can do, and until it is done every Play action
+is a click in the Console that no session can make or audit. The v1.1.3
+release logged `Upload to Google Play: skipped` for exactly this reason: the
+secret has never existed, so Play has had nothing new since v1.1.0 (217).
 
 1. Google Cloud console: create a project (or reuse one), enable the **Google
    Play Android Developer API**, create a **service account**, and create a
    JSON key for it.
 2. Play Console → *Users and permissions → Invite new users*: the service
-   account's email, app access to TimeFlow, permission **Release to testing
-   tracks** (add **Release to production** later if you want). It can take a
-   day to start working.
+   account's email, app access to TimeFlow, permissions **Release to testing
+   tracks** *and* **Release to production** — the Linux session maintains Play
+   end to end, including the production rollout. It can take a day to start
+   working.
 3. GitHub → repository *Settings → Secrets and variables → Actions*:
-   - Secret `PLAY_SERVICE_ACCOUNT_JSON`: the whole JSON key.
+   - Secret `PLAY_SERVICE_ACCOUNT_JSON`: the whole JSON key. Keep it here and
+     not on any machine: then every promotion is a workflow run with a log,
+     and deleting this one secret takes the ability away again.
    - Variable `PLAY_TRACK` (optional, default `internal`): e.g. `alpha` to
      send tagged releases straight to the closed test.
    - Variable `PLAY_RELEASE_STATUS` (default `draft`): leave unset until Play
@@ -142,7 +150,33 @@ Invitation you can send:
      that hasn't been reviewed yet.
 
 From then on, pushing a `vX.Y.Z` tag uploads the bundle with the "What's new"
-text.
+text, and tracks are moved with the *Play release* workflow (Actions → *Play
+release*) or `scripts/play_release.py`:
+
+| Command | What it does |
+|---|---|
+| `show` | what build is on each track, and how much of the audience has it |
+| `promote --from internal --to alpha` | moves a build between tracks |
+| `promote --from alpha --to production` | to production, at a tenth of users |
+| `rollout --fraction 0.5` / `--fraction 1` | widens a staged rollout |
+| `halt` | stops a rollout reaching anyone new |
+
+`--dry-run` prints the requests without credentials and without sending them,
+which is how to read a command before it reaches real users. A build only ever
+sits on one track: giving its version code to another moves it.
+
+## Who maintains what
+
+| | |
+|---|---|
+| TestFlight, App Store Connect, the iOS build | the Mac mini session |
+| Google Play, the Android build, the tester-round APK and portal | the Linux PC session |
+| Anything needing a phone in hand, Google/Apple sign-in, or identity | Ian |
+
+The Linux PC has no Android device (`adb devices` is empty, by design — it is
+a desktop), so it can prove a build compiles and check what is inside the
+artifact the way CI does, but not that it runs. A build going to production
+should have been on a phone first: Ian's, or a round's testers'.
 
 ## Each later release
 

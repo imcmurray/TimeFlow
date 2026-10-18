@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -6,6 +7,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:timeflow/data/datasources/database.dart';
 import 'package:timeflow/data/repositories/task_repository.dart';
 import 'package:timeflow/domain/entities/task.dart';
+import 'package:timeflow/services/background_breadcrumb.dart';
+import 'package:timeflow/services/notification_service.dart';
+import 'package:timeflow/services/reminder_actions.dart';
+import 'package:timeflow/services/reminder_coordinator.dart';
 import 'package:timeflow/services/task_service.dart';
 
 import '../helpers/test_db.dart';
@@ -102,6 +107,54 @@ void main() {
 
     await TaskService(backgroundRepo).setCompleted(seen, true);
     await app.customStatement('COMMIT;');
+    final after = await appRepo.getRange(
+      DateTime(2026, 6, 3),
+      DateTime(2026, 6, 4),
+    );
+    expect(after.single.isCompleted, isTrue);
+  });
+
+  test('a save refused because the app is writing waits and lands', () async {
+    await BackgroundBreadcrumb.clear();
+    addTearDown(BackgroundBreadcrumb.clear);
+    final appRepo = TaskRepository(app);
+    await TaskService(
+      appRepo,
+    ).create(draft('Lunch', start: DateTime(2026, 6, 3, 12)));
+    final backgroundRepo = TaskRepository(background);
+    final seen = (await backgroundRepo.getRange(
+      DateTime(2026, 6, 3),
+      DateTime(2026, 6, 4),
+    )).single;
+
+    // WAL is no help when the app's isolate is the one writing: the other
+    // connection is refused at once, because two connections in one process
+    // never wait for each other. Holding it for less than the first retry's
+    // wait is the real shape — a first launch seeding categories, say, not
+    // something that stays locked.
+    final inside = Completer<void>();
+    final appBusy = app.transaction(() async {
+      await app.customStatement('UPDATE tasks SET title = title;');
+      inside.complete();
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+    });
+    await inside.future;
+
+    await applyInBackground(
+      backgroundRepo,
+      ReminderResponse(
+        ReminderPayload(seen.id, seen.startTime),
+        ReminderActions.completed,
+      ),
+      seen,
+    );
+    await appBusy;
+
+    expect(
+      await BackgroundBreadcrumb.read(),
+      contains(BackgroundBreadcrumb.locked),
+      reason: 'the first attempt should have been refused',
+    );
     final after = await appRepo.getRange(
       DateTime(2026, 6, 3),
       DateTime(2026, 6, 4),

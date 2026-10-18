@@ -39,6 +39,14 @@ version is tagged, *Unreleased* becomes that version's notes.
   SQLite's default rollback journal a reader blocks a writer's commit, so the
   background handler's save was lost. The database now runs in WAL mode, where
   a reader and a writer can work at once (TimeFlow#68).
+- **A reminder answered while the app happens to be writing is tried again
+  rather than lost.** WAL keeps a reader out of the way, but two connections in
+  one process never wait for each other as writers, however long SQLite's busy
+  timeout is set to — it refuses at once rather than risk a deadlock. On a
+  background launch the app is almost always only reading; for the rest, a
+  first launch still seeding its categories, the handler now waits 200 ms,
+  400 ms and 800 ms before giving up, and each wait is in the breadcrumb
+  (TimeFlow#68).
 - **The task editor's Category and Repeat values are no longer drawn grey.** Both
   fields are a tappable box rather than a real input, and a bare label inside one
   inherits the app's secondary grey, so a chosen category read as an empty

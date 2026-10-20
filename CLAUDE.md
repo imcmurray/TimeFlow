@@ -13,6 +13,14 @@ App Store Connect). **GitHub issues are the shared channel and the durable
 record** — a decision that isn't in an issue didn't happen, because the other
 machine can only read what's written down.
 
+Each session keeps its own store: the Mac takes TestFlight and the App Store,
+the Linux PC takes Google Play (`scripts/play_release.py` and the *Play
+release* workflow, see [docs/PLAY_STORE.md](docs/PLAY_STORE.md)). A build's
+number is the commit count, so the same commit is the same build number on
+both, and neither session promotes the other's. The Linux PC has no Android
+hardware, so anything that needs a build to *run* on a phone is Ian's or a
+tester's, never ticked off from here.
+
 At the start of every session:
 1. `git fetch --prune && git checkout main && git pull`
 2. Read `docs/CHANGELOG.md` → *Unreleased* for what changed since you last

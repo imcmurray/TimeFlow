@@ -7,6 +7,7 @@
 | Pull request | Analyze, format check, generated-code check, tests (under `TZ=America/Denver`), web build, debug-signed Android build |
 | Push to `main` | All of the above, then the web app deploys to GitHub Pages and a **release-signed** app bundle + APK are built (CI artifacts) |
 | Tag `vX.Y.Z` | GitHub release with the signed APK, a beta APK for tester rounds (`timeflow-vX.Y.Z-beta.apk`), the bundle (AAB) and experimental desktop zips; the bundle also goes to Google Play if `PLAY_SERVICE_ACCOUNT_JSON` is set (track/status from the `PLAY_TRACK`/`PLAY_RELEASE_STATUS` variables, default internal/draft) |
+| *Play release* workflow (manual) | `show`, `promote`, `rollout` or `halt` on any Play track, through `scripts/play_release.py`. The service-account key stays a repository secret, so each one is a run with a log |
 
 Build numbers are the commit count on `main` (`scripts/build_flags.sh`), so
 every build's Android version code is higher than the last.
@@ -20,7 +21,23 @@ every build's Android version code is higher than the last.
 3. Once the PR shows **merged**, tag the merge commit:
    `git tag v1.0.1 && git push origin v1.0.1`. The release workflow refuses
    a tag that doesn't match `pubspec.yaml`.
-4. Promote the build in Play Console (internal → closed → production).
+4. Promote it with the *Play release* workflow (Actions → *Play release* →
+   *Run workflow*), or `scripts/play_release.py` locally with the service
+   account key:
+
+   ```bash
+   scripts/play_release.py show                                  # what's where
+   scripts/play_release.py promote --from internal --to alpha    # to the closed test
+   scripts/play_release.py promote --from alpha --to production  # a tenth of users
+   scripts/play_release.py rollout --fraction 0.5                # widen it
+   scripts/play_release.py rollout --fraction 1                  # everyone
+   scripts/play_release.py halt                                  # stop it going further
+   ```
+
+   Every command takes `--dry-run`, which prints the requests it would send
+   and needs no credentials. A promotion to production is a tenth of users
+   unless told otherwise, because real installs are the only test a build
+   this far along hasn't already had.
 
 ## Beta builds (tester rounds)
 

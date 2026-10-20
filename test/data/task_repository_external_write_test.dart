@@ -114,7 +114,7 @@ void main() {
     expect(after.single.isCompleted, isTrue);
   });
 
-  test('a save refused because the app is writing waits and lands', () async {
+  test('a save made while the app is writing waits and lands', () async {
     await BackgroundBreadcrumb.clear();
     addTearDown(BackgroundBreadcrumb.clear);
     final appRepo = TaskRepository(app);
@@ -127,11 +127,15 @@ void main() {
       DateTime(2026, 6, 4),
     )).single;
 
-    // WAL is no help when the app's isolate is the one writing: the other
-    // connection is refused at once, because two connections in one process
-    // never wait for each other. Holding it for less than the first retry's
-    // wait is the real shape — a first launch seeding categories, say, not
-    // something that stays locked.
+    // WAL is no help when the app's isolate is the one writing. What the other
+    // connection does then depends on the SQLite underneath: on Linux it is
+    // refused at once and writeWithRetries waits and tries again; on macOS it
+    // honours busy_timeout and simply waits out the app's transaction. Either
+    // way the save has to land, which is what this asserts. The retry itself
+    // is pinned in background_write_retry_test.dart, where the refusal is
+    // forced rather than left to the platform. Holding it for less than the
+    // first retry's wait is the real shape — a first launch seeding
+    // categories, say, not something that stays locked.
     final inside = Completer<void>();
     final appBusy = app.transaction(() async {
       await app.customStatement('UPDATE tasks SET title = title;');
@@ -150,10 +154,15 @@ void main() {
     );
     await appBusy;
 
+    // Null where nothing was refused; where something was, only the waits.
+    final crumb = await BackgroundBreadcrumb.read();
     expect(
-      await BackgroundBreadcrumb.read(),
-      contains(BackgroundBreadcrumb.locked),
-      reason: 'the first attempt should have been refused',
+      (crumb ?? '')
+          .split('\n')
+          .where((l) => l.isNotEmpty)
+          .every((l) => l.contains(BackgroundBreadcrumb.locked)),
+      isTrue,
+      reason: 'a refusal may be retried, never fail: $crumb',
     );
     final after = await appRepo.getRange(
       DateTime(2026, 6, 3),

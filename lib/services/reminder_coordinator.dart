@@ -327,9 +327,10 @@ const backgroundWriteWaits = [
 ///
 /// WAL stopped a *reader* in the app's main isolate from blocking this commit,
 /// which is what a tester lost a *Completed* to. A writer there still blocks
-/// it: two connections in one process never wait for each other, because
+/// it. On Linux two connections in one process never wait for each other —
 /// SQLite returns `SQLITE_BUSY` rather than risk a deadlock, however long
-/// `busy_timeout` is. On a background launch the main isolate is almost always
+/// `busy_timeout` is — while macOS's SQLite does wait; this covers the platforms
+/// that refuse. On a background launch the main isolate is almost always
 /// only reading, so this covers the narrow rest — a first launch still seeding
 /// categories, a migration — where a second or so is plenty.
 ///

@@ -51,10 +51,10 @@ def token():
     try:
         from google.auth.transport.requests import Request
         from google.oauth2 import service_account
-    except ImportError:
-        sys.exit('this needs google-auth to sign in to Play: '
-                 'pip install google-auth (or pass --dry-run, which signs in '
-                 'to nothing)')
+    except ImportError as e:
+        sys.exit(f'this needs google-auth and requests to sign in to Play ({e}): '
+                 'pip install google-auth requests (or pass --dry-run, which '
+                 'signs in to nothing)')
 
     raw = os.environ.get('PLAY_SERVICE_ACCOUNT_JSON', '').strip()
     if raw:

@@ -1,0 +1,84 @@
+# A beta bundle for Play's internal testing track: the Android counterpart of a
+# TestFlight tester build, with beta tester mode compiled in (TimeFlow#77).
+#
+# Internal is the only track a beta bundle goes to, and it's fixed here rather
+# than taken from an input or a variable. Internal testing skips Play's review;
+# the closed test doesn't, and what it holds is what reaches production. Store
+# bundles go to the closed test from a tag (release.yml). See docs/RELEASING.md.
+name: Play beta
+
+on:
+  workflow_dispatch:
+
+# Shared with play.yml: Play allows one open edit at a time.
+concurrency: play-release
+
+env:
+  FLUTTER_VERSION: '3.44.2'
+
+jobs:
+  beta:
+    runs-on: ubuntu-latest
+    # A version code can only be used once, and it comes from the commit count,
+    # so a branch's build could take the number the next build on main needs.
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0               # the commit count is the version code
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Restore upload keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload-keystore.jks"
+          echo "KEYSTORE_PATH=$RUNNER_TEMP/upload-keystore.jks" >> "$GITHUB_ENV"
+
+      - name: Build the beta bundle
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          flutter build appbundle --release $(TIMEFLOW_BETA=1 ./scripts/build_flags.sh)
+          echo "Beta bundle: build $(git rev-list --count HEAD) from $(git rev-parse --short HEAD)" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+      # Prove it from the artifact, as release.yml does: a bundle without the
+      # portal in it is a store build under the wrong name, which is #77 again.
+      - name: Beta tester mode is in the bundle
+        run: |
+          set -euo pipefail
+          aab=build/app/outputs/bundle/release/app-release.aab
+          found=$(unzip -p "$aab" base/lib/arm64-v8a/libapp.so \
+            | strings | grep -c 'testers\.rinserepeatlabs\.com' || true)
+          echo "$found reference(s) to the tester portal"
+          [ "$found" -gt 0 ] || { echo "::error::the beta bundle has no tester portal in it"; exit 1; }
+
+      - name: Upload to internal testing
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.rinserepeatlabs.timeflow
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed
+          whatsNewDirectory: distribution/whatsnew
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-beta
+          path: build/app/outputs/bundle/release/app-release.aab

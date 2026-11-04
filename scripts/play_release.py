@@ -13,11 +13,13 @@ the exact requests it would send, which is how to check a command before it
 touches real users.
 
   scripts/play_release.py show --track production
-  scripts/play_release.py promote --from internal --to alpha
   scripts/play_release.py promote --from alpha --to production --fraction 0.1
   scripts/play_release.py rollout --track production --fraction 0.5
   scripts/play_release.py rollout --track production --fraction 1
   scripts/play_release.py halt --track production
+
+Don't promote out of internal: that track holds beta bundles, and only a store
+bundle belongs on alpha or production (TimeFlow#77, docs/RELEASING.md).
 
 A rollout to everyone is `--fraction 1`, which Play records as "completed"; any
 fraction below 1 is an "inProgress" staged rollout that `halt` can stop. The

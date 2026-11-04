@@ -6,7 +6,8 @@
 |---|---|
 | Pull request | Analyze, format check, generated-code check, tests (under `TZ=America/Denver`), web build, debug-signed Android build |
 | Push to `main` | All of the above, then the web app deploys to GitHub Pages and a **release-signed** app bundle + APK are built (CI artifacts) |
-| Tag `vX.Y.Z` | GitHub release with the signed APK, a beta APK for tester rounds (`timeflow-vX.Y.Z-beta.apk`), the bundle (AAB) and experimental desktop zips; the bundle also goes to Google Play if `PLAY_SERVICE_ACCOUNT_JSON` is set (track/status from the `PLAY_TRACK`/`PLAY_RELEASE_STATUS` variables, default internal/draft) |
+| Tag `vX.Y.Z` | GitHub release with the signed APK, a beta APK for tester rounds (`timeflow-vX.Y.Z-beta.apk`), the bundle (AAB) and experimental desktop zips; the bundle also goes to Google Play if `PLAY_SERVICE_ACCOUNT_JSON` is set (track/status from the `PLAY_TRACK`/`PLAY_RELEASE_STATUS` variables, default alpha/draft) |
+| *Play beta* workflow (manual, `main` only) | A bundle with beta tester mode compiled in, checked for it, and uploaded to Play's **internal** track |
 | *Play release* workflow (manual) | `show`, `promote`, `rollout` or `halt` on any Play track, through `scripts/play_release.py`. The service-account key stays a repository secret, so each one is a run with a log |
 
 Build numbers are the commit count on `main` (`scripts/build_flags.sh`), so
@@ -27,7 +28,6 @@ every build's Android version code is higher than the last.
 
    ```bash
    scripts/play_release.py show                                  # what's where
-   scripts/play_release.py promote --from internal --to alpha    # to the closed test
    scripts/play_release.py promote --from alpha --to production  # a tenth of users
    scripts/play_release.py rollout --fraction 0.5                # widen it
    scripts/play_release.py rollout --fraction 1                  # everyone
@@ -38,6 +38,9 @@ every build's Android version code is higher than the last.
    and needs no credentials. A promotion to production is a tenth of users
    unless told otherwise, because real installs are the only test a build
    this far along hasn't already had.
+
+   The tag put the bundle on the closed test. Don't promote from `internal`,
+   which holds beta bundles (see below).
 
 ## Beta builds (tester rounds)
 
@@ -53,6 +56,22 @@ there, and findings go through portal-sync and findings-bridge into GitLab
   Without it (the default) there's no button, which is what Play production,
   the App Store and the public web app must get.
 - Each tag's release has `timeflow-vX.Y.Z-beta.apk` for Android rounds.
+- **Google Play: beta bundles go to internal testing, and only there**
+  (TimeFlow#77). Run *Actions → Play beta* on `main`. The closed test and
+  production only ever hold store bundles, which come from tags.
+  - Internal testing skips Play's review, and the closed test doesn't, so the
+    sign-in in a beta build never goes through review. That also means no check
+    is needed before promoting to production, as long as nothing is promoted out
+    of `internal`.
+  - Testers need to be on the internal testing list (Play Console, 100 at most).
+  - Play gives a device the highest version code on any track it can see. Someone
+    on both lists loses the beta when a later store build reaches the closed test,
+    until the next beta is uploaded, so run *Play beta* again after a release.
+  - A version code can't be reused, and it's the commit count. A beta and a store
+    bundle therefore can't come from the same commit: the release's own version
+    bump is the later commit.
+  - A tag's `timeflow-vX.Y.Z-beta.apk` remains for sideloading. It won't install
+    over a Play install, whose signature is Google's rather than our upload key's.
 - iPhone/iPad: TestFlight builds for a round are built with the flag on the
   Mac (see `IOS.md`). Don't promote a beta build to the App Store, and don't
   promote a beta bundle out of a Play testing track; upload a store build

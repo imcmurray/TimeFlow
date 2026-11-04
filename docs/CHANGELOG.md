@@ -6,6 +6,16 @@ version is tagged, *Unreleased* becomes that version's notes.
 
 ## Unreleased
 
+### Android / Google Play
+- **Play's internal testing track now carries beta builds, so Android testers get
+  Settings → Beta testing, the tasks icon and the Feedback icon.** Build 251 had
+  none of them because every bundle sent to Play was a store build. *Actions → Play
+  beta* builds a bundle with beta tester mode compiled in, checks it's there and
+  uploads it to `internal`, and only `internal`. **Tags now upload store bundles to
+  the closed test (`alpha`) instead of `internal`, and nothing should be promoted out
+  of `internal` any more.** `docs/RELEASING.md` → *Beta builds* has the rules
+  (TimeFlow#77).
+
 ### App
 - **A reminder's buttons say what they do: Completed · Snooze 5 min · Snooze
   10 min · Dismiss.** *Done* meant "complete the task", and a tester and Ian

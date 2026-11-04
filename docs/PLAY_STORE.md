@@ -15,7 +15,7 @@ to production. Start it as soon as the internal test works.
 |---|---|
 | Signed bundle (AAB) and APK for each release | GitHub release assets, e.g. `timeflow-v1.1.0.aab` |
 | Package name | `com.rinserepeatlabs.timeflow` |
-| Target SDK 36, 16 KB page-size ready, no INTERNET permission | checked on the v1.1.0 APK |
+| Target SDK 36, 16 KB page-size ready | checked on the v1.1.0 APK |
 | Listing text (name, short and full description) | [store/listing.md](store/listing.md) |
 | App icon 512×512 | `docs/store/icon-512.png` |
 | Feature graphic 1024×500 | `docs/store/feature-graphic.png` |
@@ -71,8 +71,10 @@ organization account later.
 
 **Data safety form:**
 1. *Does your app collect or share any of the required user data types?*
-   **No.** Tasks, notes, photos and categories stay on the device and the app
-   has no internet permission. Share links are sent by the user through other
+   **No.** Tasks, notes, photos and categories stay on the device. Release
+   builds have declared the internet permission since 1.1.2, for beta tester
+   mode, but a store build is compiled without that feature and makes no network
+   requests (`docs/RELEASING.md`). Share links are sent by the user through other
    apps; TimeFlow doesn't transmit them.
 2. That's the whole form when the answer is No. Submit.
 
@@ -107,7 +109,8 @@ optional.
    anyone-can-join (or invite-only). The tester kit has a header image:
    `marketing/testers/timeflow-testers-header-1200x630.png`.
 2. *Testing → Closed testing → Create track* (or use *Alpha*), add the group
-   as testers, and promote the internal release to it.
+   as testers. Its builds are store bundles, which a tag uploads here; internal
+   holds beta bundles, so don't promote from it (`docs/RELEASING.md`).
 3. Send testers the group link and the track's opt-in link. They must **opt
    in and install from Play**, and stay opted in. The 14 days count only
    while at least 12 testers are opted in.
@@ -142,21 +145,21 @@ secret has never existed, so Play has had nothing new since v1.1.0 (217).
    - Secret `PLAY_SERVICE_ACCOUNT_JSON`: the whole JSON key. Keep it here and
      not on any machine: then every promotion is a workflow run with a log,
      and deleting this one secret takes the ability away again.
-   - Variable `PLAY_TRACK` (optional, default `internal`): e.g. `alpha` to
-     send tagged releases straight to the closed test.
+   - Variable `PLAY_TRACK` (optional, default `alpha`, the closed test): leave it
+     unset. Setting it to `internal` would put store bundles over the beta.
    - Variable `PLAY_RELEASE_STATUS` (default `draft`): leave unset until Play
      has reviewed the first release, then set it to `completed` so uploads go
      out without a manual click. Play refuses anything but `draft` for an app
      that hasn't been reviewed yet.
 
-From then on, pushing a `vX.Y.Z` tag uploads the bundle with the "What's new"
-text, and tracks are moved with the *Play release* workflow (Actions → *Play
+From then on, pushing a `vX.Y.Z` tag uploads the store bundle to the closed test
+with the "What's new" text, *Actions → Play beta* uploads a beta bundle to internal
+testing, and tracks are moved with the *Play release* workflow (Actions → *Play
 release*) or `scripts/play_release.py`:
 
 | Command | What it does |
 |---|---|
 | `show` | what build is on each track, and how much of the audience has it |
-| `promote --from internal --to alpha` | moves a build between tracks |
 | `promote --from alpha --to production` | to production, at a tenth of users |
 | `rollout --fraction 0.5` / `--fraction 1` | widens a staged rollout |
 | `halt` | stops a rollout reaching anyone new |

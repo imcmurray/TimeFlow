@@ -84,6 +84,10 @@ jobs:
             esac
           done
 
+      # A tag's bundle is a store build, so it goes to the closed test. Internal
+      # is for beta bundles (play-beta.yml, TimeFlow#77), and a store build
+      # landing there would replace the beta on every tester's phone.
+      #
       # Track and status come from repository variables (Settings → Secrets
       # and variables → Actions → Variables). Until Play has reviewed the
       # app's first release it only accepts `draft`, so that's the default;
@@ -97,7 +101,7 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.rinserepeatlabs.timeflow
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: ${{ vars.PLAY_TRACK || 'internal' }}
+          track: ${{ vars.PLAY_TRACK || 'alpha' }}
           status: ${{ vars.PLAY_RELEASE_STATUS || 'draft' }}
           whatsNewDirectory: distribution/whatsnew
 
